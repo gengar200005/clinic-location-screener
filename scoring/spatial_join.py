@@ -45,9 +45,10 @@ def _detect_columns(gdf: gpd.GeoDataFrame) -> dict[str, str]:
         "sido": cols.get("sidonm") or cols.get("sido_nm") or cols.get("sido"),
         "sgg": cols.get("sggnm") or cols.get("sgg_nm") or cols.get("sgg"),
         "name": cols.get("adm_nm") or cols.get("admdong") or cols.get("dong"),
-        "code": cols.get("adm_cd") or cols.get("adm_cd2") or cols.get("code"),
+        "code": cols.get("adm_cd") or cols.get("code"),
+        "code10": cols.get("adm_cd2"),  # 10자리 — KOSIS 인구 테이블과 매핑용
     }
-    if not all(resolved.values()):
+    if not all([resolved[k] for k in ("sido", "sgg", "name", "code")]):
         raise RuntimeError(
             f"예상 컬럼 누락. 실제 컬럼: {list(gdf.columns)}. "
             "vuski/admdongkor 스키마 변경 가능성."
@@ -105,12 +106,16 @@ def build_admin_centroid(
 
     out_cols = [cmap["code"], cmap["sido"], cmap["sgg"], cmap["name"],
                 "lon", "lat", "x_5179", "y_5179"]
-    out_df = filtered[out_cols].rename(columns={
+    rename_map = {
         cmap["code"]: STD_COLS["code"],
         cmap["sido"]: STD_COLS["sido"],
         cmap["sgg"]: STD_COLS["sgg"],
         cmap["name"]: STD_COLS["name"],
-    })
+    }
+    if cmap.get("code10"):
+        out_cols.insert(1, cmap["code10"])
+        rename_map[cmap["code10"]] = "adm_cd10"
+    out_df = filtered[out_cols].rename(columns=rename_map)
     out_df.to_parquet(out_path, index=False)
     logger.info("saved %s (%d rows)", out_path, len(out_df))
     return filtered
