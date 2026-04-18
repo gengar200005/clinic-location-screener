@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# venv
+.venv/
+venv/
+env/
+
+# 환경 변수
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# node (mapshaper 로컬 설치 시)
+node_modules/
+
+# ─── 데이터 정책 ───
+# raw: 외부 API 날짜 스냅샷. 용량 크므로 제외 (재수집 가능)
+data/raw/**/*.parquet
+data/raw/**/*.csv
+data/raw/**/*.xlsx
+data/raw/**/*.geojson
+
+# cleaned: 중간 산출물. 재생성 가능하므로 제외
+data/cleaned/*.parquet
+
+# ─── 반드시 커밋 (절대 제외 금지) ───
+# data/cache/* : ODSay 영구 캐시 (삭제 시 한도 위험)
+# data/scored/* : 스코어링 히스토리
