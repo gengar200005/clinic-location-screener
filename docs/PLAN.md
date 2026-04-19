@@ -205,11 +205,13 @@ Top 30 = 내림차순 상위 30
 - Workflow permission "read+write" 부여, commit-back은 변경 시에만 (idempotent)
 - 발견한 gotcha: `data/raw/admin_boundary` 가 .gitignore라 runner마다 GeoJSON 재다운로드 필요 (~5초)
 
-### ⬜ 7주차: PWA
-- **[본인] GitHub Pages 활성화 (`main /web`)**
-- `publishers/web_export.py`
-- `web/index.html` Leaflet + Top 30 + 상세 패널
-- `manifest.json`, `sw.js`
+### ✅ 7주차: PWA
+- GitHub Pages 활성화 완료 (branch=main, path=/, URL: gengar200005.github.io/clinic-location-screener/web/)
+- `publishers/web_export.py` 확장: heatmap.json (216 KB · 652동) + boundaries.geojson (498 KB · 653동, simplify 0.0005°)
+- `web/index.html` Leaflet choropleth + Top 30 사이드패널 + 시도/점수/Top30 필터
+- `web/manifest.json` + `web/icon.svg` PWA 메타
+- `web/sw.js` Service Worker (network-first 데이터 / cache-first shell)
+- 커밋 78d5347, 배포 검증 완료
 
 ### ⬜ 8주차: 안정화
 - `tests/` 최소 케이스
