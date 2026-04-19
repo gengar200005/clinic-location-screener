@@ -92,7 +92,7 @@
         </div>`;
 
       // ── Map ──────────
-      const map = L.map('map', { zoomControl: true }).setView([d.center.lat, d.center.lon], 15);
+      const map = L.map('map', { zoomControl: true }).setView([d.center.lat, d.center.lon], 14);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap', maxZoom: 19,
       }).addTo(map);
@@ -104,9 +104,27 @@
         }).addTo(map);
       }
 
-      // 반경 원
-      L.circle([d.center.lat, d.center.lon], { radius: 500, color: '#4caf50', weight: 1, opacity: 0.6, fillOpacity: 0.04, dashArray: '4,4' }).addTo(map);
-      L.circle([d.center.lat, d.center.lon], { radius: 1000, color: '#2196f3', weight: 1, opacity: 0.5, fillOpacity: 0.03, dashArray: '4,4' }).addTo(map);
+      // 반경 원 (점수 산정 기준 — 시인성 강화)
+      const radii = [
+        { r: 500,  color: '#43a047', label: '500m' },
+        { r: 1000, color: '#1e88e5', label: '1km' },
+        { r: 2000, color: '#fb8c00', label: '2km' },
+      ];
+      radii.forEach(({ r, color, label }) => {
+        L.circle([d.center.lat, d.center.lon], {
+          radius: r, color, weight: 2, opacity: 0.85,
+          fillColor: color, fillOpacity: 0.06, dashArray: '5,5',
+        }).addTo(map);
+        // 원 외곽에 라벨 (북쪽 위치)
+        const offsetLat = r / 111000;
+        L.marker([d.center.lat + offsetLat, d.center.lon], {
+          icon: L.divIcon({
+            html: `<div style="background:${color};color:#fff;font-size:10px;font-weight:600;padding:1px 5px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.3);">${label}</div>`,
+            className: '', iconSize: [40, 16], iconAnchor: [20, 8],
+          }),
+          interactive: false,
+        }).addTo(map);
+      });
 
       // 중심점 별
       L.marker([d.center.lat, d.center.lon], { icon: mkIcon('⭐', 36) })
