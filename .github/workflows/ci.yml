@@ -1,0 +1,42 @@
+name: CI
+
+# pytest only — API 호출 없음. Push/PR 시 빠르게(<1분) 검증.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scoring/**'
+      - 'scrapers/**'
+      - 'publishers/**'
+      - 'config/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v

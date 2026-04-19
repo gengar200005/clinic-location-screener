@@ -59,6 +59,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # ── pytest gate: 코드 깨졌으면 API 콜 전에 fail-fast ──
+      - name: Run unit tests
+        run: pytest tests/ -q
+
       # ── 0. 경계 + centroid (runner에는 raw/cleaned 없음 → 매번 빌드) ──
       # admin_boundary GeoJSON 다운로드 (vuski/admdongkor, ~34MB, idempotent)
       - name: Download admin boundary GeoJSON

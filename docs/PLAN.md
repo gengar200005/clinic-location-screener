@@ -213,11 +213,12 @@ Top 30 = 내림차순 상위 30
 - `web/sw.js` Service Worker (network-first 데이터 / cache-first shell)
 - 커밋 78d5347, 배포 검증 완료
 
-### ⬜ 8주차: 안정화
-- `tests/` 최소 케이스
-- `docs/DATA_SOURCES.md`, `SCORING.md`, `RUNBOOK.md`
-- 2회 연속 배치 성공 확인
-- 가중치 민감도 (선택)
+### ✅ 8주차: 안정화
+- `tests/` 16 케이스 (normalize·competition·population·weighted_sum) — 모두 통과
+- `docs/DATA_SOURCES.md`, `docs/SCORING.md`, `docs/RUNBOOK.md` 작성
+- `.github/workflows/ci.yml` (push·PR 시 pytest 자동 실행) + weekly_pipeline에 pytest gate 추가
+- 2회 연속 배치 성공: 첫 검증 (Run 24628887939, 4분 7초) + 다음 토 03:00 KST cron으로 충족 예정
+- 가중치 민감도: 미실시 (Post-MVP)
 
 ### ⬜ 9주차+ (Post-MVP)
 - 임대료 2차 필터 (국토부 실거래가)
