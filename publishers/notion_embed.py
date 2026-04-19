@@ -1,13 +1,22 @@
-"""Notion Top 30 페이지 본문에 GitHub Pages iframe embed 삽입.
+"""Notion Top 30 페이지 본문 자동/수동 영역 관리.
 
-notion_detail.py의 PNG+링크 방식을 **인터랙티브 Leaflet 맵** embed로 교체.
-각 페이지 구조:
-  1. 📍 위치 요약 (좌표·역·Kakao/Naver 링크)
-  2. 🗺 인터랙티브 지도 (GitHub Pages embed)
-  3. 📊 상세 점수
-  4. ⚠️ 플래그 (해당 시)
+페이지 본문 구조:
+  🤖 자동 갱신 영역  (← 시작 마커)
+    · 🗺 인터랙티브 지도 (GitHub Pages iframe)
+    · 📊 상세 점수
+    · ⚠️ 플래그 (해당 시)
+  ✍️ 답사 기록 (수동)  (← 보존 마커)
+    · 📍 현장 답사 기록 (답사일·동행자·임대료·층수·면적)
+    · 🔍 상권 현황
+    · 🏥 경쟁 현황 (반경 500m)
+    · 💬 총평
+    · ✅ 체크리스트
+    · 📎 메모
 
-의원 리스트는 embed 안에 포함되므로 페이지 본문에서 제거.
+보존 로직:
+- 두 마커가 모두 있으면: 마커 사이만 삭제, 새 자동 블록을 시작 마커 뒤에 삽입.
+  → 답사 기록은 절대 건드리지 않음. 순위 이탈·재진입해도 보존.
+- 마커 없으면 (신규 페이지 또는 옛 포맷): 전체 클리어 + 마커 포함 풀 템플릿 주입.
 
 사용:
     python -m publishers.notion_embed [--only RANK]
@@ -32,35 +41,51 @@ from publishers.notion_detail import (
     _divider,
     _embed,
     _heading2,
+    _heading3,
     _paragraph,
     _rt,
+    _todo,
 )
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://gengar200005.github.io/clinic-location-screener/web/detail/"
 
+# 마커 heading 텍스트 (substring 매칭)
+AUTO_MARKER_TEXT = "🤖 자동 갱신 영역"
+MANUAL_MARKER_TEXT = "✍️ 답사 기록"
 
-def build_embed_blocks(row: pd.Series) -> list[dict]:
-    """페이지 본문 블록 — 요약 + embed + 점수 + 플래그."""
+
+# ─────────────────────────────────────────────────────────
+# 자동 영역 블록 생성
+# ─────────────────────────────────────────────────────────
+def _auto_marker_block() -> dict:
+    return _heading2(f"{AUTO_MARKER_TEXT} (매주 토 03:00 자동 갱신)")
+
+
+def _manual_marker_block() -> dict:
+    return _heading2(f"{MANUAL_MARKER_TEXT} (수동 · 매주 갱신 시 보존됨)")
+
+
+def build_auto_blocks(row: pd.Series) -> list[dict]:
+    """자동 영역 본문 — 지도 + 점수 + 플래그. 매주 새로 생성.
+
+    주의: 시작 마커는 별도로 _auto_marker_block()에서 처리 — 여기엔 포함 X.
+    """
     adm_cd = str(row["adm_cd"])
     embed_url = f"{BASE_URL}#{adm_cd}"
-    kakao_link = f"https://map.kakao.com/link/map/{row['adm_nm']},{row.get('lat','')},{row.get('lon','')}"
-    # 좌표 없을 수도 있으니 Top 30 parquet에 포함된 건 rank·score·adm_cd 정도.
-    # embed 내부에서 상세 표시되므로 여기는 최소 정보만.
 
     blocks: list[dict] = []
 
-    blocks.append(_heading2("🗺 인터랙티브 지도"))
+    # 지도
+    blocks.append(_heading3("🗺 인터랙티브 지도"))
     blocks.append(_paragraph([
         _rt("의원 마커 클릭 또는 리스트 항목 클릭 → 지도 위 위치 하이라이트 + 상세 정보"),
     ]))
     blocks.append(_embed(embed_url))
 
-    blocks.append(_divider())
-
-    # 상세 점수
-    blocks.append(_heading2("📊 상세 점수"))
+    # 점수
+    blocks.append(_heading3("📊 상세 점수"))
     blocks.append(_bullet([
         _rt("총점: ", bold=True),
         _rt(f"{float(row['score']):.4f}  (C={float(row['c_norm']):.2f}, P={float(row['p_norm']):.2f}, T={float(row['t_norm']):.2f})"),
@@ -77,7 +102,6 @@ def build_embed_blocks(row: pd.Series) -> list[dict]:
         _rt(f"1km {int(row.get('n_clinic_1km', 0))}개  ·  "),
         _rt(f"2km {int(row.get('n_clinic_2km', 0))}개"),
     ]))
-    # 통근: 자차(score 기준) + 대중교통(보조)
     commute_parts = [
         _rt("통근: ", bold=True),
         _rt(f"🚗 자차 {int(row['t_raw'])}분"),
@@ -90,7 +114,6 @@ def build_embed_blocks(row: pd.Series) -> list[dict]:
     )
     blocks.append(_bullet(commute_parts))
 
-    # 외부 링크
     blocks.append(_paragraph([
         _rt("🗺 외부 지도: "),
         _rt("Kakao Maps",
@@ -105,12 +128,11 @@ def build_embed_blocks(row: pd.Series) -> list[dict]:
     if row.get("med_desert_flag"):
         flags.append(("🏜", "의료사막 의심 (1km≤5 AND 2km≤30)"))
     if row.get("centroid_mismatch_flag"):
-        flags.append(("📍", "중심점 에러 (500m=0 이지만 2km≥50) — 상권이 중심점 밖에 있음"))
+        flags.append(("📍", "중심점 에러 (500m=0 이지만 2km≥50) — 상권이 중심점 밖"))
     if row.get("suburban_cluster_flag"):
-        flags.append(("🏘", "신도시 상가밀집형 (동내≥10 AND 1km≤5) — 아파트+집중 상가"))
+        flags.append(("🏘", "신도시 상가밀집형 (동내≥10 AND 1km≤5)"))
     if flags:
-        blocks.append(_divider())
-        blocks.append(_heading2("⚠️ 플래그"))
+        blocks.append(_heading3("⚠️ 플래그"))
         for emoji, text in flags:
             color = "orange_background" if emoji == "🏜" else "yellow_background"
             blocks.append(_callout(text, emoji=emoji, color=color))
@@ -118,6 +140,144 @@ def build_embed_blocks(row: pd.Series) -> list[dict]:
     return blocks
 
 
+def build_manual_template() -> list[dict]:
+    """답사 기록 수동 영역 — 신규 페이지 최초 진입 시 1회 주입."""
+    blocks: list[dict] = []
+
+    blocks.append(_heading3("📍 현장 답사 기록"))
+    blocks.append(_bullet([_rt("답사일: ")]))
+    blocks.append(_bullet([_rt("동행자: ")]))
+    blocks.append(_bullet([_rt("임대료: 보증금 ___ / 월세 ___")]))
+    blocks.append(_bullet([_rt("층수·면적: ")]))
+    blocks.append(_paragraph([
+        _rt("💡 팁: 답사일·임대료·층수·면적은 상단 DB 프로퍼티에도 입력하면 "),
+        _rt("📍 임장 관리 view", bold=True),
+        _rt("에서 한눈에 비교 가능."),
+    ]))
+
+    blocks.append(_heading3("🔍 상권 현황"))
+    blocks.append(_paragraph([_rt("유동인구·주요 상권 축·주차 여건·지하철 접근성 등")]))
+
+    blocks.append(_heading3("🏥 경쟁 현황 (반경 500m)"))
+    blocks.append(_paragraph([_rt("임장 중 실제 확인한 내과·소화기 의원 관찰 (대기환자 수·리모델링 여부·신규 개원 등)")]))
+
+    blocks.append(_heading3("💬 총평"))
+    blocks.append(_paragraph([_rt("")]))
+
+    blocks.append(_heading3("✅ 체크리스트"))
+    for item in [
+        "1층 가시성 양호",
+        "주차 공간 확보",
+        "대중교통 접근성",
+        "경쟁 내과 위치 확인",
+        "건물 상태·리모델링 필요 여부",
+        "건물주 미팅",
+        "재방문 의향",
+    ]:
+        blocks.append(_todo(item, checked=False))
+
+    blocks.append(_heading3("📎 사진·링크·메모"))
+    blocks.append(_paragraph([_rt("")]))
+
+    return blocks
+
+
+# ─────────────────────────────────────────────────────────
+# 마커 탐지 + 부분 업데이트
+# ─────────────────────────────────────────────────────────
+def _get_heading_text(block: dict) -> str:
+    """heading_2/3 블록의 plain text 추출. 다른 타입은 빈 문자열."""
+    btype = block.get("type", "")
+    if btype not in ("heading_2", "heading_3"):
+        return ""
+    rt = block.get(btype, {}).get("rich_text", [])
+    return "".join(r.get("plain_text", "") for r in rt)
+
+
+def _list_all_children(client: Client, page_id: str) -> list[dict]:
+    all_blocks: list[dict] = []
+    start_cursor = None
+    while True:
+        resp = client.blocks.children.list(
+            block_id=page_id, start_cursor=start_cursor, page_size=100,
+        )
+        all_blocks.extend(resp.get("results", []))
+        if not resp.get("has_more"):
+            break
+        start_cursor = resp.get("next_cursor")
+    return all_blocks
+
+
+def _find_markers(children: list[dict]) -> tuple[int | None, int | None]:
+    """자동 영역 시작·수동 영역 시작 heading 인덱스. 없으면 None."""
+    auto_idx = None
+    manual_idx = None
+    for i, b in enumerate(children):
+        t = _get_heading_text(b)
+        if auto_idx is None and AUTO_MARKER_TEXT in t:
+            auto_idx = i
+        elif manual_idx is None and MANUAL_MARKER_TEXT in t:
+            manual_idx = i
+    return auto_idx, manual_idx
+
+
+def update_page_body(
+    client: Client,
+    page_id: str,
+    auto_blocks: list[dict],
+) -> tuple[str, int]:
+    """페이지 본문 갱신. 마커 있으면 자동 영역만 교체, 없으면 풀 템플릿 주입.
+
+    반환: (모드 문자열, 삽입한 블록 수)
+    """
+    children = _list_all_children(client, page_id)
+    auto_idx, manual_idx = _find_markers(children)
+
+    if auto_idx is None or manual_idx is None or auto_idx >= manual_idx:
+        # 신규 페이지 or 옛 포맷 → 전체 클리어 + 풀 템플릿
+        _clear_page_content(client, page_id)
+        full = (
+            [_auto_marker_block()]
+            + auto_blocks
+            + [_divider()]
+            + [_manual_marker_block()]
+            + build_manual_template()
+        )
+        _append_blocks(client, page_id, full)
+        return "full", len(full)
+
+    # 기존 포맷 → 마커 사이만 교체
+    auto_start_id = children[auto_idx]["id"]
+    # 삭제 대상: auto_idx+1 ~ manual_idx-1
+    to_delete = children[auto_idx + 1 : manual_idx]
+    for b in to_delete:
+        client.blocks.delete(block_id=b["id"])
+
+    # 새 자동 블록을 시작 마커 바로 뒤에 삽입
+    # auto_blocks는 일반적으로 <30개라 단일 요청으로 충분
+    if auto_blocks:
+        client.blocks.children.append(
+            block_id=page_id,
+            children=auto_blocks[:100],
+            after=auto_start_id,
+        )
+        # 100 초과 시 chain (안전망)
+        after_id = auto_start_id
+        if len(auto_blocks) > 100:
+            # 첫 청크 삽입 직후의 마지막 블록 ID를 다음 after로 쓰려면 response 필요
+            # 단순화: 한 번 더 호출 (100 초과 케이스는 거의 없음)
+            logger.warning("auto_blocks %d개 > 100 — 200까지만 처리", len(auto_blocks))
+            client.blocks.children.append(
+                block_id=page_id,
+                children=auto_blocks[100:200],
+                # after 없이 → 페이지 끝에 붙는 이슈. 100 초과 시 수작업 필요.
+            )
+    return "partial", len(auto_blocks)
+
+
+# ─────────────────────────────────────────────────────────
+# 메인
+# ─────────────────────────────────────────────────────────
 def run(only_rank: int | None = None) -> dict:
     load_dotenv()
     token = os.environ.get("NOTION_TOKEN")
@@ -135,6 +295,7 @@ def run(only_rank: int | None = None) -> dict:
     logger.info("existing pages: %d", len(name_to_id))
 
     processed = 0
+    n_full, n_partial = 0, 0
     for _, row in top30.iterrows():
         rank = int(row["rank"])
         if only_rank is not None and rank != only_rank:
@@ -142,16 +303,23 @@ def run(only_rank: int | None = None) -> dict:
         name = str(row["adm_nm"])
         page_id = name_to_id.get(name)
         if not page_id:
-            logger.warning("  [rank %d] %s — 없음 (skip)", rank, name)
+            logger.warning("  [rank %d] %s — 페이지 없음 (skip)", rank, name)
             continue
 
-        blocks = build_embed_blocks(row)
-        _clear_page_content(client, page_id)
-        _append_blocks(client, page_id, blocks)
-        logger.info("  [rank %d] %s — %d blocks OK", rank, name, len(blocks))
+        auto_blocks = build_auto_blocks(row)
+        mode, n = update_page_body(client, page_id, auto_blocks)
+        if mode == "full":
+            n_full += 1
+        else:
+            n_partial += 1
+        logger.info("  [rank %d] %s — %s (%d blocks)", rank, name, mode, n)
         processed += 1
 
-    summary = {"pages": processed}
+    summary = {
+        "pages": processed,
+        "full_template": n_full,
+        "partial_auto": n_partial,
+    }
     logger.info("complete: %s", summary)
     return summary
 
@@ -161,8 +329,11 @@ def main() -> int:
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
-    parser = argparse.ArgumentParser(description="Notion 30페이지 embed 교체")
-    parser.add_argument("--only", type=int, default=None)
+    parser = argparse.ArgumentParser(
+        description="Notion Top 30 페이지 본문 자동/수동 영역 관리"
+    )
+    parser.add_argument("--only", type=int, default=None,
+                        help="특정 순위만 처리 (테스트용)")
     args = parser.parse_args()
     run(only_rank=args.only)
     return 0

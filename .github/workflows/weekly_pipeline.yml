@@ -111,6 +111,10 @@ jobs:
       - name: Publish — Notion DB sync
         run: python -m publishers.notion_sync
 
+      - name: Publish — Notion 페이지 본문 (자동 영역만 갱신)
+        # 마커 로직으로 답사 기록 수동 영역 보존 — 순위 이탈·재진입에도 안전.
+        run: python -m publishers.notion_embed
+
       # ── 5. Commit back ──
       # 영구 커밋 대상:
       #   data/cache/*.parquet  (ODSay·Kakao·역세권 캐시 — 삭제 시 한도 위험)

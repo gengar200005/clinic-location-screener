@@ -267,6 +267,20 @@ def _heading2(text: str) -> dict:
     }
 
 
+def _heading3(text: str) -> dict:
+    return {
+        "type": "heading_3",
+        "heading_3": {"rich_text": [_rt(text, bold=True)]},
+    }
+
+
+def _todo(text: str, checked: bool = False) -> dict:
+    return {
+        "type": "to_do",
+        "to_do": {"rich_text": [_rt(text)], "checked": checked},
+    }
+
+
 def _paragraph(rich_items: list[dict]) -> dict:
     return {"type": "paragraph", "paragraph": {"rich_text": rich_items}}
 
