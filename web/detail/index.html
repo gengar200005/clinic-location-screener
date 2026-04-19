@@ -80,13 +80,14 @@
       if (m.centroid_mismatch) flags.push('<span class="flag">📍 중심점 에러</span>');
       if (m.suburban) flags.push('<span class="flag">🏘 신도시밀집</span>');
       const short = d.name.split(' ').slice(1).join(' ');
+      const transitStr = (m.t_transit != null && m.t_transit < 999) ? ` · 🚇 대중교통 ${m.t_transit}분` : '';
       document.getElementById('hdr').innerHTML = `
         <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span></h1>
         <div class="meta">
           40+ ${m.pop_40plus.toLocaleString()}명 (${(m.ratio_40plus*100).toFixed(0)}%) ·
           의원 동내 ${m.n_clinic} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km} ·
-          자차 ${m.t_raw}분
-          ${d.station ? ` · 🚇 ${d.station.name} ${d.station.dist_m}m` : ''}
+          🚗 자차 ${m.t_raw}분${transitStr}
+          ${d.station ? ` · 🚉 ${d.station.name} ${d.station.dist_m}m` : ''}
           ${flags.length ? '<br>' + flags.join('') : ''}
         </div>`;
 

@@ -19,9 +19,10 @@
 환경변수:
 - NOTION_TOKEN       Notion integration secret (ntn_...)
 - NOTION_DB_ID       Top 30 DB의 database_id
-- NOTION_DS_ID       (선택) data_source_id. 미지정 시 DB로부터 조회.
+- NOTION_DS_ID       (권장) data_source_id. 미지정 시 DB에서 조회.
+                     notion-client 3.0 이상은 data_sources API 우선 사용.
 
-의존성: notion-client (requirements.txt에 이미 포함)
+의존성: notion-client>=3.0 (requirements.txt에 이미 포함)
 """
 from __future__ import annotations
 
@@ -98,13 +99,28 @@ def _page_props(row: pd.Series, today: str) -> dict:
     }
 
 
-def _query_existing(client: Client, database_id: str) -> dict[str, str]:
+def _resolve_data_source_id(client: Client, database_id: str) -> str:
+    """DB에서 첫 번째 data_source_id 조회 (단일 소스 DB 기준).
+
+    notion-client 3.0부터 query는 data_sources 엔드포인트를 사용.
+    """
+    db = client.databases.retrieve(database_id=database_id)
+    sources = db.get("data_sources") or []
+    if not sources:
+        raise RuntimeError(
+            f"DB {database_id} 에 data source 없음. "
+            "DB가 integration에 공유됐는지 확인."
+        )
+    return sources[0]["id"]
+
+
+def _query_existing(client: Client, data_source_id: str) -> dict[str, str]:
     """기존 페이지를 동명(title) → page_id 맵으로 반환."""
     result: dict[str, str] = {}
     start_cursor = None
     while True:
-        resp = client.databases.query(
-            database_id=database_id,
+        resp = client.data_sources.query(
+            data_source_id=data_source_id,
             start_cursor=start_cursor,
             page_size=100,
         )
@@ -129,6 +145,7 @@ def sync(
     notion_token: str | None = None,
     top30_path: Path | None = None,
     mark_dropped: bool = True,
+    data_source_id: str | None = None,
 ) -> dict:
     """Top 30 → Notion DB upsert.
 
@@ -137,10 +154,11 @@ def sync(
     load_dotenv()
     token = notion_token or os.environ.get("NOTION_TOKEN")
     db_id = database_id or os.environ.get("NOTION_DB_ID")
+    ds_id = data_source_id or os.environ.get("NOTION_DS_ID")
     if not token:
         raise RuntimeError(".env의 NOTION_TOKEN 미설정.")
-    if not db_id:
-        raise RuntimeError(".env의 NOTION_DB_ID 미설정.")
+    if not db_id and not ds_id:
+        raise RuntimeError(".env의 NOTION_DB_ID 또는 NOTION_DS_ID 미설정.")
 
     top30_path = top30_path or _find_latest_top30()
     df = pd.read_parquet(top30_path)
@@ -149,8 +167,13 @@ def sync(
     today = date.today().isoformat()
     client = Client(auth=token)
 
+    # data_source_id 해석
+    if not ds_id:
+        ds_id = _resolve_data_source_id(client, db_id)
+        logger.info("resolved data_source_id: %s", ds_id)
+
     logger.info("querying existing pages...")
-    existing = _query_existing(client, db_id)
+    existing = _query_existing(client, ds_id)
     logger.info("existing pages: %d", len(existing))
 
     created, updated = 0, 0
@@ -168,7 +191,7 @@ def sync(
             # 신규. 상태 "미방문"으로 시작.
             props[PROP_STATUS] = {"select": {"name": "미방문"}}
             client.pages.create(
-                parent={"database_id": db_id},
+                parent={"data_source_id": ds_id},
                 properties=props,
             )
             created += 1

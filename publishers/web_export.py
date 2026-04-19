@@ -181,6 +181,9 @@ def build_detail_json(
             "pop_40plus": int(row["pop_40plus"]),
             "ratio_40plus": round(float(row["ratio_40plus"]), 4),
             "t_raw": int(row["t_raw"]),
+            "t_transit": (
+                int(row["t_transit"]) if pd.notna(row.get("t_transit")) else None
+            ),
             "n_clinic": int(row["n_clinic"]),
             "n_clinic_500m": int(row.get("n_clinic_500m", row.get("n_within_radius", 0))),
             "n_clinic_1km": int(row.get("n_clinic_1km", 0)),

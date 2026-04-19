@@ -73,6 +73,20 @@ def load_commute(
     return df[["adm_cd", "minutes"]].copy()
 
 
+def load_transit_supplement() -> pd.DataFrame | None:
+    """ODSay 대중교통 캐시 → (adm_cd, t_transit) 테이블.
+
+    점수 계산에는 사용 안 함 (자차 primary). 상세 표시용 보조 데이터.
+    캐시 없으면 None.
+    """
+    if not ODSAY_CACHE.exists():
+        return None
+    df = pd.read_parquet(ODSAY_CACHE)
+    df["adm_cd"] = df["adm_cd"].astype(str)
+    df = df[["adm_cd", "minutes"]].rename(columns={"minutes": "t_transit"})
+    return df
+
+
 def merge_commute(dong_table: pd.DataFrame, commute: pd.DataFrame) -> pd.DataFrame:
     """행정동 테이블에 소요시간 병합. 미매칭은 fallback 값 채움."""
     dong_table = dong_table.copy()

@@ -85,10 +85,18 @@ def run(date_str: str) -> tuple[Path, Path]:
         on="adm_cd", how="left",
     )
 
-    # 4. 통근 지표
+    # 4. 통근 지표 (점수는 자차 primary, 대중교통은 보조 display)
     logger.info("=== 3. commute ===")
     commute = load_commute()
-    base = merge_commute(base, commute)  # adds t_raw
+    base = merge_commute(base, commute)  # adds t_raw (자차)
+    # ODSay 대중교통 시간 보조 컬럼
+    from scoring.commute import load_transit_supplement
+    transit = load_transit_supplement()
+    if transit is not None:
+        base["adm_cd"] = base["adm_cd"].astype(str)
+        before = base["adm_cd"].isin(transit["adm_cd"]).sum()
+        base = base.merge(transit, on="adm_cd", how="left")
+        logger.info("  + t_transit merged (%d matched)", before)
 
     # 5. 역세권 메타 지표 (캐시 있으면만)
     try:
@@ -122,7 +130,7 @@ def run(date_str: str) -> tuple[Path, Path]:
     cols_ordered = [
         "rank", "adm_cd", "sido", "sgg", "adm_nm",
         "score", "c_norm", "p_norm", "t_norm",
-        "c_raw", "p_raw", "t_raw",
+        "c_raw", "p_raw", "t_raw", "t_transit",
         "pop_total", "pop_40plus", "ratio_40plus",
         "n_clinic", "n_clinic_gi", "n_within_radius", "density_per_10k",
         "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",

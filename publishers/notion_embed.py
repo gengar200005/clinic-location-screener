@@ -77,12 +77,18 @@ def build_embed_blocks(row: pd.Series) -> list[dict]:
         _rt(f"1km {int(row.get('n_clinic_1km', 0))}개  ·  "),
         _rt(f"2km {int(row.get('n_clinic_2km', 0))}개"),
     ]))
-    blocks.append(_bullet([
+    # 통근: 자차(score 기준) + 대중교통(보조)
+    commute_parts = [
         _rt("통근: ", bold=True),
-        _rt(f"자차 {int(row['t_raw'])}분"),
-        _rt(f"  ·  🚇 {row.get('nearest_station','-')} ({int(row.get('station_dist_m',0))}m)  "),
-        _rt(f"·  역 500m 의원 {int(row.get('n_clinic_station_500m',0))}개"),
-    ]))
+        _rt(f"🚗 자차 {int(row['t_raw'])}분"),
+    ]
+    t_transit = row.get("t_transit")
+    if pd.notna(t_transit) and int(t_transit) < 999:
+        commute_parts.append(_rt(f"  ·  🚇 대중교통 {int(t_transit)}분"))
+    commute_parts.append(
+        _rt(f"  ·  🚉 {row.get('nearest_station','-')} ({int(row.get('station_dist_m',0))}m)  ·  역 500m 의원 {int(row.get('n_clinic_station_500m',0))}개")
+    )
+    blocks.append(_bullet(commute_parts))
 
     # 외부 링크
     blocks.append(_paragraph([
