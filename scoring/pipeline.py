@@ -90,7 +90,17 @@ def run(date_str: str) -> tuple[Path, Path]:
     commute = load_commute()
     base = merge_commute(base, commute)  # adds t_raw
 
-    # 5. 최종 가중합
+    # 5. 역세권 메타 지표 (캐시 있으면만)
+    try:
+        from scoring.station_metrics import compute_for_dongs, STATION_CACHE
+        if STATION_CACHE.exists():
+            logger.info("=== 3b. station metrics ===")
+            st = compute_for_dongs(admin_centroid, clinics_by_dong)
+            base = base.merge(st, on="adm_cd", how="left")
+    except FileNotFoundError:
+        logger.info("역 캐시 없음 → 스킵")
+
+    # 6. 최종 가중합
     logger.info("=== 4. weighted sum ===")
     scored = compute_final_scores(base)
 
@@ -101,6 +111,7 @@ def run(date_str: str) -> tuple[Path, Path]:
         "c_raw", "p_raw", "t_raw",
         "pop_total", "pop_40plus", "ratio_40plus",
         "n_clinic", "n_clinic_gi", "n_within_radius", "density_per_10k",
+        "nearest_station", "station_dist_m", "n_clinic_station_500m",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]
