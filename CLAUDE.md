@@ -8,16 +8,20 @@
 
 **최종 목표 (2027-05 개원)**: PWA 히트맵 + Notion DB (Top 30) + GitHub Actions 주간 배치.
 
-## 가중치 (확정, 변경 시 docs/PLAN.md 동시 수정)
+## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 
 ```
-Score = 0.4 · C_norm + 0.4 · P_norm + 0.2 · T_norm
+Score = 0.45 · C_norm + 0.45 · P_norm + 0.1 · T_norm
   C = 경쟁 (1 − percentile_rank)     ← 낮을수록 좋음
-  P = 인구·40대+ 비율 (percentile_rank)
-  T = 이촌역 대중교통 소요 (1 − percentile_rank)  ← 낮을수록 좋음
+  P = 40+ 인구 (percentile_rank)     ← 소화기내과 유효 환자풀
+  T = 이촌역 자차분 (1 − percentile_rank, Kakao Mobility)
 ```
 
-정규화는 **percentile rank 고정**. Min-Max·Z-score로 바꾸면 히스토리 스코어 재계산 필요.
+초안 0.4/0.4/0.2에서 조정: T sensitivity 분석 결과 16/30 동 좌우하는 결정적 변수로 드러나 약화. PWA 메인의 슬라이더로 사용자 동적 재가중 가능.
+
+행정동 중심점은 **WorldPop 100m 격자 인구 가중** 좌표 사용 (기하 중심점이 산·하천에 찍히는 centroid_mismatch 해결). docs/SCORING.md 참조.
+
+정규화는 **percentile rank 고정**. 변경 시 히스토리 전체 재계산 필요.
 
 ## 폴더 구조
 
@@ -47,16 +51,17 @@ cp .env.example .env              # 키 채우기
 
 필수 Python **3.11** (geopandas·fiona 호환성). Windows pip로 설치 가능 확인됨.
 
-## API·환경 변수
+## API·환경 변수 (전부 발급·등록 완료)
 
-| 변수 | 발급처 | 상태 |
-|------|--------|------|
-| `HIRA_KEY` | data.go.kr "병원정보서비스" (데이터 ID 15001698) | ✅ 발급·검증됨 |
-| `ODSAY_KEY` | lab.odsay.com | ⬜ 4주차 |
-| `KOSIS_KEY` | kosis.kr/openapi | ⬜ 3주차 |
-| `NOTION_TOKEN`, `NOTION_DB_ID` | notion.so/my-integrations | ⬜ 5주차 |
-| `MOIS_KEY` | (선택) | ⬜ |
-| `KAKAO_KEY` | (선택) | ⬜ |
+| 변수 | 용도 |
+|------|------|
+| `HIRA_KEY` | data.go.kr 병원정보서비스 — 주력 의원 수집 |
+| `KOSIS_KEY` | kosis.kr — 40+ 인구 |
+| `KAKAO_KEY` | Kakao Mobility — 자차 통근 (T 주력) |
+| `ODSAY_KEY` | odsay.com — 대중교통 (보조 display) |
+| `NOTION_TOKEN`, `NOTION_DB_ID`, `NOTION_DS_ID` | Notion Top 30 DB sync |
+
+모두 `.env` + GitHub Secrets 등록 완료. 신규 발급 없어도 운영 가능.
 
 ## 중요 기술 결정 (엎기 어려운 것)
 
@@ -72,29 +77,54 @@ cp .env.example .env              # 키 채우기
 
 ## 실행 명령
 
-```bash
-# 1주차 (1회성)
-python -m scrapers.admin_boundary
-python -m scoring.spatial_join centroid
+자동 운영은 GH Actions cron이 토 03:00 KST에 수행. 수동 실행은 docs/RUNBOOK.md 참조.
 
-# 2주차 (주 1회)
-python -m scrapers.hira_clinic            # --test로 1페이지만
-python -m scoring.spatial_join join-clinics --clinics data/raw/hira/hira_YYYY-MM-DD.parquet
+브리핑 수동 주입: `python -m publishers.claude_briefing --input briefings.yaml`
 
-# 전체 파이프라인 (미구현, 3주차+)
-python -m scoring.pipeline --date YYYY-MM-DD
-```
+## 진행 상태 (MVP 8주차 모두 완료)
 
-## 진행 상태
+1~8주차: 데이터 수집 · 공간조인 · 점수 · Notion sync · GH Actions cron · PWA · tests · docs 모두 커밋.
 
-- ✅ 1주차: 행정동 경계 (653개) · 중심점 parquet
-- ✅ 2주차: HIRA 9,564 의원 수집 · 공간조인 6,669 / 653동
-- ⬜ 3주차: 인구·세대 (행안부 + KOSIS) → 경쟁·인구 점수
-- ⬜ 4주차: ODSay 통근 → 가중합
-- ⬜ 5주차: Notion sync
-- ⬜ 6주차: GitHub Actions 배치
-- ⬜ 7주차: PWA (Leaflet + Top 30 테이블)
-- ⬜ 8주차: 안정화·문서화
+**Post-MVP (진행 중)**:
+- ✅ T 가중치 0.2→0.1 조정 (민감도 분석 근거)
+- ✅ PWA 가중치 슬라이더
+- ✅ WorldPop 인구 가중 중심점 (centroid_mismatch 보정)
+- ✅ Notion UI 개편 (4 view + 페이지 3-zone 마커 + 답사 리포트 템플릿 + DB 속성 확장)
+- ⬜ 임대료 2차 필터 / 실패 알림 / HIRA 운영 계정 등
+
+## 🧠 Claude 브리핑 트리거 (사용자가 매주 토요일 직접 지시)
+
+**사용자 지시 예시**: "브리핑 업데이트해줘" / "Top 30 brief 갱신"
+
+**Claude Code 세션에서의 절차** (이 문서가 세션 지시서):
+
+1. **최신 Top 30 로드**: `data/scored/top30_YYYY-MM-DD.parquet` 최신 파일 + `web/data/detail/{adm_cd}.json` 30개.
+2. **각 동 분석** (가능하면 `WebSearch` 병행):
+   - 점수 breakdown (C/P/T + flag)
+   - 동내/반경 의원 현황
+   - 인구 구조 (40+ 규모·비율)
+   - 지역 이슈: 재건축·재개발·지하철 연장·신규 개원 뉴스 등 (WebSearch)
+3. **SWOT + summary + notes 구조 작성**. 각 동 200~400자 수준.
+4. **briefings.yaml** 작성 (UTF-8). 예시:
+   ```yaml
+   generated_at: "2026-04-19"
+   briefings:
+     "경기도 남양주시 호원동":
+       summary: "..."
+       swot:
+         strengths: ["..."]
+         weaknesses: ["..."]
+         opportunities: ["..."]
+         threats: ["..."]
+       notes: ["..."]
+   ```
+5. **일괄 주입**: `python -m publishers.claude_briefing --input briefings.yaml`
+6. 완료 시 사용자에게 "30개 브리핑 업데이트 완료, N개 건너뜀(페이지 없음)" 요약.
+
+**주의**:
+- 브리핑은 🧠와 ✍️ 마커 사이만 교체 (답사 기록 불침범)
+- WebSearch 결과의 정확성 주의 — 확신 없는 정보엔 "확인 필요" 표기
+- 기존 브리핑 덮어쓰기 (diff 없이) — 히스토리 필요하면 사전에 git commit
 
 ## 주의 (세션 공통)
 

@@ -1,22 +1,17 @@
 """Notion Top 30 페이지 본문 자동/수동 영역 관리.
 
-페이지 본문 구조:
-  🤖 자동 갱신 영역  (← 시작 마커)
-    · 🗺 인터랙티브 지도 (GitHub Pages iframe)
-    · 📊 상세 점수
-    · ⚠️ 플래그 (해당 시)
-  ✍️ 답사 기록 (수동)  (← 보존 마커)
-    · 📍 현장 답사 기록 (답사일·동행자·임대료·층수·면적)
-    · 🔍 상권 현황
-    · 🏥 경쟁 현황 (반경 500m)
-    · 💬 총평
-    · ✅ 체크리스트
-    · 📎 메모
+페이지 본문 구조 (3-zone):
+  🤖 자동 갱신 영역  (← 매주 토 03:00 자동, notion_embed)
+    · 🗺 인터랙티브 지도 / 📊 점수 / ⚠️ 플래그
+  🧠 Claude 브리핑  (← 사용자가 토요일 "브리핑 업데이트" 지시 시)
+    · SWOT·지역 분석 (Claude 세션에서 수동 트리거)
+  ✍️ 답사 기록 (수동)  (← 사용자 영구 보존 영역)
+    · 현장 답사·상권·경쟁·총평·체크리스트·메모
 
 보존 로직:
-- 두 마커가 모두 있으면: 마커 사이만 삭제, 새 자동 블록을 시작 마커 뒤에 삽입.
-  → 답사 기록은 절대 건드리지 않음. 순위 이탈·재진입해도 보존.
-- 마커 없으면 (신규 페이지 또는 옛 포맷): 전체 클리어 + 마커 포함 풀 템플릿 주입.
+- 3 마커 모두 있음 → 🤖와 🧠 사이만 교체 (데이터 zone). 브리핑·답사 기록 불가침.
+- 2 마커 (🤖·✍️만, 옛 포맷) → 🧠 마커 + placeholder 마이그레이션 주입.
+- 마커 없음 → 전체 클리어 + 3-zone 풀 템플릿 주입.
 
 사용:
     python -m publishers.notion_embed [--only RANK]
@@ -53,18 +48,32 @@ BASE_URL = "https://gengar200005.github.io/clinic-location-screener/web/detail/"
 
 # 마커 heading 텍스트 (substring 매칭)
 AUTO_MARKER_TEXT = "🤖 자동 갱신 영역"
+BRIEF_MARKER_TEXT = "🧠 Claude 브리핑"
 MANUAL_MARKER_TEXT = "✍️ 답사 기록"
 
 
 # ─────────────────────────────────────────────────────────
-# 자동 영역 블록 생성
+# 마커·placeholder 블록 생성
 # ─────────────────────────────────────────────────────────
 def _auto_marker_block() -> dict:
     return _heading2(f"{AUTO_MARKER_TEXT} (매주 토 03:00 자동 갱신)")
 
 
+def _brief_marker_block() -> dict:
+    return _heading2(f"{BRIEF_MARKER_TEXT} (토요일 수동 갱신)")
+
+
 def _manual_marker_block() -> dict:
-    return _heading2(f"{MANUAL_MARKER_TEXT} (수동 · 매주 갱신 시 보존됨)")
+    return _heading2(f"{MANUAL_MARKER_TEXT} (수동 · 영구 보존)")
+
+
+def _brief_placeholder_blocks() -> list[dict]:
+    """브리핑 placeholder (최초 진입 시)."""
+    return [_callout(
+        "아직 브리핑이 생성되지 않았습니다. "
+        "Claude Code 세션에서 '브리핑 업데이트' 지시 시 자동 생성됩니다.",
+        emoji="💤", color="gray_background",
+    )]
 
 
 def build_auto_blocks(row: pd.Series) -> list[dict]:
@@ -208,17 +217,38 @@ def _list_all_children(client: Client, page_id: str) -> list[dict]:
     return all_blocks
 
 
-def _find_markers(children: list[dict]) -> tuple[int | None, int | None]:
-    """자동 영역 시작·수동 영역 시작 heading 인덱스. 없으면 None."""
-    auto_idx = None
-    manual_idx = None
+def _find_markers(
+    children: list[dict],
+) -> tuple[int | None, int | None, int | None]:
+    """🤖·🧠·✍️ 마커 인덱스. 없으면 None."""
+    auto_idx = brief_idx = manual_idx = None
     for i, b in enumerate(children):
         t = _get_heading_text(b)
         if auto_idx is None and AUTO_MARKER_TEXT in t:
             auto_idx = i
+        elif brief_idx is None and BRIEF_MARKER_TEXT in t:
+            brief_idx = i
         elif manual_idx is None and MANUAL_MARKER_TEXT in t:
             manual_idx = i
-    return auto_idx, manual_idx
+    return auto_idx, brief_idx, manual_idx
+
+
+def _migrate_add_brief_marker(
+    client: Client, page_id: str, children: list[dict], manual_idx: int,
+) -> None:
+    """2-marker 페이지에 🧠 브리핑 마커 + placeholder 주입.
+
+    위치: 수동 영역 마커 바로 앞. manual_idx-1 블록 뒤에 삽입.
+    """
+    if manual_idx == 0:
+        # 페이지 맨 위가 수동 마커 — 비정상이지만 방어
+        return
+    insert_after_id = children[manual_idx - 1]["id"]
+    client.blocks.children.append(
+        block_id=page_id,
+        children=[_brief_marker_block()] + _brief_placeholder_blocks(),
+        after=insert_after_id,
+    )
 
 
 def update_page_body(
@@ -226,19 +256,22 @@ def update_page_body(
     page_id: str,
     auto_blocks: list[dict],
 ) -> tuple[str, int]:
-    """페이지 본문 갱신. 마커 있으면 자동 영역만 교체, 없으면 풀 템플릿 주입.
+    """페이지 본문 갱신. 3-zone 마커 기준 데이터 영역(🤖↔🧠)만 교체.
 
     반환: (모드 문자열, 삽입한 블록 수)
     """
     children = _list_all_children(client, page_id)
-    auto_idx, manual_idx = _find_markers(children)
+    auto_idx, brief_idx, manual_idx = _find_markers(children)
 
+    # Case 1: 마커 없음 또는 🤖·✍️ 중 하나 없음 → 전체 클리어 + 풀 템플릿
     if auto_idx is None or manual_idx is None or auto_idx >= manual_idx:
-        # 신규 페이지 or 옛 포맷 → 전체 클리어 + 풀 템플릿
         _clear_page_content(client, page_id)
         full = (
             [_auto_marker_block()]
             + auto_blocks
+            + [_divider()]
+            + [_brief_marker_block()]
+            + _brief_placeholder_blocks()
             + [_divider()]
             + [_manual_marker_block()]
             + build_manual_template()
@@ -246,33 +279,70 @@ def update_page_body(
         _append_blocks(client, page_id, full)
         return "full", len(full)
 
-    # 기존 포맷 → 마커 사이만 교체
+    # Case 2: 🤖·✍️만 있고 🧠 없음 (옛 2-marker 포맷) → 마이그레이션
+    if brief_idx is None:
+        _migrate_add_brief_marker(client, page_id, children, manual_idx)
+        # 갱신된 children 다시 로드
+        children = _list_all_children(client, page_id)
+        auto_idx, brief_idx, manual_idx = _find_markers(children)
+        if brief_idx is None:
+            # 마이그레이션 실패 — 풀 템플릿으로 폴백
+            _clear_page_content(client, page_id)
+            full = (
+                [_auto_marker_block()] + auto_blocks + [_divider()]
+                + [_brief_marker_block()] + _brief_placeholder_blocks() + [_divider()]
+                + [_manual_marker_block()] + build_manual_template()
+            )
+            _append_blocks(client, page_id, full)
+            return "full-fallback", len(full)
+
+    # Case 3: 3 마커 모두 존재 → 🤖와 🧠 사이만 교체
     auto_start_id = children[auto_idx]["id"]
-    # 삭제 대상: auto_idx+1 ~ manual_idx-1
-    to_delete = children[auto_idx + 1 : manual_idx]
+    to_delete = children[auto_idx + 1 : brief_idx]
     for b in to_delete:
         client.blocks.delete(block_id=b["id"])
 
-    # 새 자동 블록을 시작 마커 바로 뒤에 삽입
-    # auto_blocks는 일반적으로 <30개라 단일 요청으로 충분
     if auto_blocks:
+        # 일반적으로 <30개. 100 초과는 로그만 경고.
+        if len(auto_blocks) > 100:
+            logger.warning("auto_blocks %d개 > 100 — 100까지만 삽입", len(auto_blocks))
         client.blocks.children.append(
             block_id=page_id,
             children=auto_blocks[:100],
             after=auto_start_id,
         )
-        # 100 초과 시 chain (안전망)
-        after_id = auto_start_id
-        if len(auto_blocks) > 100:
-            # 첫 청크 삽입 직후의 마지막 블록 ID를 다음 after로 쓰려면 response 필요
-            # 단순화: 한 번 더 호출 (100 초과 케이스는 거의 없음)
-            logger.warning("auto_blocks %d개 > 100 — 200까지만 처리", len(auto_blocks))
-            client.blocks.children.append(
-                block_id=page_id,
-                children=auto_blocks[100:200],
-                # after 없이 → 페이지 끝에 붙는 이슈. 100 초과 시 수작업 필요.
-            )
     return "partial", len(auto_blocks)
+
+
+# ─────────────────────────────────────────────────────────
+# 브리핑 영역 업데이트 (수동 트리거 — 사용자가 토요일 지시)
+# ─────────────────────────────────────────────────────────
+def update_briefing(
+    client: Client, page_id: str, brief_blocks: list[dict],
+) -> int:
+    """🧠와 ✍️ 마커 사이를 brief_blocks로 교체. 수동 갱신 전용.
+
+    페이지에 3 마커가 모두 있어야 함. 없으면 ValueError.
+    반환: 삽입한 블록 수.
+    """
+    children = _list_all_children(client, page_id)
+    auto_idx, brief_idx, manual_idx = _find_markers(children)
+    if brief_idx is None or manual_idx is None or brief_idx >= manual_idx:
+        raise ValueError(
+            "🧠 / ✍️ 마커를 찾을 수 없습니다. "
+            "`python -m publishers.notion_embed` 먼저 실행해 페이지 구조를 만드세요."
+        )
+    brief_start_id = children[brief_idx]["id"]
+    to_delete = children[brief_idx + 1 : manual_idx]
+    for b in to_delete:
+        client.blocks.delete(block_id=b["id"])
+    if brief_blocks:
+        client.blocks.children.append(
+            block_id=page_id,
+            children=brief_blocks[:100],
+            after=brief_start_id,
+        )
+    return len(brief_blocks)
 
 
 # ─────────────────────────────────────────────────────────
