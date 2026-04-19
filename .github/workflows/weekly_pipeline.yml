@@ -1,0 +1,142 @@
+name: Weekly Pipeline
+
+# 주 1회 토요일 03:00 KST 자동 실행 + 수동 트리거
+# DAG: scrape → spatial_join → score → publish → commit-back
+# 실패 시 후속 step 자동 중단 (bash fail-fast 기본).
+
+on:
+  schedule:
+    - cron: '0 18 * * 5'  # 금 18:00 UTC = 토 03:00 KST
+  workflow_dispatch:
+    inputs:
+      force_scrape:
+        description: '캐시 무시하고 전체 재호출 (Kakao/ODSay)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write  # data/cache, data/scored, web/data 커밋 백 필요
+
+concurrency:
+  group: weekly-pipeline
+  cancel-in-progress: false  # 동시 실행만 차단, 중간 취소 X
+
+jobs:
+  pipeline:
+    name: Scrape → Score → Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TZ: Asia/Seoul
+      HIRA_KEY: ${{ secrets.HIRA_KEY }}
+      KOSIS_KEY: ${{ secrets.KOSIS_KEY }}
+      KAKAO_KEY: ${{ secrets.KAKAO_KEY }}
+      ODSAY_KEY: ${{ secrets.ODSAY_KEY }}
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
+      NOTION_DS_ID: ${{ secrets.NOTION_DS_ID }}
+      FORCE_SCRAPE: ${{ inputs.force_scrape || 'false' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # commit-back을 위해 full history
+
+      - name: Set RUN_DATE (KST)
+        run: echo "RUN_DATE=$(date +%F)" >> "$GITHUB_ENV"
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── 0. admin_centroid (없으면 빌드) ──
+      - name: Verify admin_centroid
+        run: |
+          if [ ! -f data/cleaned/admin_centroid.parquet ]; then
+            echo "admin_centroid 없음 → spatial_join centroid 실행"
+            python -m scoring.spatial_join centroid
+          else
+            echo "admin_centroid 캐시 사용"
+          fi
+
+      # ── 1. Scrape ──
+      - name: Scrape — HIRA 의원 (force, 매주 갱신)
+        run: python -m scrapers.hira_clinic --date "$RUN_DATE" --force
+
+      - name: Scrape — KOSIS 인구 + 연령대
+        run: python -m scrapers.population_kosis --date "$RUN_DATE" --age
+
+      - name: Scrape — Kakao 자차 (캐시 우선)
+        run: |
+          if [ "$FORCE_SCRAPE" = "true" ]; then
+            python -m scrapers.kakao_car --force
+          else
+            python -m scrapers.kakao_car
+          fi
+
+      - name: Scrape — ODSay 대중교통 (캐시 우선)
+        run: |
+          if [ "$FORCE_SCRAPE" = "true" ]; then
+            python -m scrapers.odsay_transit --force
+          else
+            python -m scrapers.odsay_transit
+          fi
+
+      # ── 2. Spatial join ──
+      - name: Spatial join — clinics → 행정동
+        run: |
+          python -m scoring.spatial_join join-clinics \
+            --clinics "data/raw/hira/hira_${RUN_DATE}.parquet"
+
+      # ── 3. Score ──
+      - name: Score — pipeline (C·P·T 가중합)
+        run: python -m scoring.pipeline --date "$RUN_DATE"
+
+      # ── 4. Publish ──
+      - name: Publish — web export (Top 30 detail JSON)
+        run: python -m publishers.web_export
+
+      - name: Publish — Notion DB sync
+        run: python -m publishers.notion_sync
+
+      # ── 5. Commit back ──
+      # 영구 커밋 대상:
+      #   data/cache/*.parquet  (ODSay·Kakao·역세권 캐시 — 삭제 시 한도 위험)
+      #   data/scored/*.parquet (스코어 히스토리)
+      #   web/data/**           (GitHub Pages 데이터)
+      - name: Commit cache + scored + web data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/cache data/scored web/data
+          if git diff --cached --quiet; then
+            echo "변경 없음 — commit skip"
+            exit 0
+          fi
+          git commit -m "chore(weekly): pipeline run ${RUN_DATE} [skip ci]"
+          git push
+
+      # ── 6. 디버깅용 요약 ──
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Weekly Pipeline ${RUN_DATE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "data/scored/top30_${RUN_DATE}.parquet" ]; then
+            echo "- Top 30 생성: \`top30_${RUN_DATE}.parquet\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "data/scored/scores_${RUN_DATE}.parquet" ]; then
+            echo "- 전체 스코어: \`scores_${RUN_DATE}.parquet\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "- 캐시 상태:" >> "$GITHUB_STEP_SUMMARY"
+          ls -la data/cache/ >> "$GITHUB_STEP_SUMMARY" || true
