@@ -79,7 +79,24 @@
 | 보존 | `임장상태`, `메모` 컬럼은 sync에서 건드리지 않음 |
 | 페이지 본문 | `notion_embed.py` 가 GitHub Pages iframe 삽입 |
 
-## 7. 좌표계
+## 7. WorldPop 100m 격자 인구 (data.worldpop.org)
+
+| 항목 | 값 |
+|---|---|
+| URL | `data.worldpop.org/GIS/Population/Global_2000_2020/2020/KOR/kor_ppp_2020.tif` |
+| 라이선스 | CC BY 4.0 (등록 불필요, 자동 다운로드) |
+| 데이터 | Top-down unconstrained 2020, 100m 격자 GeoTIFF, ~72MB |
+| 좌표계 | EPSG:4326 (WGS84) |
+| 사용처 | **인구 가중 행정동 중심점** 계산 — 산·하천·공원에 찍히는 기하 중심점 보정 |
+| 저장 | `data/raw/worldpop/kor_ppp_2020.tif` (.gitignore, 분기 재다운로드) |
+| 산출물 | `data/cache/admin_centroid_pop.parquet` (50KB, 영구 커밋, boundary 버전 갱신 시 재계산) |
+
+핵심 임팩트 (2026-04-19 적용):
+- 평균 219m 이동, 64개 동(~10%)이 500m+ 보정
+- Top 30 flag 합 28 → 11 (centroid_mismatch 5→3, suburban_cluster 11→4, med_desert 12→4)
+- 임장 좌표 = 진짜 배후세대 중심 (아파트단지 위주)
+
+## 8. 좌표계
 
 | 용도 | EPSG | 비고 |
 |---|---|---|

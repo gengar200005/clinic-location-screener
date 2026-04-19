@@ -130,12 +130,17 @@ vuski 새 버전 출시 시:
 # 1. 새 버전 확인
 curl -s https://api.github.com/repos/vuski/admdongkor/contents/ | grep -oE 'ver\d+'
 
-# 2. 다운로드 + centroid 재빌드
+# 2. 경계 다운로드 + 기하 centroid 재빌드
 python -m scrapers.admin_boundary --version verYYYYMMDD --force
 python -m scoring.spatial_join centroid
 
-# 3. ODSay 신규 동만 호출 (캐시 hit + 신규만)
+# 3. 인구 가중 centroid 재빌드 (WorldPop 캐시 있으면 수십 초)
+python -m scrapers.population_grid       # 처음이거나 강제 재다운로드 시
+python -m scoring.centroid_pop_weighted  # admin_centroid_pop.parquet 갱신 → 커밋
+
+# 4. ODSay/Kakao 신규 동만 호출 (캐시 hit + 신규만)
 python -m scrapers.odsay_transit
+python -m scrapers.kakao_car
 ```
 
 ## 6. 데이터 정책 요약

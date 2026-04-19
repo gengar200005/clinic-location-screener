@@ -85,6 +85,46 @@ def _find_latest_geojson() -> Path | None:
     return candidates[-1] if candidates else None
 
 
+def apply_pop_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
+    """data/cache/admin_centroid_pop.parquet 있으면 lat/lon 교체 + 5179 재계산.
+
+    centroid_mismatch_flag 동의 임장 좌표·반경 의원 카운트 정확도 향상.
+    cache 없으면 그대로 반환.
+    """
+    from config.constants import DATA_CACHE, EPSG_WGS84
+    pop_path = DATA_CACHE / "admin_centroid_pop.parquet"
+    if not pop_path.exists():
+        logger.info("admin_centroid_pop.parquet 없음 → 기하 중심점 사용")
+        return centroid
+
+    pop = pd.read_parquet(pop_path)
+    pop["adm_cd"] = pop["adm_cd"].astype(str)
+    out = centroid.copy()
+    out["adm_cd"] = out["adm_cd"].astype(str)
+    before_n = len(out)
+
+    out = out.merge(
+        pop[["adm_cd", "lat_pop", "lon_pop", "pop_weighted"]],
+        on="adm_cd", how="left",
+    )
+    matched = out["lat_pop"].notna().sum()
+    logger.info("pop-weighted 적용: %d / %d 동", matched, before_n)
+
+    # lat/lon 교체 (NaN인 동은 기존 유지)
+    out["lat"] = out["lat_pop"].where(out["lat_pop"].notna(), out["lat"])
+    out["lon"] = out["lon_pop"].where(out["lon_pop"].notna(), out["lon"])
+
+    # 5179 좌표 재계산
+    gdf = gpd.GeoDataFrame(
+        out, geometry=gpd.points_from_xy(out["lon"], out["lat"]), crs=EPSG_WGS84,
+    ).to_crs(EPSG_KOREA)
+    out["x_5179"] = gdf.geometry.x.values
+    out["y_5179"] = gdf.geometry.y.values
+
+    out = out.drop(columns=["lat_pop", "lon_pop", "pop_weighted"])
+    return out
+
+
 def build_admin_centroid(
     geojson_path: Path,
     out_path: Path | None = None,

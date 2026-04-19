@@ -76,6 +76,28 @@ Top 30 = score 내림차순 상위 30
 
 가중치 변경 시 `heatmap.json` 의 normalized 값을 그대로 쓰면 클라이언트에서 슬라이더 즉시 재계산 가능 (Post-MVP).
 
+## 행정동 중심점 — 인구 가중 (2026-04-19 적용)
+
+기하 중심점(geometric centroid)은 동 모양에 따라 산·하천·공원에 찍힐 수 있다 (이전 centroid_mismatch_flag: 동 5개). 임장 좌표가 어긋나면 "이 위치 반경 1km 의원·인구"가 실제와 괴리.
+
+**해법**: WorldPop 100m 격자 인구로 폴리곤 안 인구 가중 평균 좌표 계산.
+
+```
+lat_pop = Σ(pop_i · lat_i) / Σ pop_i
+lon_pop = Σ(pop_i · lon_i) / Σ pop_i
+```
+
+폴백: 폴리곤 안 인구 합 0이면 (공단·공원·산) 기하 중심점 사용.
+
+영향 범위:
+- ✅ **임장 좌표** (PWA detail 페이지 지도 중심)
+- ✅ **반경 500m 의원 카운트** (C 점수의 절반)
+- ✅ **통근 T_raw** (Kakao directions 도착점)
+- ✅ **반경 1km/2km 카운트 + flag**
+- ❌ P_raw (KOSIS 동 단위 통계 그대로) · density (동 단위 분모/분자)
+
+데이터 소스: docs/DATA_SOURCES.md §7. 캐시 영구 커밋 (`data/cache/admin_centroid_pop.parquet`), boundary 버전 갱신 시만 재계산.
+
 ## 해석 보조 플래그
 
 스코어와 별도로 동의 성격을 표시:

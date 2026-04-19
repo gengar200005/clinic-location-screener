@@ -220,11 +220,12 @@ Top 30 = 내림차순 상위 30
 - 2회 연속 배치 성공: 첫 검증 (Run 24628887939, 4분 7초) + 다음 토 03:00 KST cron으로 충족 예정
 - 가중치 민감도: 미실시 (Post-MVP)
 
-### ⬜ 9주차+ (Post-MVP)
-- 임대료 2차 필터 (국토부 실거래가)
-- Claude API 주간 SWOT (Top 10)
-- 실패 알림 (Slack/Discord)
-- HIRA 운영 계정 승인 시 병렬 수집
+### 🟢 Post-MVP 진행 중
+- ✅ **인구 가중 행정동 중심점** (2026-04-19): WorldPop 100m 격자로 보정. Top 30 flag 28→11 (60%↓), centroid_mismatch 5→3, Top 1 = 의정부 호원동 47K 40+ (이전엔 좌표 어긋나 누락). docs/SCORING.md, docs/DATA_SOURCES.md §7 참조.
+- ⬜ 임대료 2차 필터 (국토부 실거래가)
+- ⬜ Claude API 주간 SWOT (Top 10)
+- ⬜ 실패 알림 (Slack/Discord)
+- ⬜ HIRA 운영 계정 승인 시 병렬 수집
 
 ---
 

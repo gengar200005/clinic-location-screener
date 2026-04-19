@@ -54,6 +54,9 @@ def run(date_str: str) -> tuple[Path, Path]:
              "python -m scrapers.hira_clinic && python -m scoring.spatial_join join-clinics --clinics data/raw/hira/<최신>.parquet")
 
     admin_centroid = pd.read_parquet(centroid_path)
+    # 인구 가중 중심점 overlay (있으면) — centroid_mismatch 보정
+    from scoring.spatial_join import apply_pop_weighted_centroid
+    admin_centroid = apply_pop_weighted_centroid(admin_centroid)
     clinics_by_dong = pd.read_parquet(clinics_path)
     logger.info("load: %d dongs, %d clinics", len(admin_centroid), len(clinics_by_dong))
 
