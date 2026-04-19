@@ -92,13 +92,27 @@ def run(date_str: str) -> tuple[Path, Path]:
 
     # 5. 역세권 메타 지표 (캐시 있으면만)
     try:
-        from scoring.station_metrics import compute_for_dongs, STATION_CACHE
+        from scoring.station_metrics import compute_for_dongs as station_metrics, STATION_CACHE
         if STATION_CACHE.exists():
             logger.info("=== 3b. station metrics ===")
-            st = compute_for_dongs(admin_centroid, clinics_by_dong)
+            st = station_metrics(admin_centroid, clinics_by_dong)
             base = base.merge(st, on="adm_cd", how="left")
     except FileNotFoundError:
         logger.info("역 캐시 없음 → 스킵")
+
+    # 6. 확장 반경 지표 + 해석 플래그
+    logger.info("=== 3c. radius coverage ===")
+    from scoring.radius_metrics import compute_radius_counts, add_coverage_flags
+    radius_df = compute_radius_counts(admin_centroid, clinics_by_dong)
+    base = base.merge(radius_df, on="adm_cd", how="left")
+    base = add_coverage_flags(base)
+    n_desert = int(base["med_desert_flag"].sum())
+    n_mismatch = int(base["centroid_mismatch_flag"].sum())
+    n_suburban = int(base["suburban_cluster_flag"].sum())
+    logger.info(
+        "flags: desert=%d, centroid_mismatch=%d, suburban_cluster=%d",
+        n_desert, n_mismatch, n_suburban,
+    )
 
     # 6. 최종 가중합
     logger.info("=== 4. weighted sum ===")
@@ -111,6 +125,8 @@ def run(date_str: str) -> tuple[Path, Path]:
         "c_raw", "p_raw", "t_raw",
         "pop_total", "pop_40plus", "ratio_40plus",
         "n_clinic", "n_clinic_gi", "n_within_radius", "density_per_10k",
+        "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",
+        "med_desert_flag", "centroid_mismatch_flag", "suburban_cluster_flag",
         "nearest_station", "station_dist_m", "n_clinic_station_500m",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
