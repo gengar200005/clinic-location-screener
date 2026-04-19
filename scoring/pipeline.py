@@ -71,10 +71,10 @@ def run(date_str: str) -> tuple[Path, Path]:
     )
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
+    # merge_population이 P_raw=pop_40plus (or pop_total 폴백) 설정까지 수행
     logger.info("=== 2. population ===")
-    pop_raw = load_kosis_population()  # (adm_cd10, population)
-    base = merge_population(base, pop_raw)  # 공단·공원 제외됨
-    base = base.rename(columns={"population": "p_raw"})
+    pop_raw = load_kosis_population()
+    base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
 
     # 3. 경쟁 점수 (인구 반영)
@@ -99,6 +99,7 @@ def run(date_str: str) -> tuple[Path, Path]:
         "rank", "adm_cd", "sido", "sgg", "adm_nm",
         "score", "c_norm", "p_norm", "t_norm",
         "c_raw", "p_raw", "t_raw",
+        "pop_total", "pop_40plus", "ratio_40plus",
         "n_clinic", "n_clinic_gi", "n_within_radius", "density_per_10k",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
