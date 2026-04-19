@@ -2,21 +2,311 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>서울+경기 내과 개원 입지 스크리너</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#1565c0" />
+  <title>🏥 개원 입지 스크리너</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="anonymous" />
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; margin: 20px; max-width: 720px; color: #222; }
-    h1 { font-size: 22px; }
-    p { line-height: 1.6; }
-    code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; }
+    body { background: #f5f5f5; color: #222; -webkit-tap-highlight-color: transparent; }
+    #app { display: flex; flex-direction: column; height: 100%; }
+
+    header { padding: 8px 12px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+    header h1 { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    header .meta { margin-top: 4px; font-size: 11px; color: #666; line-height: 1.4; }
+    header .controls { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+    header .controls label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+    header .seg { display: inline-flex; border: 1px solid #ccd; border-radius: 4px; overflow: hidden; }
+    header .seg button { background: #fff; border: 0; padding: 3px 8px; font-size: 12px; cursor: pointer; color: #444; }
+    header .seg button.on { background: #1565c0; color: #fff; }
+    header .seg button + button { border-left: 1px solid #ccd; }
+
+    #map { flex: 0 0 50vh; width: 100%; }
+    .legend { background: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,.18); color: #333; }
+    .legend i { display: inline-block; width: 14px; height: 12px; margin-right: 4px; vertical-align: middle; opacity: .85; }
+
+    #list-wrap { flex: 1; overflow-y: auto; background: #fff; }
+    .row { padding: 8px 12px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 32px 1fr auto; gap: 6px; align-items: center; cursor: pointer; transition: background .08s; }
+    .row:hover { background: #f0f7ff; }
+    .row.active { background: #fff59d; }
+    .row .rank { font-weight: 700; color: #1565c0; text-align: center; font-size: 13px; }
+    .row .name { font-weight: 600; font-size: 14px; }
+    .row .name .sub { color: #888; font-weight: 400; font-size: 11px; margin-left: 4px; }
+    .row .score { font-weight: 600; color: #2e7d32; font-size: 13px; min-width: 38px; text-align: right; }
+    .row .breakdown { grid-column: 2 / -1; font-size: 11px; color: #666; line-height: 1.4; margin-top: 2px; }
+    .row .flag { display: inline-block; padding: 0 4px; margin-right: 3px; border-radius: 2px; font-size: 10px; background: #ffebee; color: #c62828; }
+
+    .popup-body { font-size: 13px; line-height: 1.5; min-width: 180px; }
+    .popup-body b { color: #1565c0; }
+    .popup-body .row-mini { display: flex; justify-content: space-between; gap: 8px; margin-top: 2px; }
+    .popup-body a.detail { display: inline-block; margin-top: 6px; padding: 4px 8px; background: #1565c0; color: #fff; border-radius: 3px; text-decoration: none; font-size: 12px; }
+
+    .loading { padding: 20px; text-align: center; color: #888; }
+    .install-hint { background: #fff3cd; padding: 6px 10px; font-size: 11px; color: #856404; border-bottom: 1px solid #ffeaa7; }
+
+    @media (min-width: 720px) {
+      #app { flex-direction: row; }
+      #map { flex: 1; height: 100%; }
+      header { width: 360px; flex: 0 0 360px; border-right: 1px solid #e0e0e0; border-bottom: 0; }
+      #list-wrap { display: none; }
+      header.desktop-stack { display: flex; flex-direction: column; padding: 0; }
+      header.desktop-stack .top { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; }
+      header.desktop-stack #list { flex: 1; overflow-y: auto; }
+    }
   </style>
 </head>
 <body>
-  <h1>🏥 서울+경기 내과 개원 입지 스크리너</h1>
-  <p>Top 30 임장 후보의 상세 지도·의원 리스트는 Notion DB에서 각 동 페이지로 들어가면 임베드로 표시됩니다.</p>
-  <p>직접 URL 접속: <code>/detail/#{adm_cd}</code></p>
-  <p>예시: <a href="./detail/#11030630">이촌1동 (11030630)</a></p>
-  <hr>
-  <p style="color:#888;font-size:13px;">7주차 PWA 본 홈은 추후 추가 예정 (전체 653동 히트맵 + Top 30 테이블).</p>
+  <div id="app">
+    <header id="hdr" class="desktop-stack">
+      <div class="top">
+        <h1>🏥 개원 입지 스크리너 <span style="color:#888;font-weight:400;font-size:12px;" id="gen"></span></h1>
+        <div class="meta" id="meta">로딩 중…</div>
+        <div class="controls">
+          <span style="color:#666;">시도</span>
+          <span class="seg" id="sido-seg">
+            <button data-v="all" class="on">전체</button>
+            <button data-v="서울특별시">서울</button>
+            <button data-v="경기도">경기</button>
+          </span>
+          <label>
+            점수 ≥ <input type="range" id="min-score" min="0" max="0.8" step="0.05" value="0" style="width:80px;" />
+            <span id="min-score-v">0</span>
+          </label>
+          <label><input type="checkbox" id="top30-only" checked /> Top 30만</label>
+        </div>
+      </div>
+      <div id="list" class="loading">데이터 로드 중…</div>
+    </header>
+    <div id="map"></div>
+    <div id="list-wrap"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin="anonymous"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    let heatmap = null, boundaries = null, geoLayer = null, map = null;
+    let activeMarker = null, activeRow = null;
+    const state = { sido: 'all', minScore: 0, top30Only: true };
+
+    // ── Color scale (quintile-ish) ──
+    function colorFor(score) {
+      if (score == null) return '#eee';
+      if (score >= 0.75) return '#1b5e20';   // dark green
+      if (score >= 0.65) return '#43a047';   // green
+      if (score >= 0.55) return '#9ccc65';   // light green
+      if (score >= 0.45) return '#fff176';   // yellow
+      if (score >= 0.35) return '#ffb74d';   // orange
+      return '#e57373';                       // red
+    }
+
+    // ── Init map ──
+    function initMap() {
+      map = L.map('map', { zoomControl: true, preferCanvas: true })
+              .setView([37.55, 127.0], 11);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap', maxZoom: 18,
+      }).addTo(map);
+
+      // Legend
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = () => {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = `<b>총점</b><br>` +
+          `<i style="background:#1b5e20"></i>≥ 0.75<br>` +
+          `<i style="background:#43a047"></i>0.65 – 0.75<br>` +
+          `<i style="background:#9ccc65"></i>0.55 – 0.65<br>` +
+          `<i style="background:#fff176"></i>0.45 – 0.55<br>` +
+          `<i style="background:#ffb74d"></i>0.35 – 0.45<br>` +
+          `<i style="background:#e57373"></i>< 0.35`;
+        return div;
+      };
+      legend.addTo(map);
+    }
+
+    // ── Choropleth layer ──
+    function styleFor(feature) {
+      const s = feature.properties.score;
+      return {
+        fillColor: colorFor(s),
+        weight: 0.6,
+        opacity: 0.7,
+        color: '#666',
+        fillOpacity: passesFilter(feature) ? 0.65 : 0.05,
+      };
+    }
+
+    function passesFilter(feature) {
+      const p = feature.properties;
+      const dong = byCode.get(String(p.adm_cd));
+      if (!dong) return false;
+      if (state.sido !== 'all' && dong.sido !== state.sido) return false;
+      if (dong.score < state.minScore) return false;
+      if (state.top30Only && dong.rank > 30) return false;
+      return true;
+    }
+
+    const byCode = new Map();
+
+    function buildLayer() {
+      if (geoLayer) map.removeLayer(geoLayer);
+      geoLayer = L.geoJSON(boundaries, {
+        style: styleFor,
+        onEachFeature: (feat, layer) => {
+          const p = feat.properties;
+          const dong = byCode.get(String(p.adm_cd));
+          if (!dong) return;
+          layer.on({
+            mouseover: e => e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.85 }),
+            mouseout: e => geoLayer.resetStyle(e.target),
+            click: e => openPopup(dong, e.target),
+          });
+          layer.bindTooltip(
+            `<b>${dong.short}</b> #${dong.rank} · ${dong.score.toFixed(3)}`,
+            { sticky: true, direction: 'top', offset: [0, -10] }
+          );
+        },
+      }).addTo(map);
+    }
+
+    function openPopup(dong, layer) {
+      const html = `
+        <div class="popup-body">
+          <b>#${dong.rank} ${dong.short}</b> <span style="color:#666;">(${dong.sgg})</span><br>
+          <div class="row-mini"><span>총점</span><b>${dong.score.toFixed(3)}</b></div>
+          <div class="row-mini"><span>경쟁 (낮을수록↑)</span><span>${dong.c.toFixed(2)}</span></div>
+          <div class="row-mini"><span>인구 40+</span><span>${dong.p.toFixed(2)}</span></div>
+          <div class="row-mini"><span>통근 (이촌역)</span><span>${dong.t.toFixed(2)}</span></div>
+          <hr style="border:0;border-top:1px solid #eee;margin:6px 0;">
+          <div class="row-mini"><span>의원 (동/500m)</span><span>${dong.n_clinic} / ${dong.n_clinic_500m}</span></div>
+          <div class="row-mini"><span>총인구 / 40+</span><span>${(dong.pop_total||0).toLocaleString()} / ${(dong.pop_40plus||0).toLocaleString()}</span></div>
+          <div class="row-mini"><span>🚗 자차</span><span>${dong.t_raw}분</span></div>
+          ${dong.rank <= 30 ? `<a class="detail" href="detail/#${dong.adm_cd}">상세보기 →</a>` : ''}
+        </div>`;
+      layer.bindPopup(html, { maxWidth: 240 }).openPopup();
+    }
+
+    // ── List ──
+    function renderList() {
+      const filtered = heatmap.dongs
+        .filter(d => {
+          if (state.sido !== 'all' && d.sido !== state.sido) return false;
+          if (d.score < state.minScore) return false;
+          if (state.top30Only && d.rank > 30) return false;
+          return true;
+        })
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, 100);
+
+      const list = document.getElementById('list');
+      if (!filtered.length) {
+        list.innerHTML = '<div class="loading">조건에 맞는 동 없음</div>';
+        return;
+      }
+      list.innerHTML = filtered.map(d => {
+        const sidoTag = d.sido === '서울특별시' ? '서울' : '경기';
+        const flags = (d.med_desert ? '<span class="flag">🏜</span>' : '') +
+                      (d.suburban ? '<span class="flag" style="background:#fff3e0;color:#ef6c00;">🏘</span>' : '');
+        return `<div class="row" data-cd="${d.adm_cd}">
+          <div class="rank">${d.rank}</div>
+          <div class="name">${flags}${d.short}<span class="sub">${sidoTag}·${d.sgg}</span></div>
+          <div class="score">${d.score.toFixed(3)}</div>
+          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 의원 ${d.n_clinic} · 🚗 ${d.t_raw}분</div>
+        </div>`;
+      }).join('');
+
+      list.querySelectorAll('.row').forEach(el => {
+        el.addEventListener('click', () => {
+          const cd = el.dataset.cd;
+          const d = byCode.get(cd);
+          if (!d) return;
+          if (activeRow) activeRow.classList.remove('active');
+          el.classList.add('active');
+          activeRow = el;
+          map.setView([d.lat, d.lon], 14, { animate: true });
+          // find layer
+          geoLayer.eachLayer(l => {
+            if (l.feature && String(l.feature.properties.adm_cd) === cd) {
+              openPopup(d, l);
+            }
+          });
+        });
+      });
+    }
+
+    function applyFilter() {
+      if (geoLayer) geoLayer.setStyle(styleFor);
+      renderList();
+    }
+
+    // ── Controls ──
+    function bindControls() {
+      document.querySelectorAll('#sido-seg button').forEach(b => {
+        b.addEventListener('click', () => {
+          document.querySelectorAll('#sido-seg button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+          state.sido = b.dataset.v;
+          applyFilter();
+        });
+      });
+      const slider = document.getElementById('min-score');
+      const sliderV = document.getElementById('min-score-v');
+      slider.addEventListener('input', () => {
+        state.minScore = parseFloat(slider.value);
+        sliderV.textContent = slider.value;
+        applyFilter();
+      });
+      document.getElementById('top30-only').addEventListener('change', e => {
+        state.top30Only = e.target.checked;
+        applyFilter();
+      });
+    }
+
+    // ── Bootstrap ──
+    initMap();
+    bindControls();
+
+    Promise.all([
+      fetch('data/heatmap.json').then(r => r.json()),
+      fetch('data/boundaries.geojson').then(r => r.json()),
+    ]).then(([h, b]) => {
+      heatmap = h;
+      boundaries = b;
+      heatmap.dongs.forEach(d => byCode.set(String(d.adm_cd), d));
+
+      // Header meta
+      document.getElementById('gen').textContent = `· ${h.generated_at} 갱신`;
+      const top30 = h.dongs.filter(d => d.rank <= 30);
+      const sidoCnt = h.stats.n_top30_by_sido;
+      document.getElementById('meta').innerHTML =
+        `전체 <b>${h.stats.n_dongs}</b>동 스코어링 · ` +
+        `Top 30 = 서울 ${sidoCnt['서울특별시']||0} · 경기 ${sidoCnt['경기도']||0} · ` +
+        `가중치 C ${h.weights.c} / P ${h.weights.p} / T ${h.weights.t}`;
+
+      buildLayer();
+      renderList();
+    }).catch(e => {
+      document.getElementById('meta').textContent = '데이터 로드 실패: ' + e;
+      document.getElementById('list').innerHTML = `<div class="loading">데이터 로드 실패</div>`;
+    });
+
+    // ── Service Worker ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  })();
+  </script>
 </body>
 </html>
