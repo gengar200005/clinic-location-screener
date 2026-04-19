@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>개원 입지 상세</title>
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="anonymous" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; }
+    body { background: #f5f5f5; color: #222; }
+    #app { display: flex; flex-direction: column; height: 100%; }
+    header { padding: 8px 12px; background: #fff; border-bottom: 1px solid #e0e0e0; }
+    header h1 { margin: 0; font-size: 15px; font-weight: 600; }
+    header .meta { margin-top: 2px; font-size: 12px; color: #666; }
+    header .badge { display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 3px; font-size: 11px; font-weight: 600; background: #e3f2fd; color: #1565c0; }
+    header .flag { display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 3px; font-size: 11px; background: #fff3e0; color: #ef6c00; }
+    header .flag.red { background: #ffebee; color: #c62828; }
+    #map { flex: 0 0 50vh; width: 100%; }
+    #list-wrap { flex: 1; overflow-y: auto; background: #fff; padding: 6px 0; }
+    .clinic { padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background .08s; }
+    .clinic:hover { background: #f0f7ff; }
+    .clinic.active { background: #fff59d; }
+    .clinic.gi { background: #ffebee; }
+    .clinic.gi.active { background: #ffd54f; }
+    .clinic .top { display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
+    .clinic .dist { font-weight: 600; color: #1565c0; min-width: 40px; }
+    .clinic .name { font-weight: 600; }
+    .clinic .gi-star { color: #e53935; }
+    .clinic .kind { color: #757575; font-size: 12px; font-weight: normal; margin-left: auto; }
+    .clinic .sub { font-size: 12px; color: #666; margin-top: 2px; padding-left: 48px; }
+    .loading { padding: 20px; text-align: center; color: #888; }
+    .popup-body { font-size: 13px; line-height: 1.4; }
+    .popup-body b { color: #1565c0; }
+    @media (min-width: 720px) {
+      #app { flex-direction: row; }
+      #map { flex: 1; height: 100%; }
+      #list-wrap { flex: 0 0 360px; border-left: 1px solid #e0e0e0; }
+      header { position: absolute; top: 0; left: 0; right: 360px; z-index: 1000; border-radius: 0 0 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,.08); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="hdr"><div class="loading">로딩…</div></header>
+    <div id="map"></div>
+    <div id="list-wrap"><div id="list" class="loading">의원 데이터 로드 중…</div></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin="anonymous"></script>
+  <script>
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const adm_cd = window.location.hash.replace('#', '') || params.get('adm_cd') || '11030630';
+    const dataUrl = `../data/detail/${adm_cd}.json`;
+
+    const mkIcon = (emoji, size=28, bg='transparent') => L.divIcon({
+      html: `<div style="font-size:${size-4}px;line-height:${size}px;text-align:center;width:${size}px;height:${size}px;background:${bg};border-radius:50%;">${emoji}</div>`,
+      className: '', iconSize: [size, size], iconAnchor: [size/2, size/2],
+    });
+
+    fetch(dataUrl).then(r => {
+      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      return r.json();
+    }).then(d => render(d)).catch(e => {
+      document.getElementById('hdr').innerHTML = `<h1>오류</h1><div class="meta">${dataUrl} — ${e}</div>`;
+      document.getElementById('list').innerHTML = `<div class="loading">데이터 로드 실패</div>`;
+    });
+
+    function render(d) {
+      // ── Header ──────────
+      const m = d.metrics;
+      const flags = [];
+      if (m.med_desert) flags.push('<span class="flag red">🏜 의료사막</span>');
+      if (m.centroid_mismatch) flags.push('<span class="flag">📍 중심점 에러</span>');
+      if (m.suburban) flags.push('<span class="flag">🏘 신도시밀집</span>');
+      const short = d.name.split(' ').slice(1).join(' ');
+      document.getElementById('hdr').innerHTML = `
+        <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span></h1>
+        <div class="meta">
+          40+ ${m.pop_40plus.toLocaleString()}명 (${(m.ratio_40plus*100).toFixed(0)}%) ·
+          의원 동내 ${m.n_clinic} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km} ·
+          자차 ${m.t_raw}분
+          ${d.station ? ` · 🚇 ${d.station.name} ${d.station.dist_m}m` : ''}
+          ${flags.length ? '<br>' + flags.join('') : ''}
+        </div>`;
+
+      // ── Map ──────────
+      const map = L.map('map', { zoomControl: true }).setView([d.center.lat, d.center.lon], 15);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap', maxZoom: 19,
+      }).addTo(map);
+
+      // 동 경계
+      if (d.boundary) {
+        L.geoJSON(d.boundary, {
+          style: { color: '#1976d2', weight: 2, fillColor: '#1976d2', fillOpacity: 0.06, dashArray: '4,4' }
+        }).addTo(map);
+      }
+
+      // 반경 원
+      L.circle([d.center.lat, d.center.lon], { radius: 500, color: '#4caf50', weight: 1, opacity: 0.6, fillOpacity: 0.04, dashArray: '4,4' }).addTo(map);
+      L.circle([d.center.lat, d.center.lon], { radius: 1000, color: '#2196f3', weight: 1, opacity: 0.5, fillOpacity: 0.03, dashArray: '4,4' }).addTo(map);
+
+      // 중심점 별
+      L.marker([d.center.lat, d.center.lon], { icon: mkIcon('⭐', 36) })
+       .bindPopup(`<div class="popup-body"><b>${d.name}</b><br>중심점(행정구역 대표점)</div>`).addTo(map);
+
+      // 역
+      if (d.station) {
+        L.marker([d.station.lat, d.station.lon], { icon: mkIcon('🚇', 32) })
+         .bindPopup(`<div class="popup-body"><b>🚇 ${d.station.name}</b><br>중심점에서 ${d.station.dist_m}m<br>역 500m 내 의원 ${d.station.n_clinic_500m}개</div>`).addTo(map);
+      }
+
+      // 의원 핀
+      const markers = [];
+      d.clinics.forEach((c, i) => {
+        const color = c.is_gi ? '#e53935' : (c.kind.includes('의원') ? '#1976d2' : '#9e9e9e');
+        const radius = c.is_gi ? 10 : 6;
+        const marker = L.circleMarker([c.lat, c.lon], {
+          radius, color, weight: 2, fillColor: color, fillOpacity: 0.75,
+        }).bindPopup(`
+          <div class="popup-body">
+            <b>${c.is_gi ? '⭐ ' : ''}${c.name}</b><br>
+            ${c.kind}${c.drs ? ` · 의사 ${c.drs}명` : ''}${c.estb_year ? ` · ${c.estb_year} 개원` : ''}<br>
+            ${c.addr ? `📍 ${c.addr}<br>` : ''}
+            ${c.tel ? `☎ <a href="tel:${c.tel}">${c.tel}</a>` : ''}
+          </div>`).addTo(map);
+        markers.push(marker);
+      });
+
+      // ── List ──────────
+      const listEl = document.getElementById('list');
+      if (!d.clinics.length) {
+        listEl.innerHTML = '<div class="loading">반경 1km 내 의원 없음</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      d.clinics.forEach((c, i) => {
+        const row = document.createElement('div');
+        row.className = 'clinic' + (c.is_gi ? ' gi' : '');
+        row.innerHTML = `
+          <div class="top">
+            <span class="dist">${c.dist}m</span>
+            <span class="name">${c.is_gi ? '<span class="gi-star">⭐</span> ' : ''}${c.name}</span>
+            <span class="kind">${c.kind}</span>
+          </div>
+          <div class="sub">
+            ${c.drs ? `의사 ${c.drs}명 · ` : ''}
+            ${c.estb_year ? `${c.estb_year} 개원 · ` : ''}
+            ${c.addr}
+            ${c.tel ? `<br>☎ ${c.tel}` : ''}
+          </div>`;
+        row.addEventListener('click', () => {
+          document.querySelectorAll('.clinic').forEach(r => r.classList.remove('active'));
+          row.classList.add('active');
+          map.setView([c.lat, c.lon], 17);
+          markers[i].openPopup();
+        });
+        listEl.appendChild(row);
+      });
+    }
+  })();
+  </script>
+</body>
+</html>
