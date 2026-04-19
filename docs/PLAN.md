@@ -198,10 +198,12 @@ Top 30 = 내림차순 상위 30
 - Top 30 DB 스키마: 동명/총점/경쟁/인구/통근/의원수/총인구/이촌소요/메모/임장상태/업데이트일
 - `publishers/notion_sync.py`
 
-### ⬜ 6주차: GitHub Actions 배치화
-- **[본인] Secrets 등록**
-- `weekly_pipeline.yml` 3-job DAG
-- `workflow_dispatch` 검증 → cron 활성화
+### ✅ 6주차: GitHub Actions 배치화
+- Secrets 7개 등록 (HIRA·KOSIS·KAKAO·ODSAY·NOTION_TOKEN·NOTION_DB_ID·NOTION_DS_ID)
+- `weekly_pipeline.yml` single-job 15-step DAG (cron 토 03:00 KST + workflow_dispatch)
+- 첫 검증 통과: 2026-04-19 12:17 UTC, 4분 7초, 캐시 100% hit
+- Workflow permission "read+write" 부여, commit-back은 변경 시에만 (idempotent)
+- 발견한 gotcha: `data/raw/admin_boundary` 가 .gitignore라 runner마다 GeoJSON 재다운로드 필요 (~5초)
 
 ### ⬜ 7주차: PWA
 - **[본인] GitHub Pages 활성화 (`main /web`)**
