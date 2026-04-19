@@ -40,6 +40,8 @@ data/raw/**/*.parquet
 data/raw/**/*.csv
 data/raw/**/*.xlsx
 data/raw/**/*.geojson
+data/raw/**/*.tif
+data/raw/**/*.tiff
 
 # cleaned: 중간 산출물. 재생성 가능하므로 제외
 data/cleaned/*.parquet
