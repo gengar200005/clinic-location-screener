@@ -28,6 +28,13 @@
     header .seg button.on { background: #1565c0; color: #fff; }
     header .seg button + button { border-left: 1px solid #ccd; }
 
+    .weights { margin-top: 8px; padding: 6px 8px; background: #fafafa; border: 1px solid #eee; border-radius: 4px; font-size: 11px; }
+    .weights-title { font-weight: 600; color: #444; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .weights-title button { margin-left: auto; padding: 1px 6px; font-size: 10px; background: #fff; border: 1px solid #ccd; border-radius: 3px; cursor: pointer; color: #555; }
+    .weights label { display: flex; align-items: center; gap: 6px; margin: 2px 0; color: #555; }
+    .weights label input[type=range] { flex: 1; }
+    .weights label span { min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; color: #1565c0; font-weight: 600; }
+
     #map { flex: 0 0 50vh; width: 100%; }
     .legend { background: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,.18); color: #333; }
     .legend i { display: inline-block; width: 14px; height: 12px; margin-right: 4px; vertical-align: middle; opacity: .85; }
@@ -81,6 +88,25 @@
           </label>
           <label><input type="checkbox" id="top30-only" checked /> Top 30만</label>
         </div>
+
+        <div class="weights" id="weights-panel">
+          <div class="weights-title">
+            가중치 재조정 <span style="color:#888;font-weight:400;font-size:11px;">(기본 C·P 0.45 / T 0.1)</span>
+            <button id="reset-w" type="button">기본값</button>
+          </div>
+          <label>경쟁 C
+            <input type="range" id="w-c" min="0" max="1" step="0.05" value="0.45" />
+            <span id="w-c-v">0.45</span>
+          </label>
+          <label>인구 P
+            <input type="range" id="w-p" min="0" max="1" step="0.05" value="0.45" />
+            <span id="w-p-v">0.45</span>
+          </label>
+          <label>통근 T
+            <input type="range" id="w-t" min="0" max="1" step="0.05" value="0.10" />
+            <span id="w-t-v">0.10</span>
+          </label>
+        </div>
       </div>
       <div id="list" class="loading">데이터 로드 중…</div>
     </header>
@@ -97,7 +123,8 @@
 
     let heatmap = null, boundaries = null, geoLayer = null, map = null;
     let activeMarker = null, activeRow = null;
-    const state = { sido: 'all', minScore: 0, top30Only: true };
+    const DEFAULT_W = { c: 0.45, p: 0.45, t: 0.10 };
+    const state = { sido: 'all', minScore: 0, top30Only: true, weights: { ...DEFAULT_W } };
 
     // ── Color scale (quintile-ish) ──
     function colorFor(score) {
@@ -249,6 +276,26 @@
       renderList();
     }
 
+    // ── Re-score with current weights (slider 변경 시) ──
+    function recomputeScores() {
+      const w = state.weights;
+      const sum = w.c + w.p + w.t;
+      if (sum <= 0) return;  // 모든 슬라이더 0 → 무시
+      heatmap.dongs.forEach(d => {
+        d.score = Math.round(((w.c*d.c + w.p*d.p + w.t*d.t) / sum) * 10000) / 10000;
+      });
+      // 재정렬 + rank 재할당
+      heatmap.dongs.sort((a, b) => b.score - a.score);
+      heatmap.dongs.forEach((d, i) => { d.rank = i + 1; });
+      // boundary feature properties 동기화 (스타일·tooltip 정확)
+      if (boundaries) {
+        boundaries.features.forEach(f => {
+          const dong = byCode.get(String(f.properties.adm_cd));
+          if (dong) { f.properties.score = dong.score; f.properties.rank = dong.rank; }
+        });
+      }
+    }
+
     // ── Controls ──
     function bindControls() {
       document.querySelectorAll('#sido-seg button').forEach(b => {
@@ -269,6 +316,34 @@
       document.getElementById('top30-only').addEventListener('change', e => {
         state.top30Only = e.target.checked;
         applyFilter();
+      });
+
+      // 가중치 슬라이더
+      ['c', 'p', 't'].forEach(k => {
+        const el = document.getElementById('w-' + k);
+        const lbl = document.getElementById('w-' + k + '-v');
+        el.addEventListener('input', () => {
+          state.weights[k] = parseFloat(el.value);
+          lbl.textContent = parseFloat(el.value).toFixed(2);
+          if (heatmap) {
+            recomputeScores();
+            // tooltip도 새 rank·score 반영하려면 layer 재생성
+            buildLayer();
+            renderList();
+          }
+        });
+      });
+      document.getElementById('reset-w').addEventListener('click', () => {
+        state.weights = { ...DEFAULT_W };
+        ['c', 'p', 't'].forEach(k => {
+          document.getElementById('w-' + k).value = DEFAULT_W[k];
+          document.getElementById('w-' + k + '-v').textContent = DEFAULT_W[k].toFixed(2);
+        });
+        if (heatmap) {
+          recomputeScores();
+          buildLayer();
+          renderList();
+        }
       });
     }
 
