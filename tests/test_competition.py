@@ -6,6 +6,7 @@ import pandas as pd
 
 from scoring.competition import (
     compute_competition_raw,
+    compute_subcluster_max_doctors,
     count_clinics_per_dong,
 )
 
@@ -88,4 +89,58 @@ def test_competition_station_penalty_none_means_zero():
     out = compute_competition_raw(n_by_dong, within, population=pop, station_penalty=None)
     assert "n_doctors_station_500m_med" in out.columns
     assert out["n_doctors_station_500m_med"].iloc[0] == 0
+    assert abs(out["c_raw"].iloc[0] - 3.0) < 1e-9
+
+
+def test_compute_subcluster_max_doctors_basic():
+    """동 내 가장 밀집된 500m disk 내과 의사 수.
+
+    A동 centroid 기준:
+      - C1, C2: 250m 이내 (서로 500m 안) → cluster 의사수 5+3=8
+      - C3: 1.5km 안이지만 C1·C2와 600m 이상 떨어짐 → 단독 cluster 의사수 4
+      → max = 8
+    """
+    import numpy as np
+    # 좌표는 EPSG:5179 가정 (m 단위)
+    admin = pd.DataFrame({
+        "adm_cd": ["A"],
+        "x_5179": [0.0],
+        "y_5179": [0.0],
+    })
+    clinics = pd.DataFrame({
+        "yadmNm": ["X 내과", "Y 내과", "Z 내과", "Q 정형"],
+        "drTotCnt": [5, 3, 4, 10],
+        "x_5179": [0.0, 200.0, 1000.0, 50.0],   # C1 origin, C2 200m, C3 1km away, Q 50m (비내과)
+        "y_5179": [0.0,   0.0,    0.0,  0.0],
+    })
+    out = compute_subcluster_max_doctors(admin, clinics)
+    assert out.loc[0, "adm_cd"] == "A"
+    assert out.loc[0, "n_doctors_subcluster_max_med"] == 8
+    # 비내과 Q는 제외돼야 함 — n_clinics_subcluster_max_med = 2 (C1+C2)
+    assert out.loc[0, "n_clinics_subcluster_max_med"] == 2
+
+
+def test_compute_subcluster_max_doctors_empty():
+    """동 반경 안 내과 의원 0개면 둘 다 0."""
+    admin = pd.DataFrame({"adm_cd": ["A"], "x_5179": [0.0], "y_5179": [0.0]})
+    clinics = pd.DataFrame({
+        "yadmNm": ["X 정형"],   # 비내과만
+        "drTotCnt": [3],
+        "x_5179": [100.0],
+        "y_5179": [0.0],
+    })
+    out = compute_subcluster_max_doctors(admin, clinics)
+    assert out.loc[0, "n_doctors_subcluster_max_med"] == 0
+    assert out.loc[0, "n_clinics_subcluster_max_med"] == 0
+
+
+def test_competition_subcluster_penalty_zero_default():
+    """W_COMP_SUBCLUSTER 기본 0 — subcluster_penalty 머지하지만 c_raw 영향 0."""
+    n_by_dong = pd.DataFrame({"adm_cd": ["A"], "n_clinic": [10], "n_clinic_gi": [0]})
+    within = pd.DataFrame({"adm_cd": ["A"], "n_within_radius": [4]})
+    pop = pd.DataFrame({"adm_cd": ["A"], "population": [50_000]})
+    sub = pd.DataFrame({"adm_cd": ["A"], "n_doctors_subcluster_max_med": [99]})
+    out = compute_competition_raw(n_by_dong, within, population=pop, subcluster_penalty=sub)
+    assert out["n_doctors_subcluster_max_med"].iloc[0] == 99
+    # W_COMP_SUBCLUSTER=0이라 99×0=0 → c_raw = 3.0 (density 1.0 + radius 2.0)
     assert abs(out["c_raw"].iloc[0] - 3.0) < 1e-9

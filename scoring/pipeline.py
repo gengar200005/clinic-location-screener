@@ -29,6 +29,7 @@ from config.constants import DATA_CLEANED, DATA_SCORED
 from scoring.commute import load_commute, merge_commute
 from scoring.competition import (
     compute_competition_raw,
+    compute_subcluster_max_doctors,
     count_clinics_per_dong,
     count_clinics_within_radius,
 )
@@ -121,6 +122,17 @@ def run(date_str: str) -> tuple[Path, Path]:
     except FileNotFoundError:
         logger.info("역 캐시 없음 → station 페널티 0")
 
+    # 2c. subcluster max — 동 내 가장 밀집된 500m disk 내과 의사 수
+    # 컬럼은 항상 출력. c_raw 영향은 W_COMP_SUBCLUSTER 활성화 후 (기본 0).
+    logger.info("=== 2c. subcluster max density (c_raw 페널티 입력, W=0이면 영향 없음) ===")
+    subcluster_meta = compute_subcluster_max_doctors(admin_centroid, clinics_by_dong)
+    logger.info(
+        "subcluster max 의사 수: median %.0f, p90 %.0f, max %.0f",
+        subcluster_meta["n_doctors_subcluster_max_med"].median(),
+        subcluster_meta["n_doctors_subcluster_max_med"].quantile(0.9),
+        subcluster_meta["n_doctors_subcluster_max_med"].max(),
+    )
+
     # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 40+ 인구 + 역세권 페널티)
     # density 분모 우선순위:
     #   1) catchment_pop_40plus (40+ 환자풀 — 내과 진료 베이스)
@@ -147,11 +159,17 @@ def run(date_str: str) -> tuple[Path, Path]:
         base_for_comp,
         within_for_comp,
         population=pop_for_comp,
-        station_penalty=station_meta,  # 캐시 없으면 None → 페널티 0
+        station_penalty=station_meta,         # 캐시 없으면 None → 페널티 0
+        subcluster_penalty=subcluster_meta,   # W_COMP_SUBCLUSTER=0이면 영향 없음
+    )
+    # subcluster meta의 n_clinics 컬럼도 display용으로 받기
+    base = base.merge(
+        subcluster_meta[["adm_cd", "n_clinics_subcluster_max_med"]],
+        on="adm_cd", how="left",
     )
     base = base.merge(
         comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw",
-              "n_doctors_station_500m_med"]].rename(
+              "n_doctors_station_500m_med", "n_doctors_subcluster_max_med"]].rename(
             columns={
                 "n_within_radius": "n_doctors_within_radius_med",
                 "density_per_10k": "density_per_10k_med",
@@ -227,6 +245,7 @@ def run(date_str: str) -> tuple[Path, Path]:
         "med_desert_flag", "centroid_mismatch_flag", "suburban_cluster_flag",
         "nearest_station", "station_dist_m", "n_clinic_station_500m",
         "n_doctors_station_500m_med",
+        "n_doctors_subcluster_max_med", "n_clinics_subcluster_max_med",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]

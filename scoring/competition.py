@@ -27,6 +27,7 @@ from config.constants import (
     W_COMP_DENSITY,
     W_COMP_RADIUS,
     W_COMP_STATION,
+    W_COMP_SUBCLUSTER,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,17 +134,95 @@ def count_clinics_within_radius(
     return out
 
 
+def compute_subcluster_max_doctors(
+    admin_centroid: pd.DataFrame,
+    clinics_by_dong: pd.DataFrame,
+    radius_m: int = 1500,
+    cluster_radius_m: int = 500,
+) -> pd.DataFrame:
+    """동 내 가장 밀집된 subcluster의 내과 의사 수.
+
+    각 동 centroid 반경 radius_m 안의 모든 내과 의원 위치를 후보 anchor로 삼아,
+    각 anchor 기준 cluster_radius_m 안 내과 의사 수를 계산 → max.
+
+    "동 centroid가 의료상권 mean이라 역세권 밀집을 묻는 문제"의 정밀 보정.
+    사용자 지시상 격자 분할 안이지만, 격자 경계 효과를 피하려고 의원 위치 기반
+    sliding disk로 구현 (DBSCAN 단순 버전 — eps=cluster_radius_m, minPts=1).
+
+    반환: [adm_cd, n_doctors_subcluster_max_med, n_clinics_subcluster_max_med]
+    """
+    if "x_5179" not in clinics_by_dong.columns:
+        import geopandas as gpd
+        from config.constants import EPSG_KOREA, EPSG_WGS84
+
+        gdf = gpd.GeoDataFrame(
+            clinics_by_dong,
+            geometry=gpd.points_from_xy(
+                pd.to_numeric(clinics_by_dong["XPos"]),
+                pd.to_numeric(clinics_by_dong["YPos"]),
+            ),
+            crs=EPSG_WGS84,
+        ).to_crs(EPSG_KOREA)
+        clinics_by_dong = clinics_by_dong.copy()
+        clinics_by_dong["x_5179"] = gdf.geometry.x.values
+        clinics_by_dong["y_5179"] = gdf.geometry.y.values
+
+    is_internal = clinics_by_dong["yadmNm"].str.contains("내과", na=False)
+    cl_med = clinics_by_dong[is_internal]
+    cl_x = cl_med["x_5179"].to_numpy(dtype="float32")
+    cl_y = cl_med["y_5179"].to_numpy(dtype="float32")
+    drs = pd.to_numeric(
+        cl_med.get("drTotCnt", 0), errors="coerce"
+    ).fillna(0).astype(int).to_numpy()
+
+    dong_x = admin_centroid["x_5179"].to_numpy(dtype="float32")
+    dong_y = admin_centroid["y_5179"].to_numpy(dtype="float32")
+
+    r2_outer = float(radius_m) ** 2
+    r2_cluster = float(cluster_radius_m) ** 2
+
+    n_dong = len(admin_centroid)
+    max_drs = np.zeros(n_dong, dtype=int)
+    max_clin = np.zeros(n_dong, dtype=int)
+
+    for i in range(n_dong):
+        dx = cl_x - dong_x[i]
+        dy = cl_y - dong_y[i]
+        in_outer = (dx * dx + dy * dy) <= r2_outer
+        if not in_outer.any():
+            continue
+        cx = cl_x[in_outer]
+        cy = cl_y[in_outer]
+        cd = drs[in_outer]
+        # n_cand x n_cand 페어 거리 (n_cand 보통 수십, 메모리 OK)
+        ax = cx[:, None] - cx[None, :]
+        ay = cy[:, None] - cy[None, :]
+        within = (ax * ax + ay * ay) <= r2_cluster
+        max_drs[i] = int((within * cd[None, :]).sum(axis=1).max())
+        max_clin[i] = int(within.sum(axis=1).max())
+
+    return pd.DataFrame({
+        "adm_cd": admin_centroid["adm_cd"].values,
+        "n_doctors_subcluster_max_med": max_drs,
+        "n_clinics_subcluster_max_med": max_clin,
+    })
+
+
 def compute_competition_raw(
     n_by_dong: pd.DataFrame,
     within_radius: pd.DataFrame,
     population: pd.DataFrame | None = None,
     station_penalty: pd.DataFrame | None = None,
+    subcluster_penalty: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """C_raw = w_density · (N/P_10k) + w_radius · N_radius + w_station · N_station
+    """C_raw = w_density·(N/P_10k) + w_radius·N_radius
+              + w_station·N_station + w_subcluster·N_subcluster_max
 
     - population: adm_cd + population 컬럼. None이면 밀도 항 제외 (간이 모드).
     - station_penalty: adm_cd + n_doctors_station_500m_med (선택).
-        역 캐시 없으면 None — 역세권 항 0으로 처리.
+        역 캐시 없으면 None → 항 0.
+    - subcluster_penalty: adm_cd + n_doctors_subcluster_max_med (선택).
+        compute_subcluster_max_doctors 결과. W_COMP_SUBCLUSTER 기본 0이면 영향 없음.
     """
     df = n_by_dong.merge(within_radius, on="adm_cd", how="left")
     df["n_within_radius"] = df["n_within_radius"].fillna(0)
@@ -158,6 +237,16 @@ def compute_competition_raw(
     else:
         df["n_doctors_station_500m_med"] = 0
 
+    # subcluster max 페널티 머지 (없으면 0)
+    if subcluster_penalty is not None:
+        df = df.merge(
+            subcluster_penalty[["adm_cd", "n_doctors_subcluster_max_med"]],
+            on="adm_cd", how="left",
+        )
+        df["n_doctors_subcluster_max_med"] = df["n_doctors_subcluster_max_med"].fillna(0)
+    else:
+        df["n_doctors_subcluster_max_med"] = 0
+
     if population is not None:
         df = df.merge(population[["adm_cd", "population"]], on="adm_cd", how="left")
         safe_pop = df["population"].replace(0, np.nan)
@@ -167,6 +256,7 @@ def compute_competition_raw(
             W_COMP_DENSITY * df["density_per_10k"]
             + W_COMP_RADIUS * df["n_within_radius"]
             + W_COMP_STATION * df["n_doctors_station_500m_med"]
+            + W_COMP_SUBCLUSTER * df["n_doctors_subcluster_max_med"]
         )
     else:
         logger.warning("population 없음 — 반경 항만 사용 (간이 모드)")
@@ -174,6 +264,7 @@ def compute_competition_raw(
         df["c_raw"] = (
             df["n_within_radius"].astype(float)
             + W_COMP_STATION * df["n_doctors_station_500m_med"]
+            + W_COMP_SUBCLUSTER * df["n_doctors_subcluster_max_med"]
         )
 
     return df

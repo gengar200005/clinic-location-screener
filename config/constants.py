@@ -29,6 +29,12 @@ W_COMMUTE = 0.1
 W_COMP_DENSITY = 0.5
 W_COMP_RADIUS = 0.5
 W_COMP_STATION = 0.2
+# 2026-04-21 추가: W_COMP_SUBCLUSTER (동 내 가장 밀집된 500m disk 내과 의사 수)
+#   (c) 안: 1.5km 안 의원 각각을 anchor로 sliding disk → max.
+#         (b) 역세권 페널티가 "최근접역" 한 점 기준이라면, 이건 동 내 임의 subcluster 검출.
+#         가장 정확하지만 (b)와 페널티 의도 중첩 — ablation 후 활성화.
+#   기본 0.0: 컬럼만 출력하고 c_raw 영향 없음. 데스크톱에서 결과 검토 후 0.1~0.2 권장.
+W_COMP_SUBCLUSTER = 0.0
 
 # 인구 서브가중치: 총인구 vs 40+ 비율
 W_POP_TOTAL = 0.6

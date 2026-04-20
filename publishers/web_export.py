@@ -353,6 +353,8 @@ def build_detail_json(
             "n_within_radius_all": int(row.get("n_within_radius_all", 0)),
             "n_doctors_within_radius_med": int(row.get("n_doctors_within_radius_med", 0)),
             "n_doctors_station_500m_med": int(row.get("n_doctors_station_500m_med", 0)),
+            "n_doctors_subcluster_max_med": int(row.get("n_doctors_subcluster_max_med", 0)),
+            "n_clinics_subcluster_max_med": int(row.get("n_clinics_subcluster_max_med", 0)),
             "med_desert": bool(row.get("med_desert_flag", False)),
             "centroid_mismatch": bool(row.get("centroid_mismatch_flag", False)),
             "suburban": bool(row.get("suburban_cluster_flag", False)),
