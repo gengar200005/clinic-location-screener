@@ -2,7 +2,7 @@
 
 > PC·환경이 바뀌어도 (데스크톱 Claude Code ↔ 웹 claude.ai) 이 파일 내용을 Claude 대화 시작 시 붙여넣으면 맥락이 복원됩니다.
 >
-> **마지막 저장**: 2026-04-20 (A안 catchment 스코어링 코드 구현 완료, 재계산 대기)
+> **마지막 저장**: 2026-04-20 저녁 (답사 단계 진입 — 점수 모델 정밀화 완료 + 상세 UI 인터랙티브)
 
 ---
 
@@ -21,27 +21,79 @@ Notion Top 30 DB: https://notion.so/258c6d8940b54d6fbd4d900797d5d7b1
 2. docs/PLAN.md — 주차별 마일스톤 + 완료 체크
 3. docs/SCORING.md — 현재 공식 (0.45·C + 0.45·P + 0.1·T) + 인구 가중 중심점 + 3-zone 마커
 
-현재 상태 (2026-04-20 기준):
-- MVP 1~8주차 완료 (매주 토 03:00 KST cron 자동 운영)
-- Post-MVP: T 가중치 조정, PWA 슬라이더, WorldPop 인구 가중 중심점, Notion UI 3-zone 마커 완료
-- 30개 페이지 마이그레이션 완료 (🤖 자동 · 🧠 브리핑 · ✍️ 답사 3 zone)
-- **A안 catchment 스코어링 — 코드 구현 완료 (branch: claude/review-handoff-8pMTC)**
-  - centroid_pop_weighted.py: 1.5km 반경 WorldPop 합 catchment_pop_1_5km 추가
-  - population.py: P_raw = catchment_pop_1_5km × ratio_40plus (폴백: pop_40plus)
-  - pipeline.py: density 분모도 catchment로 통일
-  - 테스트 21/21 통과. 단, 실제 재계산은 admin_centroid_pop.parquet 갱신 필요
-  - **데스크톱에서 해야 할 일**:
-    1. `python -m scoring.centroid_pop_weighted` (WorldPop tif 필요, admin_centroid_pop.parquet 재생성 — catchment_pop_1_5km 컬럼 추가)
-    2. `python -m scoring.pipeline` (새 점수 생성)
-    3. Top 30 확인 → 행신2동 류 catchment 이득 동 랭킹 변화 검증
-    4. `python -m publishers.notion_sync --top30 ...` + `python -m publishers.web_export`
+현재 상태 (2026-04-20 저녁 기준 — 답사 단계 진입):
 
-다음 합의된 작업: A안 결과 검증 + 민감도 분석 (반경 1.0/1.5/2.0km 비교)
+## 점수 모델 v3 (2026-04-20 확정)
+공식: Score = 0.45·C_norm + 0.45·P_norm + 0.1·T_norm
+
+C_raw 정의 — 내과 의사 수 / 40+ 환자풀 기준으로 정밀화:
+- 분자: **내과 의사 수 합** (병원명에 "내과" 포함, drTotCnt 합)
+  · 근거: 1차 의료기관 내과 전문의 90%+ = 소화기. 키워드만으로 충분
+  · 1인 의원 vs 5인 그룹의원 구분 (의원 수가 아닌 의사 수 가중)
+- 분모: **catchment_pop_40plus** (1.5km 배후 40+ 인구 = 내과 환자풀)
+- 반경: **1.5km (P와 통일)** — 이전 500m → 도심 P 인플레 해결, 동률 68→13
+- 출력 컬럼: n_clinic (전체 display), n_clinic_med (내과 의원 수),
+  n_doctors_med (내과 의사 수 합), n_within_radius_med (1.5km 내과 의원),
+  n_doctors_within_radius_med (1.5km 내과 의사 수)
+
+P_raw: catchment_pop_1.5km × ratio_40plus (배후세대 기반 40+ 환자풀)
+T_raw: 이촌1동 기준 자차(Kakao). 컷: t_raw > 50분 Top50 export에서 제외
+
+결과:
+- Top30 sido: 서울 22 / 경기 8 (40+ 분모 반영 — 노원·강북·도봉 고령 belt 부상)
+- Top10: 양천 신월7동, 강북 번3동, 노원 월계2동, 관악 삼성동, 노원 하계2동,
+         성북 장위2동, 부천 소사본1동, 부천 도당동, 부천 원미1동, 부천 심곡본동
+
+## 답사 워크플로 UI (상세 페이지)
+- Top50 detail JSON (Top30에서 확장)
+- 🏬 상가 추정 anchor: 1·2층 상가 cluster 기반 (소상공인진흥공단 상가업소 정보)
+  · data/raw/commercial/ — 서울(535k) + 경기(233k) CSV, 1·2층만 320k
+  · data/cleaned/shops_by_dong.parquet — 656 동, mean 좌표 + convex hull
+  · 의원 cluster는 폴백
+- ⭐ pop centroid (점수 모델 기준)와 🏬 anchor 구분
+- 보라 점선 폴리곤: 1·2층 상가 convex hull (1종 근생 매물 후보 zone)
+- **지도 클릭 → 🎯 anchor + 반경 1km** 우측 의원 리스트 자동 갱신
+  · web/data/all_clinics.json (6669개, 1.4MB) 클라이언트 캐시
+  · haversine 거리 계산, 내과 강조·정렬·홈페이지 링크 그대로
+  · "동 기준 복귀" 버튼
+- 내과 의원: 빨간 [내과] 태그 + 좌측 빨간 보더 + 강조 / 비내과: 회색 반투명
+- 각 의원: 🌐 홈페이지(254/1899 내과는 hospUrl, 나머지 네이버 검색 폴백) + 📞 전화
+- 상단 필터바: 내과만 / 내과 우선 정렬 / 카운트
+- 답사 링크바: 카카오맵·네이버지도·네이버부동산(1·2층 상가 anchor 좌표)
+
+## 메인 페이지
+- 시도 탭: 전체 / 서울 / 경기
+- 상위 N 토글: 30 / 50 / 100
+- 기준 탭: 점수 / 통근 / 신도시 / 의료사막 / 저밀도
+- 리스트·팝업: 내과 N개(의사 M) / 전체 M 병기
+
+## 답사 산출물 (오프라인 활용)
+- docs/SURVEY_CHECKLIST.md — 9 섹션 체크리스트 (출력용)
+- data/scored/survey_cards/INDEX.md + 30개 동별 카드 (markdown)
+- data/scored/top50_seoul_2026-04-20.csv / top50_gyeonggi_2026-04-20.csv
+- data/scored/narrow_top10_2026-04-20.csv — 5개 기준
+
+## 사용 가능 스크립트
+- python -m scoring.pipeline — 점수 재계산
+- python -m publishers.web_export — 웹 데이터 갱신 (detail + heatmap + boundaries + narrow + all_clinics)
+- python -m scrapers.commercial_shops — 상가업소 CSV → shops_by_dong.parquet
+- python -m scripts.gen_survey_cards --top 30 — 답사 카드 생성
+- python -m scripts.narrow_top10 — 5개 기준 Top10 CSV
+- python -m scripts.export_top50_by_sido — 서울/경기 분리 Top50
+- python -m scripts.sensitivity_station_centroid — 역세권 centroid 민감도
+
+## 진행중·보류 이슈
+- R-ONE 상업용 부동산 임대료(15069766) / 공실률(15069726) — 사용자 결정 대기
+  · 상권 구획도(15086933)는 JPG 이미지 → spatial join 불가 (포기)
+  · 임대료는 시군구 단위라 가치 낮을 수 있음. 답사 후 매물 단계에서 별도 활용이 더 실용적
+- 의료시설 입지 후보 답사 실시 (Top30 서울 belt + 경기 부천 belt)
+- 답사 후 피드백 반영한 점수 weighting 재튜닝
 
 어떻게 진행할지 알려주세요:
-- "A안 재계산" → 데스크톱에서 centroid_pop_weighted + pipeline 순서 실행, 결과 비교
-- "브리핑 업데이트해줘" → 토요일 정기 브리핑 (CLAUDE.md §Claude 브리핑 트리거 절차 참조)
-- "현재 상태 보여줘" → git log + 최근 Actions 실행 결과 요약
+- "답사 후 피드백 반영" → 방문한 동 체크리스트 결과 공유하면 반영
+- "임대료 데이터 받음" → data/raw/rent/에 CSV 넣어주면 통합
+- "다음 동 답사 전 카드 재생성" → python -m scripts.gen_survey_cards --top N
+- "웹 재배포" → python -m publishers.web_export + git push
 - 그 외 새 아이디어 환영
 ```
 
