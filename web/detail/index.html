@@ -94,8 +94,8 @@
       const townTagMap = { gen_1: '1기 신도시', gen_2: '2기 신도시', gen_3: '3기 신도시', seoul_renew: '서울 재개발' };
       const townBadge = d.town_tag ? `<span class="tag">🏗 ${townTagMap[d.town_tag] || d.town_tag}</span>` : '';
       const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (40+ ${(m.catchment_pop_40plus/1000).toFixed(0)}k)` : '';
-      const medStr = `<b style="color:#c62828;">내과 ${m.n_clinic_med}</b> / 전체 ${m.n_clinic}`;
-      const radiusMedStr = `1.5km 내과 ${m.n_within_radius_med} / 전체 ${m.n_within_radius_all}`;
+      const medStr = `<b style="color:#c62828;">내과 의원 ${m.n_clinic_med}개 (의사 ${m.n_doctors_med}명)</b> / 전체 의원 ${m.n_clinic}`;
+      const radiusMedStr = `1.5km 내과 의원 ${m.n_within_radius_med}개 (의사 ${m.n_doctors_within_radius_med}명) / 전체 ${m.n_within_radius_all}`;
       document.getElementById('hdr').innerHTML = `
         <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span>${sidoRankStr}</h1>
         <div class="meta">

@@ -31,24 +31,33 @@ logger = logging.getLogger(__name__)
 def count_clinics_per_dong(
     clinics_by_dong: pd.DataFrame,
     internal_keyword: str | None = None,
+    sum_doctors: bool = False,
 ) -> pd.DataFrame:
     """클리닉 공간조인 결과 → 행정동별 개수 집계.
 
     입력: scoring.spatial_join.join_clinics_to_dong 산출 parquet
     internal_keyword: 'yadmNm'에 이 키워드 포함된 의원만 카운트 (예: '내과').
-                      None이면 전체.
-    출력: columns = [adm_cd, adm_nm, sido, sgg, n_clinic, n_clinic_gi]
+    sum_doctors: True면 drTotCnt 합도 같이 반환 (n_doctors 컬럼).
+    출력: columns = [adm_cd, adm_nm, sido, sgg, n_clinic, n_clinic_gi(, n_doctors)]
     """
     df = clinics_by_dong
     if internal_keyword:
         mask = df["yadmNm"].str.contains(internal_keyword, na=False)
         df = df[mask]
     # is_gi: 병원명에 "소화기" 포함 태깅 (scrapers/hira_clinic.py에서 계산)
-    grouped = df.groupby(["adm_cd", "sido", "sgg", "adm_nm"]).agg(
-        n_clinic=("yadmNm", "count"),
-        n_clinic_gi=("is_gi", "sum") if "is_gi" in df.columns else ("yadmNm", "count"),
-    ).reset_index()
-    if "is_gi" not in df.columns:
+    if sum_doctors:
+        df = df.copy()
+        df["_dr"] = pd.to_numeric(df.get("drTotCnt", 0), errors="coerce").fillna(0).astype(int)
+        agg_kwargs = {
+            "n_clinic": ("yadmNm", "count"),
+            "n_doctors": ("_dr", "sum"),
+        }
+    else:
+        agg_kwargs = {"n_clinic": ("yadmNm", "count")}
+    if "is_gi" in df.columns:
+        agg_kwargs["n_clinic_gi"] = ("is_gi", "sum")
+    grouped = df.groupby(["adm_cd", "sido", "sgg", "adm_nm"]).agg(**agg_kwargs).reset_index()
+    if "n_clinic_gi" not in grouped.columns:
         grouped["n_clinic_gi"] = 0
     return grouped
 
@@ -58,6 +67,7 @@ def count_clinics_within_radius(
     admin_centroid: pd.DataFrame,
     radius_m: int = COMPETITION_RADIUS_M,
     internal_keyword: str | None = None,
+    sum_doctors: bool = False,
 ) -> pd.DataFrame:
     """각 행정동 중심점에서 반경 `radius_m` 이내 클리닉 수.
 
@@ -106,10 +116,17 @@ def count_clinics_within_radius(
     within_mask = (dx * dx + dy * dy) <= (radius_m ** 2)
     n_within = within_mask.sum(axis=1)
 
-    return pd.DataFrame({
+    out = pd.DataFrame({
         "adm_cd": admin_centroid["adm_cd"].values,
         "n_within_radius": n_within,
     })
+    if sum_doctors:
+        dr = pd.to_numeric(
+            clinics_by_dong.get("drTotCnt", 0), errors="coerce"
+        ).fillna(0).astype(int).to_numpy(dtype="float32")
+        # within_mask: (n_dong, n_clinic). 각 동에 대해 마스크된 의원의 dr 합.
+        out["n_doctors_within"] = (within_mask * dr[None, :]).sum(axis=1).astype(int)
+    return out
 
 
 def compute_competition_raw(

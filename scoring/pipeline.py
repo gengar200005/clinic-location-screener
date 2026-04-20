@@ -61,41 +61,47 @@ def run(date_str: str) -> tuple[Path, Path]:
     logger.info("load: %d dongs, %d clinics", len(admin_centroid), len(clinics_by_dong))
 
     # 1. 경쟁 지표
-    # n_clinic / n_within_radius (전체 의원) — display·반경 플래그용
-    # n_clinic_med / n_within_radius_med (병원명 "내과" 포함만) — c_raw 점수용
-    # 가정: 1차 의료기관 내과 전문의 90%+ = 소화기. 따라서 내과 키워드만으로 충분.
+    # 전체 의원: n_clinic, n_within_radius_all — display·플래그용
+    # 내과 의원: n_clinic_med (의원 수), n_doctors_med (의사 수 합) — 점수 input
+    # 가정: 1차 의료기관 내과 전문의 90%+ = 소화기. 키워드만으로 충분.
     INTERNAL_KW = "내과"
-    logger.info("=== 1. competition (점수=내과만, 표시=전체) ===")
+    logger.info("=== 1. competition (점수=내과 의사 수, 표시=전체 의원) ===")
     n_by_dong = count_clinics_per_dong(clinics_by_dong)
     within = count_clinics_within_radius(clinics_by_dong, admin_centroid)
-    n_by_dong_med = count_clinics_per_dong(clinics_by_dong, internal_keyword=INTERNAL_KW)
+    n_by_dong_med = count_clinics_per_dong(
+        clinics_by_dong, internal_keyword=INTERNAL_KW, sum_doctors=True
+    )
     within_med = count_clinics_within_radius(
-        clinics_by_dong, admin_centroid, internal_keyword=INTERNAL_KW
+        clinics_by_dong, admin_centroid, internal_keyword=INTERNAL_KW, sum_doctors=True
     )
     n_total_clinics = len(clinics_by_dong)
     n_med_clinics = clinics_by_dong["yadmNm"].str.contains(INTERNAL_KW, na=False).sum()
+    n_med_doctors = pd.to_numeric(
+        clinics_by_dong[clinics_by_dong["yadmNm"].str.contains(INTERNAL_KW, na=False)]["drTotCnt"],
+        errors="coerce",
+    ).fillna(0).astype(int).sum()
     logger.info(
-        "내과 의원 (이름에 '%s'): %d / %d (%.1f%%)",
-        INTERNAL_KW, n_med_clinics, n_total_clinics, 100 * n_med_clinics / n_total_clinics,
+        "내과 의원 %d개 / 의사 %d명 (평균 %.2f명/의원) — 의사 수 가중 c_raw",
+        n_med_clinics, n_med_doctors, n_med_doctors / max(n_med_clinics, 1),
     )
 
     # 의원 0개 동도 포함시키기 위해 admin_centroid 기준으로 outer merge
     base_cols = ["adm_cd", "adm_cd10", "sido", "sgg", "adm_nm"]
-    # catchment 컬럼이 있으면 포함 (P_raw · density 분모용)
     catchment_cols = [c for c in admin_centroid.columns if c.startswith("catchment_pop_")]
     base_cols += catchment_cols
     base = admin_centroid[base_cols].merge(
         n_by_dong[["adm_cd", "n_clinic", "n_clinic_gi"]],
         on="adm_cd", how="left",
     )
-    # 내과 카운트 머지
+    # 내과 카운트 + 의사 수 머지
     base = base.merge(
-        n_by_dong_med[["adm_cd", "n_clinic"]].rename(columns={"n_clinic": "n_clinic_med"}),
+        n_by_dong_med[["adm_cd", "n_clinic", "n_doctors"]].rename(
+            columns={"n_clinic": "n_clinic_med", "n_doctors": "n_doctors_med"}
+        ),
         on="adm_cd", how="left",
     )
-    base[["n_clinic", "n_clinic_gi", "n_clinic_med"]] = (
-        base[["n_clinic", "n_clinic_gi", "n_clinic_med"]].fillna(0).astype(int)
-    )
+    int_cols = ["n_clinic", "n_clinic_gi", "n_clinic_med", "n_doctors_med"]
+    base[int_cols] = base[int_cols].fillna(0).astype(int)
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
     # merge_population이 P_raw 설정까지 수행 (catchment × ratio_40plus 우선)
@@ -104,36 +110,51 @@ def run(date_str: str) -> tuple[Path, Path]:
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
 
-    # 3. 경쟁 점수 (내과 의원 기준)
-    # density 분모 = catchment_pop 있으면 catchment, 아니면 p_raw
-    if catchment_cols and base[catchment_cols[0]].notna().any():
+    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 40+ 인구)
+    # density 분모 우선순위:
+    #   1) catchment_pop_40plus (40+ 환자풀 — 내과 진료 베이스)
+    #   2) catchment_pop_*km (전체 인구 폴백)
+    #   3) p_raw
+    if "catchment_pop_40plus" in base.columns and base["catchment_pop_40plus"].notna().any():
+        density_col = "catchment_pop_40plus"
+        logger.info("density 분모 = catchment_pop_40plus (40+ 환자풀)")
+    elif catchment_cols and base[catchment_cols[0]].notna().any():
         density_col = catchment_cols[0]
-        logger.info("density 분모 = %s (배후 상권 기반)", density_col)
+        logger.info("density 분모 = %s (전체 인구 폴백)", density_col)
     else:
         density_col = "p_raw"
-        logger.info("density 분모 = p_raw (catchment 없음 — 폴백)")
+        logger.info("density 분모 = p_raw (catchment 없음)")
     pop_for_comp = base[["adm_cd", density_col]].rename(columns={density_col: "population"})
 
-    # c_raw는 내과 기준: base의 n_clinic을 임시로 n_clinic_med로 덮어쓰고 함수 호출
+    # c_raw 입력: 의사 수 가중 (n_doctors_med, n_doctors_within_radius_med)
     base_for_comp = base.copy()
-    base_for_comp["n_clinic"] = base_for_comp["n_clinic_med"]
-    comp = compute_competition_raw(base_for_comp, within_med, population=pop_for_comp)
-    # comp의 n_within_radius (내과 기준), density_per_10k (내과 기준), c_raw 머지
+    base_for_comp["n_clinic"] = base_for_comp["n_doctors_med"]
+    within_for_comp = within_med[["adm_cd", "n_doctors_within"]].rename(
+        columns={"n_doctors_within": "n_within_radius"}
+    )
+    comp = compute_competition_raw(base_for_comp, within_for_comp, population=pop_for_comp)
     base = base.merge(
         comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw"]].rename(
             columns={
-                "n_within_radius": "n_within_radius_med",
+                "n_within_radius": "n_doctors_within_radius_med",
                 "density_per_10k": "density_per_10k_med",
             }
         ),
         on="adm_cd", how="left",
     )
-    # 전체 의원 기준 within_radius도 메타로 보존 (display)
+    # 디스플레이용: 내과 의원 카운트 (의사 수가 아닌)
+    base = base.merge(
+        within_med[["adm_cd", "n_within_radius"]].rename(
+            columns={"n_within_radius": "n_within_radius_med"}
+        ),
+        on="adm_cd", how="left",
+    )
+    # 전체 의원 기준 within_radius (display)
     base = base.merge(
         within.rename(columns={"n_within_radius": "n_within_radius_all"}),
         on="adm_cd", how="left",
     )
-    # 호환성: 기존 컬럼명 n_within_radius / density_per_10k는 내과 기준 값으로 노출 (점수 모델과 일관)
+    # 호환성 컬럼: 의사 수 기준
     base["n_within_radius"] = base["n_within_radius_med"]
     base["density_per_10k"] = base["density_per_10k_med"]
 
@@ -185,9 +206,9 @@ def run(date_str: str) -> tuple[Path, Path]:
         "c_raw", "p_raw", "t_raw", "t_transit",
         "pop_total", "pop_40plus", "ratio_40plus",
         "catchment_pop_1_5km", "catchment_pop_40plus",
-        "n_clinic", "n_clinic_gi", "n_clinic_med",
+        "n_clinic", "n_clinic_gi", "n_clinic_med", "n_doctors_med",
         "n_within_radius", "n_within_radius_med", "n_within_radius_all",
-        "density_per_10k",
+        "n_doctors_within_radius_med", "density_per_10k",
         "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",
         "med_desert_flag", "centroid_mismatch_flag", "suburban_cluster_flag",
         "nearest_station", "station_dist_m", "n_clinic_station_500m",

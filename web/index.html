@@ -240,7 +240,8 @@
           <div class="row-mini"><span>인구 40+</span><span>${dong.p.toFixed(2)}</span></div>
           <div class="row-mini"><span>통근 (이촌역)</span><span>${dong.t.toFixed(2)}</span></div>
           <hr style="border:0;border-top:1px solid #eee;margin:6px 0;">
-          <div class="row-mini"><span>내과 (동내)</span><b style="color:#c62828;">${dong.n_clinic_med ?? '-'}</b></div>
+          <div class="row-mini"><span>내과 의원 (동내)</span><b style="color:#c62828;">${dong.n_clinic_med ?? '-'}개</b></div>
+          <div class="row-mini"><span>내과 의사 수</span><b style="color:#c62828;">${dong.n_doctors_med ?? '-'}명</b></div>
           <div class="row-mini"><span>전체 의원 (동/500m)</span><span>${dong.n_clinic} / ${dong.n_clinic_500m}</span></div>
           <div class="row-mini"><span>총인구 / 40+</span><span>${(dong.pop_total||0).toLocaleString()} / ${(dong.pop_40plus||0).toLocaleString()}</span></div>
           <div class="row-mini"><span>🚗 자차</span><span>${dong.t_raw}분</span></div>
@@ -284,7 +285,7 @@
           <div class="rank">${d.rank}${sidoRank}</div>
           <div class="name">${flags}${d.short}<span class="sub">${sidoTag}·${d.sgg}</span></div>
           <div class="score">${d.score.toFixed(3)}</div>
-          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}</b>/전체 ${d.n_clinic} · 🚗 ${d.t_raw}분</div>
+          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}개(의사${d.n_doctors_med ?? '-'})</b>/전체 ${d.n_clinic} · 🚗 ${d.t_raw}분</div>
         </div>`;
       }).join('');
 
