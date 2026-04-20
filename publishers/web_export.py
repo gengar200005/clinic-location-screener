@@ -149,17 +149,29 @@ def load_all():
 def _clinic_entry(cl: pd.Series, dist_m: int) -> dict:
     estb = str(cl.get("estbDd", "") or "")
     estb_year = estb[:4] if len(estb) >= 4 and estb.isdigit() else None
+    name = str(cl.get("yadmNm", ""))
+    addr = str(cl.get("addr", "") or "")
+    hosp_url = cl.get("hospUrl")
+    hosp_url = str(hosp_url) if pd.notna(hosp_url) and str(hosp_url).strip() else None
+    if hosp_url and not hosp_url.startswith(("http://", "https://")):
+        hosp_url = "http://" + hosp_url
+    # 폴백: 네이버 검색
+    search_q = f"{name} {addr.split(',')[0] if addr else ''}".strip()
+    search_url = f"https://search.naver.com/search.naver?query={search_q.replace(' ', '+')}"
     return {
-        "name": str(cl.get("yadmNm", "")),
+        "name": name,
         "lat": float(cl.get("YPos", 0)),
         "lon": float(cl.get("XPos", 0)),
         "dist": int(dist_m),
         "kind": str(cl.get("clCdNm", "")),
         "is_gi": bool(cl.get("is_gi", False)),
+        "is_internal": "내과" in name,  # 점수 모델과 동일 정의
         "drs": int(cl.get("drTotCnt")) if pd.notna(cl.get("drTotCnt")) else None,
-        "addr": str(cl.get("addr", "") or ""),
+        "addr": addr,
         "tel": str(cl.get("telno", "") or ""),
         "estb_year": estb_year,
+        "hosp_url": hosp_url,
+        "search_url": search_url,
     }
 
 

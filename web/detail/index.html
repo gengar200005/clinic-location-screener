@@ -21,17 +21,27 @@
     header .flag.red { background: #ffebee; color: #c62828; }
     #map { flex: 0 0 50vh; width: 100%; }
     #list-wrap { flex: 1; overflow-y: auto; background: #fff; padding: 6px 0; }
-    .clinic { padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background .08s; }
+    .clinic { padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background .08s; opacity: 0.55; }
     .clinic:hover { background: #f0f7ff; }
     .clinic.active { background: #fff59d; }
-    .clinic.gi { background: #ffebee; }
+    .clinic.internal { background: #ffebee; opacity: 1; border-left: 3px solid #e53935; }
+    .clinic.internal.active { background: #ffd54f; }
+    .clinic.gi { background: #ffe0b2; opacity: 1; border-left: 3px solid #e65100; }
     .clinic.gi.active { background: #ffd54f; }
     .clinic .top { display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
     .clinic .dist { font-weight: 600; color: #1565c0; min-width: 40px; }
     .clinic .name { font-weight: 600; }
-    .clinic .gi-star { color: #e53935; }
+    .clinic .gi-star { color: #e65100; }
+    .clinic .int-tag { display: inline-block; background: #e53935; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-right: 4px; vertical-align: middle; font-weight: 700; }
     .clinic .kind { color: #757575; font-size: 12px; font-weight: normal; margin-left: auto; }
     .clinic .sub { font-size: 12px; color: #666; margin-top: 2px; padding-left: 48px; }
+    .clinic .links { padding-left: 48px; margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .clinic .links a { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; font-size: 11px; background: #fff; border: 1px solid #bbb; border-radius: 3px; text-decoration: none; color: #444; }
+    .clinic .links a:hover { background: #e3f2fd; border-color: #1565c0; }
+    .clinic .links a.home { background: #e3f2fd; color: #0d47a1; border-color: #1565c0; font-weight: 600; }
+    .filter-bar { padding: 6px 12px; background: #f5f5f5; border-bottom: 1px solid #ddd; display: flex; gap: 8px; align-items: center; font-size: 12px; }
+    .filter-bar label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+    .filter-bar .count { color: #666; font-size: 11px; margin-left: auto; }
     .loading { padding: 20px; text-align: center; color: #888; }
     .popup-body { font-size: 13px; line-height: 1.4; }
     .popup-body b { color: #1565c0; }
@@ -55,7 +65,14 @@
     <header id="hdr"><div class="loading">로딩…</div></header>
     <div id="survey-links" class="survey-links" style="display:none;"></div>
     <div id="map"></div>
-    <div id="list-wrap"><div id="list" class="loading">의원 데이터 로드 중…</div></div>
+    <div id="list-wrap">
+      <div id="filter-bar" class="filter-bar" style="display:none;">
+        <label><input type="checkbox" id="only-internal" /> 내과만</label>
+        <label><input type="checkbox" id="sort-internal-first" checked /> 내과 우선 정렬</label>
+        <span class="count" id="filter-count"></span>
+      </div>
+      <div id="list" class="loading">의원 데이터 로드 중…</div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -166,53 +183,90 @@
          .bindPopup(`<div class="popup-body"><b>🚇 ${d.station.name}</b><br>중심점에서 ${d.station.dist_m}m<br>역 500m 내 의원 ${d.station.n_clinic_500m}개</div>`).addTo(map);
       }
 
-      // 의원 핀
+      // 의원 핀 — 내과 = 빨강, 소화기 = 별표, 그 외 = 회색
       const markers = [];
       d.clinics.forEach((c, i) => {
-        const color = c.is_gi ? '#e53935' : (c.kind.includes('의원') ? '#1976d2' : '#9e9e9e');
-        const radius = c.is_gi ? 10 : 6;
-        const marker = L.circleMarker([c.lat, c.lon], {
-          radius, color, weight: 2, fillColor: color, fillOpacity: 0.75,
-        }).bindPopup(`
+        const color = c.is_internal ? '#e53935' : (c.kind.includes('의원') ? '#9e9e9e' : '#bdbdbd');
+        const radius = c.is_internal ? 10 : 5;
+        const opacity = c.is_internal ? 0.85 : 0.4;
+        const popupHtml = `
           <div class="popup-body">
-            <b>${c.is_gi ? '⭐ ' : ''}${c.name}</b><br>
+            <b>${c.is_gi ? '⭐ ' : ''}${c.is_internal ? '<span style="color:#e53935;">[내과] </span>' : ''}${c.name}</b><br>
             ${c.kind}${c.drs ? ` · 의사 ${c.drs}명` : ''}${c.estb_year ? ` · ${c.estb_year} 개원` : ''}<br>
             ${c.addr ? `📍 ${c.addr}<br>` : ''}
-            ${c.tel ? `☎ <a href="tel:${c.tel}">${c.tel}</a>` : ''}
-          </div>`).addTo(map);
+            ${c.tel ? `☎ <a href="tel:${c.tel}">${c.tel}</a><br>` : ''}
+            ${c.hosp_url ? `🌐 <a href="${c.hosp_url}" target="_blank">홈페이지</a>` : `🔍 <a href="${c.search_url}" target="_blank">네이버 검색</a>`}
+          </div>`;
+        const marker = L.circleMarker([c.lat, c.lon], {
+          radius, color, weight: 2, fillColor: color, fillOpacity: opacity,
+        }).bindPopup(popupHtml).addTo(map);
         markers.push(marker);
       });
 
       // ── List ──────────
       const listEl = document.getElementById('list');
+      const filterBar = document.getElementById('filter-bar');
+      const onlyInternal = document.getElementById('only-internal');
+      const sortInternalFirst = document.getElementById('sort-internal-first');
+      const countEl = document.getElementById('filter-count');
+
       if (!d.clinics.length) {
         listEl.innerHTML = '<div class="loading">반경 1km 내 의원 없음</div>';
         return;
       }
-      listEl.innerHTML = '';
-      d.clinics.forEach((c, i) => {
-        const row = document.createElement('div');
-        row.className = 'clinic' + (c.is_gi ? ' gi' : '');
-        row.innerHTML = `
-          <div class="top">
-            <span class="dist">${c.dist}m</span>
-            <span class="name">${c.is_gi ? '<span class="gi-star">⭐</span> ' : ''}${c.name}</span>
-            <span class="kind">${c.kind}</span>
-          </div>
-          <div class="sub">
-            ${c.drs ? `의사 ${c.drs}명 · ` : ''}
-            ${c.estb_year ? `${c.estb_year} 개원 · ` : ''}
-            ${c.addr}
-            ${c.tel ? `<br>☎ ${c.tel}` : ''}
-          </div>`;
-        row.addEventListener('click', () => {
-          document.querySelectorAll('.clinic').forEach(r => r.classList.remove('active'));
-          row.classList.add('active');
-          map.setView([c.lat, c.lon], 17);
-          markers[i].openPopup();
+      filterBar.style.display = 'flex';
+
+      function renderClinicList() {
+        let items = d.clinics.slice();
+        if (onlyInternal.checked) items = items.filter(c => c.is_internal);
+        if (sortInternalFirst.checked) {
+          items.sort((a, b) => {
+            if (a.is_internal !== b.is_internal) return a.is_internal ? -1 : 1;
+            return a.dist - b.dist;
+          });
+        }
+        const intCnt = d.clinics.filter(c => c.is_internal).length;
+        countEl.textContent = `내과 ${intCnt}개 / 전체 ${d.clinics.length}개`;
+
+        listEl.innerHTML = '';
+        items.forEach((c) => {
+          const origIdx = d.clinics.indexOf(c);
+          const row = document.createElement('div');
+          row.className = 'clinic' + (c.is_gi ? ' gi' : (c.is_internal ? ' internal' : ''));
+          const tagHtml = c.is_gi ? '<span class="gi-star">⭐</span> '
+                        : (c.is_internal ? '<span class="int-tag">내과</span>' : '');
+          const linkBtn = c.hosp_url
+            ? `<a class="home" href="${c.hosp_url}" target="_blank" onclick="event.stopPropagation();">🌐 홈페이지</a>`
+            : `<a href="${c.search_url}" target="_blank" onclick="event.stopPropagation();">🔍 네이버 검색</a>`;
+          row.innerHTML = `
+            <div class="top">
+              <span class="dist">${c.dist}m</span>
+              <span class="name">${tagHtml}${c.name}</span>
+              <span class="kind">${c.kind}</span>
+            </div>
+            <div class="sub">
+              ${c.drs ? `의사 ${c.drs}명 · ` : ''}
+              ${c.estb_year ? `${c.estb_year} 개원 · ` : ''}
+              ${c.addr}
+              ${c.tel ? `<br>☎ ${c.tel}` : ''}
+            </div>
+            <div class="links">
+              ${linkBtn}
+              ${c.tel ? `<a href="tel:${c.tel}" onclick="event.stopPropagation();">📞 전화</a>` : ''}
+            </div>`;
+          row.addEventListener('click', () => {
+            document.querySelectorAll('.clinic').forEach(r => r.classList.remove('active'));
+            row.classList.add('active');
+            map.setView([c.lat, c.lon], 17);
+            markers[origIdx].openPopup();
+          });
+          listEl.appendChild(row);
         });
-        listEl.appendChild(row);
-      });
+      }
+
+      onlyInternal.addEventListener('change', renderClinicList);
+      sortInternalFirst.addEventListener('change', renderClinicList);
+      renderClinicList();
     }
   })();
   </script>
