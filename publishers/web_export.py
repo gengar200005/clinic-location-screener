@@ -198,6 +198,48 @@ def build_detail_json(
 
     clinic_list = [_clinic_entry(cl, cl["_dist"]) for _, cl in near.iterrows()]
 
+    # 상가 추정 anchor + convex hull (의원 군집 기반)
+    # 우선순위: (1) 동 내 의원 → (2) 500m 이내 의원 → (3) pop centroid 폴백
+    in_dong = clinics[clinics["adm_cd"].astype(str) == adm_cd]
+    if len(in_dong) >= 1:
+        anchor_pool = in_dong
+        anchor_type = "in_dong"
+    elif mask.sum() > 0:
+        # 500m 이내만 추출 (1km는 너무 넓을 수 있음)
+        close_mask = dist <= 500
+        anchor_pool = clinics[close_mask] if close_mask.sum() > 0 else clinics[mask]
+        anchor_type = "nearby_500m" if close_mask.sum() > 0 else "nearby_1km"
+    else:
+        anchor_pool = pd.DataFrame()
+        anchor_type = "fallback_pop_centroid"
+
+    if len(anchor_pool) > 0:
+        anchor_lat = float(pd.to_numeric(anchor_pool["YPos"]).mean())
+        anchor_lon = float(pd.to_numeric(anchor_pool["XPos"]).mean())
+    else:
+        anchor_lat, anchor_lon = center_lat, center_lon
+
+    commercial_anchor = {
+        "lat": round(anchor_lat, 6),
+        "lon": round(anchor_lon, 6),
+        "n_clinics": int(len(anchor_pool)),
+        "type": anchor_type,
+    }
+
+    # Convex hull (3개 이상 의원만)
+    commercial_hull = None
+    if len(anchor_pool) >= 3:
+        from shapely.geometry import MultiPoint
+        points = MultiPoint(list(zip(
+            pd.to_numeric(anchor_pool["XPos"]),
+            pd.to_numeric(anchor_pool["YPos"]),
+        )))
+        hull = points.convex_hull
+        if hull.geom_type == "Polygon":
+            coords = list(hull.exterior.coords)
+            # GeoJSON-style [[lon, lat], ...]
+            commercial_hull = [[round(x, 6), round(y, 6)] for x, y in coords]
+
     # 경계 폴리곤 (GeoJSON Feature)
     boundary_feat = None
     # admin_boundary.geojson의 adm_cd는 string 8자리와 일치해야 함
@@ -223,15 +265,13 @@ def build_detail_json(
 
     # 답사 준비 외부 링크 (검색어 = adm_nm 자체)
     nm_q = str(row["adm_nm"]).replace(" ", "+")
+    # 네이버 부동산은 상가 추정 anchor 좌표 사용 (의원 군집 = 1종 근생 매물 가능 영역)
     survey_links = {
         "kakao_map": f"https://map.kakao.com/?q={nm_q}",
-        # 네이버 지도 신버전 (/p/search/)
         "naver_map": f"https://map.naver.com/p/search/{nm_q}",
-        # 네이버 부동산 신버전 (new.land.naver.com) — 상가 1종 근생
-        # ms=lat,lon,zoom · a=SG(상가) · b=B1(월세) · e=RETAIL
         "naver_estate": (
             f"https://new.land.naver.com/offices?"
-            f"ms={center_lat},{center_lon},15&a=SG&b=B1&e=RETAIL"
+            f"ms={anchor_lat},{anchor_lon},16&a=SG&b=B1&e=RETAIL"
         ),
     }
 
@@ -285,6 +325,8 @@ def build_detail_json(
             "suburban": bool(row.get("suburban_cluster_flag", False)),
         },
         "survey_links": survey_links,
+        "commercial_anchor": commercial_anchor,
+        "commercial_hull": commercial_hull,
         "clinics": clinic_list,
     }
     return out

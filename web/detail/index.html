@@ -176,9 +176,31 @@
         }).addTo(map);
       });
 
-      // 중심점 별
+      // 중심점 별 (인구 가중)
       L.marker([d.center.lat, d.center.lon], { icon: mkIcon('⭐', 36) })
-       .bindPopup(`<div class="popup-body"><b>${d.name}</b><br>중심점(행정구역 대표점)</div>`).addTo(map);
+       .bindPopup(`<div class="popup-body"><b>${d.name}</b><br>중심점 (인구 가중 — 점수 모델 기준)</div>`).addTo(map);
+
+      // 상가 추정 anchor + convex hull (의원 군집 기반)
+      if (d.commercial_anchor) {
+        const ca = d.commercial_anchor;
+        const typeLabel = {
+          in_dong: `동 내 의원 ${ca.n_clinics}개의 평균 위치`,
+          nearby_500m: `500m 이내 의원 ${ca.n_clinics}개의 평균 위치`,
+          nearby_1km: `1km 이내 의원 ${ca.n_clinics}개의 평균 위치`,
+          fallback_pop_centroid: '주변 의원 없음 — 인구 중심 폴백'
+        }[ca.type] || ca.type;
+        L.marker([ca.lat, ca.lon], { icon: mkIcon('🏬', 32) })
+         .bindPopup(`<div class="popup-body"><b>🏬 상가 추정 중심</b><br>${typeLabel}<br><i>1종 근생 매물 검색 anchor</i></div>`)
+         .addTo(map);
+      }
+      if (d.commercial_hull && d.commercial_hull.length >= 3) {
+        // [lon,lat] → [lat,lon]
+        const latlngs = d.commercial_hull.map(([lon, lat]) => [lat, lon]);
+        L.polygon(latlngs, {
+          color: '#9c27b0', weight: 2, opacity: 0.8, dashArray: '4,4',
+          fillColor: '#9c27b0', fillOpacity: 0.07,
+        }).bindTooltip('의원 군집 영역 (1종 근생 매물 후보 zone)', { sticky: true }).addTo(map);
+      }
 
       // 역
       if (d.station) {
