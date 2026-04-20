@@ -56,14 +56,18 @@
       #app { flex-direction: row; }
       #map { flex: 1; height: 100%; }
       #list-wrap { flex: 0 0 360px; border-left: 1px solid #e0e0e0; }
-      header { position: absolute; top: 0; left: 0; right: 360px; z-index: 1000; border-radius: 0 0 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,.08); }
+      header { position: absolute; top: 0; left: 0; right: 360px; z-index: 1000; border-radius: 0 0 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,.08); background: #fff; }
+      header #hdr-body { padding: 8px 12px; }
+      header .survey-links { border-bottom-left-radius: 0; border-bottom-right-radius: 6px; }
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <header id="hdr"><div class="loading">로딩…</div></header>
-    <div id="survey-links" class="survey-links" style="display:none;"></div>
+    <header id="hdr">
+      <div id="hdr-body"><div class="loading">로딩…</div></div>
+      <div id="survey-links" class="survey-links" style="display:none;"></div>
+    </header>
     <div id="map"></div>
     <div id="list-wrap">
       <div id="filter-bar" class="filter-bar" style="display:none;">
@@ -93,7 +97,7 @@
       if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
       return r.json();
     }).then(d => render(d)).catch(e => {
-      document.getElementById('hdr').innerHTML = `<h1>오류</h1><div class="meta">${dataUrl} — ${e}</div>`;
+      document.getElementById('hdr-body').innerHTML = `<h1>오류</h1><div class="meta">${dataUrl} — ${e}</div>`;
       document.getElementById('list').innerHTML = `<div class="loading">데이터 로드 실패</div>`;
     });
 
@@ -113,7 +117,7 @@
       const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (40+ ${(m.catchment_pop_40plus/1000).toFixed(0)}k)` : '';
       const medStr = `<b style="color:#c62828;">내과 의원 ${m.n_clinic_med}개 (의사 ${m.n_doctors_med}명)</b> / 전체 의원 ${m.n_clinic}`;
       const radiusMedStr = `1.5km 내과 의원 ${m.n_within_radius_med}개 (의사 ${m.n_doctors_within_radius_med}명) / 전체 ${m.n_within_radius_all}`;
-      document.getElementById('hdr').innerHTML = `
+      document.getElementById('hdr-body').innerHTML = `
         <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span>${sidoRankStr}</h1>
         <div class="meta">
           ${townBadge}
