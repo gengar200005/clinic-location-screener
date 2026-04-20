@@ -180,14 +180,15 @@
       L.marker([d.center.lat, d.center.lon], { icon: mkIcon('⭐', 36) })
        .bindPopup(`<div class="popup-body"><b>${d.name}</b><br>중심점 (인구 가중 — 점수 모델 기준)</div>`).addTo(map);
 
-      // 상가 추정 anchor + convex hull (의원 군집 기반)
+      // 상가 추정 anchor + convex hull
       if (d.commercial_anchor) {
         const ca = d.commercial_anchor;
         const typeLabel = {
-          in_dong: `동 내 의원 ${ca.n_clinics}개의 평균 위치`,
-          nearby_500m: `500m 이내 의원 ${ca.n_clinics}개의 평균 위치`,
-          nearby_1km: `1km 이내 의원 ${ca.n_clinics}개의 평균 위치`,
-          fallback_pop_centroid: '주변 의원 없음 — 인구 중심 폴백'
+          shops_floor12: `1·2층 상가 ${ca.n_shops_floor12}개의 평균 위치 (동 전체 ${ca.n_shops_total}개)`,
+          clinics_in_dong: `동 내 의원 ${ca.n_clinics}개의 평균 위치`,
+          clinics_nearby_500m: `500m 이내 의원 ${ca.n_clinics}개의 평균 위치`,
+          clinics_nearby_1km: `1km 이내 의원 ${ca.n_clinics}개의 평균 위치`,
+          fallback_pop_centroid: '주변 상가·의원 없음 — 인구 중심 폴백'
         }[ca.type] || ca.type;
         L.marker([ca.lat, ca.lon], { icon: mkIcon('🏬', 32) })
          .bindPopup(`<div class="popup-body"><b>🏬 상가 추정 중심</b><br>${typeLabel}<br><i>1종 근생 매물 검색 anchor</i></div>`)
@@ -196,10 +197,11 @@
       if (d.commercial_hull && d.commercial_hull.length >= 3) {
         // [lon,lat] → [lat,lon]
         const latlngs = d.commercial_hull.map(([lon, lat]) => [lat, lon]);
+        const isShops = d.commercial_anchor && d.commercial_anchor.type === 'shops_floor12';
         L.polygon(latlngs, {
           color: '#9c27b0', weight: 2, opacity: 0.8, dashArray: '4,4',
           fillColor: '#9c27b0', fillOpacity: 0.07,
-        }).bindTooltip('의원 군집 영역 (1종 근생 매물 후보 zone)', { sticky: true }).addTo(map);
+        }).bindTooltip(isShops ? '1·2층 상가 영역 (1종 근생 매물 후보 zone)' : '의원 군집 영역 (폴백)', { sticky: true }).addTo(map);
       }
 
       // 역

@@ -116,6 +116,11 @@ def load_all():
     top30 = pd.read_parquet(_latest_top30())
     centroid = pd.read_parquet(DATA_CLEANED / "admin_centroid.parquet")
     clinics = pd.read_parquet(DATA_CLEANED / "clinics_by_dong.parquet")
+    # 1·2층 상가 cluster (선택적 — 없으면 의원 cluster로 폴백)
+    shops_path = DATA_CLEANED / "shops_by_dong.parquet"
+    shops = pd.read_parquet(shops_path) if shops_path.exists() else None
+    if shops is not None:
+        shops["adm_cd10"] = shops["adm_cd10"].astype(str)
 
     # 의원 EPSG:5179 좌표
     gdf = gpd.GeoDataFrame(
@@ -143,7 +148,7 @@ def load_all():
     else:
         boundary_gdf = boundary_gdf.to_crs(EPSG_WGS84)
 
-    return top30, centroid, clinics, stations, boundary_gdf
+    return top30, centroid, clinics, stations, boundary_gdf, shops
 
 
 def _clinic_entry(cl: pd.Series, dist_m: int) -> dict:
@@ -181,6 +186,7 @@ def build_detail_json(
     clinics: pd.DataFrame,
     stations: pd.DataFrame | None,
     boundary_gdf: gpd.GeoDataFrame,
+    shops: pd.DataFrame | None = None,
 ) -> dict:
     adm_cd = str(row["adm_cd"])
     cent = centroid[centroid["adm_cd"].astype(str) == adm_cd].iloc[0]
@@ -198,47 +204,71 @@ def build_detail_json(
 
     clinic_list = [_clinic_entry(cl, cl["_dist"]) for _, cl in near.iterrows()]
 
-    # 상가 추정 anchor + convex hull (의원 군집 기반)
-    # 우선순위: (1) 동 내 의원 → (2) 500m 이내 의원 → (3) pop centroid 폴백
-    in_dong = clinics[clinics["adm_cd"].astype(str) == adm_cd]
-    if len(in_dong) >= 1:
-        anchor_pool = in_dong
-        anchor_type = "in_dong"
-    elif mask.sum() > 0:
-        # 500m 이내만 추출 (1km는 너무 넓을 수 있음)
-        close_mask = dist <= 500
-        anchor_pool = clinics[close_mask] if close_mask.sum() > 0 else clinics[mask]
-        anchor_type = "nearby_500m" if close_mask.sum() > 0 else "nearby_1km"
-    else:
-        anchor_pool = pd.DataFrame()
-        anchor_type = "fallback_pop_centroid"
+    # 상가 추정 anchor + convex hull
+    # 우선순위:
+    #   (1) shops_by_dong (1·2층 상가 집계) — 가장 정확 (소상공인진흥공단)
+    #   (2) 동 내 의원 → 500m 이내 → pop centroid 폴백
+    adm_cd10 = str(row.get("adm_cd10", "")) or (adm_cd + "00")
+    shops_row = None
+    if shops is not None and len(shops) > 0:
+        m = shops[shops["adm_cd10"] == adm_cd10]
+        if len(m) > 0:
+            shops_row = m.iloc[0]
 
-    if len(anchor_pool) > 0:
-        anchor_lat = float(pd.to_numeric(anchor_pool["YPos"]).mean())
-        anchor_lon = float(pd.to_numeric(anchor_pool["XPos"]).mean())
-    else:
-        anchor_lat, anchor_lon = center_lat, center_lon
-
-    commercial_anchor = {
-        "lat": round(anchor_lat, 6),
-        "lon": round(anchor_lon, 6),
-        "n_clinics": int(len(anchor_pool)),
-        "type": anchor_type,
-    }
-
-    # Convex hull (3개 이상 의원만)
+    commercial_anchor = None
     commercial_hull = None
-    if len(anchor_pool) >= 3:
-        from shapely.geometry import MultiPoint
-        points = MultiPoint(list(zip(
-            pd.to_numeric(anchor_pool["XPos"]),
-            pd.to_numeric(anchor_pool["YPos"]),
-        )))
-        hull = points.convex_hull
-        if hull.geom_type == "Polygon":
-            coords = list(hull.exterior.coords)
-            # GeoJSON-style [[lon, lat], ...]
-            commercial_hull = [[round(x, 6), round(y, 6)] for x, y in coords]
+    if shops_row is not None:
+        anchor_lat = float(shops_row["shops_lat_mean"])
+        anchor_lon = float(shops_row["shops_lon_mean"])
+        commercial_anchor = {
+            "lat": round(anchor_lat, 6),
+            "lon": round(anchor_lon, 6),
+            "n_shops_total": int(shops_row["n_shops_total"]),
+            "n_shops_floor12": int(shops_row["n_shops_floor12"]),
+            "type": "shops_floor12",
+        }
+        # hull WKT → coords
+        if pd.notna(shops_row.get("shops_hull_wkt")):
+            from shapely import wkt as _wkt
+            hull = _wkt.loads(shops_row["shops_hull_wkt"])
+            if hull.geom_type == "Polygon":
+                commercial_hull = [
+                    [round(x, 6), round(y, 6)] for x, y in hull.exterior.coords
+                ]
+    else:
+        # 폴백: 의원 군집
+        in_dong = clinics[clinics["adm_cd"].astype(str) == adm_cd]
+        if len(in_dong) >= 1:
+            anchor_pool = in_dong
+            anchor_type = "clinics_in_dong"
+        elif mask.sum() > 0:
+            close_mask = dist <= 500
+            anchor_pool = clinics[close_mask] if close_mask.sum() > 0 else clinics[mask]
+            anchor_type = "clinics_nearby_500m" if close_mask.sum() > 0 else "clinics_nearby_1km"
+        else:
+            anchor_pool = pd.DataFrame()
+            anchor_type = "fallback_pop_centroid"
+        if len(anchor_pool) > 0:
+            anchor_lat = float(pd.to_numeric(anchor_pool["YPos"]).mean())
+            anchor_lon = float(pd.to_numeric(anchor_pool["XPos"]).mean())
+        else:
+            anchor_lat, anchor_lon = center_lat, center_lon
+        commercial_anchor = {
+            "lat": round(anchor_lat, 6),
+            "lon": round(anchor_lon, 6),
+            "n_clinics": int(len(anchor_pool)),
+            "type": anchor_type,
+        }
+        if len(anchor_pool) >= 3:
+            from shapely.geometry import MultiPoint
+            points = MultiPoint(list(zip(
+                pd.to_numeric(anchor_pool["XPos"]),
+                pd.to_numeric(anchor_pool["YPos"]),
+            )))
+            hull = points.convex_hull
+            if hull.geom_type == "Polygon":
+                commercial_hull = [[round(x, 6), round(y, 6)]
+                                   for x, y in hull.exterior.coords]
 
     # 경계 폴리곤 (GeoJSON Feature)
     boundary_feat = None
@@ -460,7 +490,7 @@ def export_boundaries(
 
 def run(top_n: int = 50) -> int:
     WEB_DETAIL_DIR.mkdir(parents=True, exist_ok=True)
-    _, centroid, clinics, stations, boundary_gdf = load_all()
+    _, centroid, clinics, stations, boundary_gdf, shops = load_all()
 
     # 점수 + 신도시 태그 + 시도순위 enrich
     scores_path = _latest_scores()
@@ -477,7 +507,7 @@ def run(top_n: int = 50) -> int:
     top_df = _top_n_from_scores(scores, n=top_n)
     count = 0
     for _, row in top_df.iterrows():
-        data = build_detail_json(row, centroid, clinics, stations, boundary_gdf)
+        data = build_detail_json(row, centroid, clinics, stations, boundary_gdf, shops)
         out = WEB_DETAIL_DIR / f"{row['adm_cd']}.json"
         with open(out, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
