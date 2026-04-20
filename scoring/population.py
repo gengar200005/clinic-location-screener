@@ -1,14 +1,21 @@
 """인구 지표 P 계산.
 
-**P_raw = pop_40plus** (40세 이상 인구, 실수치).
+**P_raw = catchment_pop_1_5km × ratio_40plus** (기본, catchment 기반)
+   · catchment: 중심점 반경 1.5km WorldPop 인구 합 (행정동 경계 무시)
+   · ratio_40plus: 동 단위 KOSIS 연령 비율 (동 수준 근사)
+**P_raw = pop_40plus** (폴백, catchment 없을 때)
 
 근거: 소화기내과 유효 환자풀은 40+.
 - 20대 대부분 급성 1회성. 40+부터 만성질환 빈도 급증 (GI·HTN·DM·검진)
 - 국가검진(위·대장내시경) 대상 50+에서 수요 집중
-- pop_total × ratio_40plus = pop_40plus 이므로 총인구·비율 두 정보 모두 반영
+
+배후세대 보정: 행정동 경계는 인위적. "작은 동 + 인접 대단지" 케이스(행신2동 등)가
+동 단위 pop_40plus로는 과소평가됨. catchment 1.5km는 실상권 규모로, 동 경계 밖의
+배후세대까지 포착. 연령 비율은 동 단위 통계를 그대로 적용 (근사).
 
 데이터:
 - 기본(권장): data/raw/population/kosis_pop_age_{date}.parquet — 총인구 + 40+ 합
+             + data/cache/admin_centroid_pop.parquet 의 catchment 컬럼
 - 폴백: data/raw/population/kosis_pop_{date}.parquet — 총인구만 (P_raw=총인구)
 
 KOSIS는 10자리 행정구역 코드(adm_cd10)로 제공. admin_centroid의 `adm_cd10` 컬럼이 브리지.
@@ -65,33 +72,75 @@ def load_kosis_population(parquet_path: Path | None = None) -> pd.DataFrame:
     return df[cols].copy()
 
 
+def _find_catchment_col(df: pd.DataFrame) -> str | None:
+    """dong_table/merged에서 catchment_pop_*km 컬럼 이름 탐색. 없으면 None."""
+    for c in df.columns:
+        if c.startswith("catchment_pop_") and c.endswith("km"):
+            return c
+    return None
+
+
 def merge_population(
     dong_table: pd.DataFrame,
     pop: pd.DataFrame,
 ) -> pd.DataFrame:
     """행정동 테이블에 인구 병합 + MIN_POPULATION 필터.
 
-    P_raw 정책:
-    - pop_40plus 있으면 → P_raw = pop_40plus (소화기내과 유효 환자풀)
-    - 없으면 → P_raw = pop_total (폴백)
+    P_raw 정책 (우선순위):
+    1. catchment_pop_*km 컬럼 + ratio_40plus 있으면
+       → P_raw = catchment_pop × ratio_40plus (배후세대 기반 40+ 풀)
+    2. pop_40plus 있으면 → P_raw = pop_40plus (동 단위 폴백)
+    3. 그 외 → P_raw = pop_total
     """
     merged = dong_table.merge(pop, on="adm_cd10", how="left")
     missing = merged["pop_total"].isna().sum()
     if missing:
         logger.warning("인구 매칭 실패: %d 동", missing)
 
-    # MIN_POPULATION은 총인구 기준
+    # MIN_POPULATION은 동 단위 총인구 기준 (공단·공원 동 배제)
     before = len(merged)
     merged = merged[merged["pop_total"].fillna(0) >= MIN_POPULATION].copy()
     logger.info("population filter (>= %d): %d / %d", MIN_POPULATION, len(merged), before)
 
     # P_raw 설정
-    if "pop_40plus" in merged.columns and merged["pop_40plus"].notna().any():
+    catchment_col = _find_catchment_col(merged)
+    has_catchment = (
+        catchment_col is not None
+        and merged[catchment_col].notna().any()
+    )
+    has_ratio = (
+        "ratio_40plus" in merged.columns
+        and merged["ratio_40plus"].notna().any()
+    )
+    has_40plus = (
+        "pop_40plus" in merged.columns
+        and merged["pop_40plus"].notna().any()
+    )
+
+    if has_catchment and has_ratio:
+        catch = merged[catchment_col].astype(float)
+        ratio = merged["ratio_40plus"].astype(float)
+        # catchment 또는 ratio NaN인 행은 동 단위 pop_40plus 로 폴백
+        p_catchment = catch * ratio
+        merged["catchment_pop_40plus"] = p_catchment
+        if has_40plus:
+            merged["p_raw"] = p_catchment.where(
+                p_catchment.notna() & (p_catchment > 0),
+                merged["pop_40plus"].astype(float),
+            )
+        else:
+            merged["p_raw"] = p_catchment.fillna(0.0)
+        logger.info(
+            "P_raw = %s × ratio_40plus (중앙값=%d, 동 pop_40plus 중앙값=%d)",
+            catchment_col,
+            int(merged["p_raw"].median()),
+            int(merged["pop_40plus"].median()) if has_40plus else -1,
+        )
+    elif has_40plus:
         merged["p_raw"] = merged["pop_40plus"].astype(float)
         logger.info(
-            "P_raw = pop_40plus (중앙값=%d, 비율 중앙값=%.3f)",
+            "P_raw = pop_40plus (catchment 없음 — 동 단위 폴백, 중앙값=%d)",
             int(merged["pop_40plus"].median()),
-            float(merged["ratio_40plus"].median()),
         )
     else:
         merged["p_raw"] = merged["pop_total"].astype(float)

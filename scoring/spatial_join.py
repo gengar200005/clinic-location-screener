@@ -89,6 +89,7 @@ def apply_pop_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
     """data/cache/admin_centroid_pop.parquet 있으면 lat/lon 교체 + 5179 재계산.
 
     centroid_mismatch_flag 동의 임장 좌표·반경 의원 카운트 정확도 향상.
+    `catchment_pop_*km` 컬럼이 있으면 함께 merge (P_raw · density 분모용).
     cache 없으면 그대로 반환.
     """
     from config.constants import DATA_CACHE, EPSG_WGS84
@@ -103,12 +104,16 @@ def apply_pop_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
     out["adm_cd"] = out["adm_cd"].astype(str)
     before_n = len(out)
 
-    out = out.merge(
-        pop[["adm_cd", "lat_pop", "lon_pop", "pop_weighted"]],
-        on="adm_cd", how="left",
-    )
+    merge_cols = ["adm_cd", "lat_pop", "lon_pop", "pop_weighted"]
+    catchment_cols = [c for c in pop.columns if c.startswith("catchment_pop_")]
+    merge_cols += catchment_cols
+
+    out = out.merge(pop[merge_cols], on="adm_cd", how="left")
     matched = out["lat_pop"].notna().sum()
-    logger.info("pop-weighted 적용: %d / %d 동", matched, before_n)
+    logger.info(
+        "pop-weighted 적용: %d / %d 동 (catchment 컬럼: %s)",
+        matched, before_n, catchment_cols or "없음",
+    )
 
     # lat/lon 교체 (NaN인 동은 기존 유지)
     out["lat"] = out["lat_pop"].where(out["lat_pop"].notna(), out["lat"])
@@ -121,6 +126,7 @@ def apply_pop_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
     out["x_5179"] = gdf.geometry.x.values
     out["y_5179"] = gdf.geometry.y.values
 
+    # catchment 컬럼은 유지, 나머지 보조 컬럼만 정리
     out = out.drop(columns=["lat_pop", "lon_pop", "pop_weighted"])
     return out
 

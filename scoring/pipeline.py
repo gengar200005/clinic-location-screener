@@ -65,7 +65,11 @@ def run(date_str: str) -> tuple[Path, Path]:
     n_by_dong = count_clinics_per_dong(clinics_by_dong)
     within = count_clinics_within_radius(clinics_by_dong, admin_centroid)
     # 의원 0개 동도 포함시키기 위해 admin_centroid 기준으로 outer merge
-    base = admin_centroid[["adm_cd", "adm_cd10", "sido", "sgg", "adm_nm"]].merge(
+    base_cols = ["adm_cd", "adm_cd10", "sido", "sgg", "adm_nm"]
+    # catchment 컬럼이 있으면 포함 (P_raw · density 분모용)
+    catchment_cols = [c for c in admin_centroid.columns if c.startswith("catchment_pop_")]
+    base_cols += catchment_cols
+    base = admin_centroid[base_cols].merge(
         n_by_dong[["adm_cd", "n_clinic", "n_clinic_gi"]],
         on="adm_cd", how="left",
     )
@@ -74,14 +78,20 @@ def run(date_str: str) -> tuple[Path, Path]:
     )
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
-    # merge_population이 P_raw=pop_40plus (or pop_total 폴백) 설정까지 수행
+    # merge_population이 P_raw 설정까지 수행 (catchment × ratio_40plus 우선)
     logger.info("=== 2. population ===")
     pop_raw = load_kosis_population()
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
 
-    # 3. 경쟁 점수 (인구 반영)
-    pop_for_comp = base[["adm_cd", "p_raw"]].rename(columns={"p_raw": "population"})
+    # 3. 경쟁 점수 (density 분모 = catchment_pop 있으면 catchment, 아니면 p_raw)
+    if catchment_cols and base[catchment_cols[0]].notna().any():
+        density_col = catchment_cols[0]
+        logger.info("density 분모 = %s (배후 상권 기반)", density_col)
+    else:
+        density_col = "p_raw"
+        logger.info("density 분모 = p_raw (catchment 없음 — 폴백)")
+    pop_for_comp = base[["adm_cd", density_col]].rename(columns={density_col: "population"})
     comp = compute_competition_raw(base, within, population=pop_for_comp)
     base = base.merge(
         comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw"]],
@@ -135,6 +145,7 @@ def run(date_str: str) -> tuple[Path, Path]:
         "score", "c_norm", "p_norm", "t_norm",
         "c_raw", "p_raw", "t_raw", "t_transit",
         "pop_total", "pop_40plus", "ratio_40plus",
+        "catchment_pop_1_5km", "catchment_pop_40plus",
         "n_clinic", "n_clinic_gi", "n_within_radius", "density_per_10k",
         "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",
         "med_desert_flag", "centroid_mismatch_flag", "suburban_cluster_flag",

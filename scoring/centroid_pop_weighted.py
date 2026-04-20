@@ -1,4 +1,4 @@
-"""인구 가중 행정동 중심점 계산.
+"""인구 가중 행정동 중심점 + 배후 catchment 인구 계산.
 
 기하 중심점(geometric centroid)은 동 모양에 따라 산·하천·공원에 찍힐 수 있다
 (centroid_mismatch_flag: Top 30 중 5개 케이스). 진짜 배후세대(아파트단지) 위치
@@ -9,9 +9,14 @@
 
 폴백: 폴리곤 안에 인구 픽셀이 0개거나 합이 0 (공단·공원·산) → 기하 중심점 사용.
 
-출력: data/cache/admin_centroid_pop.parquet (영구 커밋, 50KB)
-- columns: adm_cd, lat_pop, lon_pop, pop_sum_in_polygon, pop_weighted (bool)
-- pop_weighted=False는 폴백한 동
+추가로, 중심점 기준 `CATCHMENT_RADIUS_M` (기본 1.5km) 반경의 WorldPop 픽셀 합을
+`catchment_pop` 으로 저장. 행정동 경계와 무관한 배후세대 실상권 인구이며,
+scoring.population / competition 에서 P_raw · density 분모로 사용.
+
+출력: data/cache/admin_centroid_pop.parquet (영구 커밋)
+- columns: adm_cd, lat_pop, lon_pop, pop_sum_in_polygon, pop_weighted (bool),
+           catchment_pop_1_5km
+- pop_weighted=False는 폴백한 동 (catchment는 기하 중심점 기준으로 계산)
 
 사용:
     python -m scoring.centroid_pop_weighted
@@ -32,14 +37,64 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio
+from pyproj import Transformer
 from rasterio.mask import mask as rio_mask
+from shapely.geometry import Point
+from shapely.ops import transform as shapely_transform
 
-from config.constants import DATA_CACHE, DATA_CLEANED, DATA_RAW, EPSG_WGS84
+from config.constants import (
+    CATCHMENT_RADIUS_M,
+    DATA_CACHE,
+    DATA_CLEANED,
+    DATA_RAW,
+    EPSG_KOREA,
+    EPSG_WGS84,
+)
 
 logger = logging.getLogger(__name__)
 
 OUT_PATH = DATA_CACHE / "admin_centroid_pop.parquet"
 WORLDPOP_PATH = DATA_RAW / "worldpop" / "kor_ppp_2020.tif"
+
+_CATCHMENT_KM = CATCHMENT_RADIUS_M / 1000
+CATCHMENT_COL = f"catchment_pop_{str(_CATCHMENT_KM).replace('.', '_')}km"
+
+_TO_5179 = Transformer.from_crs(EPSG_WGS84, EPSG_KOREA, always_xy=True).transform
+_TO_4326 = Transformer.from_crs(EPSG_KOREA, EPSG_WGS84, always_xy=True).transform
+
+
+def _catchment_polygon_wgs84(lon: float, lat: float, radius_m: float):
+    """(lon, lat) 중심으로 radius_m 버퍼(원) → WGS84 폴리곤.
+
+    EPSG:5179 투영 후 버퍼 → 다시 WGS84 역변환. 위도에 따른 왜곡 보정됨.
+    """
+    x, y = _TO_5179(lon, lat)
+    buf_5179 = Point(x, y).buffer(radius_m, resolution=32)
+    return shapely_transform(lambda a, b, z=None: _TO_4326(a, b), buf_5179)
+
+
+def _compute_catchment_pop(
+    lon: float, lat: float, raster, radius_m: float
+) -> float:
+    """중심점 반경 radius_m 내 WorldPop 픽셀 합.
+
+    모두 0·NaN 픽셀이어도 0.0 반환 (에러 없음).
+    """
+    buf = _catchment_polygon_wgs84(lon, lat, radius_m)
+    try:
+        clipped, _ = rio_mask(
+            raster, [buf.__geo_interface__],
+            crop=True, all_touched=True, filled=False,
+        )
+    except ValueError:
+        return 0.0
+    arr = clipped[0]
+    if hasattr(arr, "mask"):
+        values = np.where(~arr.mask, arr.data, 0.0)
+    else:
+        values = arr
+    values = np.where(np.isfinite(values) & (values > 0), values, 0.0)
+    return float(values.sum())
 
 
 def _latest_boundary() -> Path:
@@ -126,28 +181,31 @@ def build() -> Path:
         for adm_cd, poly in zip(gdf["adm_cd"], gdf.geometry):
             result = _compute_centroid_for_polygon(poly, src, src.transform)
             if result is None:
-                # 폴백: 기하 중심점
+                # 폴백: 기하 중심점 (폴리곤 안 인구 0)
                 fallback = geom_lookup.get(str(adm_cd))
                 if fallback is None:
                     logger.warning("adm_cd=%s 폴백 좌표 없음 → 스킵", adm_cd)
                     continue
-                rows.append({
-                    "adm_cd": adm_cd,
-                    "lat_pop": fallback["lat"],
-                    "lon_pop": fallback["lon"],
-                    "pop_sum_in_polygon": 0.0,
-                    "pop_weighted": False,
-                })
+                lat, lon = fallback["lat"], fallback["lon"]
+                pop_sum_in_polygon = 0.0
+                is_weighted = False
                 n_fallback += 1
             else:
-                lat, lon, pop_sum = result
-                rows.append({
-                    "adm_cd": adm_cd,
-                    "lat_pop": lat,
-                    "lon_pop": lon,
-                    "pop_sum_in_polygon": pop_sum,
-                    "pop_weighted": True,
-                })
+                lat, lon, pop_sum_in_polygon = result
+                is_weighted = True
+
+            # catchment: 행정동 경계와 무관하게 1.5km 반경 인구
+            catchment_pop = _compute_catchment_pop(
+                lon, lat, src, CATCHMENT_RADIUS_M
+            )
+            rows.append({
+                "adm_cd": adm_cd,
+                "lat_pop": lat,
+                "lon_pop": lon,
+                "pop_sum_in_polygon": pop_sum_in_polygon,
+                "pop_weighted": is_weighted,
+                CATCHMENT_COL: catchment_pop,
+            })
 
     df = pd.DataFrame(rows)
     df.to_parquet(OUT_PATH, index=False)
@@ -168,6 +226,14 @@ def build() -> Path:
     logger.info(
         "이동 거리 통계 (m): 평균 %.0f · 중앙 %.0f · 최대 %.0f · 500m+ 이동 %d개",
         dist.mean(), dist.median(), dist.max(), (dist > 500).sum(),
+    )
+
+    # catchment 진단
+    cc = df[CATCHMENT_COL]
+    logger.info(
+        "%s 통계: 중앙 %d · 평균 %d · 최소 %d · 최대 %d",
+        CATCHMENT_COL, int(cc.median()), int(cc.mean()),
+        int(cc.min()), int(cc.max()),
     )
     return OUT_PATH
 

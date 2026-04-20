@@ -2,7 +2,7 @@
 
 > PC·환경이 바뀌어도 (데스크톱 Claude Code ↔ 웹 claude.ai) 이 파일 내용을 Claude 대화 시작 시 붙여넣으면 맥락이 복원됩니다.
 >
-> **마지막 저장**: 2026-04-19 23:30 KST
+> **마지막 저장**: 2026-04-20 (A안 catchment 스코어링 코드 구현 완료, 재계산 대기)
 
 ---
 
@@ -21,22 +21,25 @@ Notion Top 30 DB: https://notion.so/258c6d8940b54d6fbd4d900797d5d7b1
 2. docs/PLAN.md — 주차별 마일스톤 + 완료 체크
 3. docs/SCORING.md — 현재 공식 (0.45·C + 0.45·P + 0.1·T) + 인구 가중 중심점 + 3-zone 마커
 
-현재 상태 (2026-04-19 기준):
+현재 상태 (2026-04-20 기준):
 - MVP 1~8주차 완료 (매주 토 03:00 KST cron 자동 운영)
-- Post-MVP 진행 중: T 가중치 조정, PWA 슬라이더, WorldPop 인구 가중 중심점, Notion UI 3-zone 마커
+- Post-MVP: T 가중치 조정, PWA 슬라이더, WorldPop 인구 가중 중심점, Notion UI 3-zone 마커 완료
 - 30개 페이지 마이그레이션 완료 (🤖 자동 · 🧠 브리핑 · ✍️ 답사 3 zone)
+- **A안 catchment 스코어링 — 코드 구현 완료 (branch: claude/review-handoff-8pMTC)**
+  - centroid_pop_weighted.py: 1.5km 반경 WorldPop 합 catchment_pop_1_5km 추가
+  - population.py: P_raw = catchment_pop_1_5km × ratio_40plus (폴백: pop_40plus)
+  - pipeline.py: density 분모도 catchment로 통일
+  - 테스트 21/21 통과. 단, 실제 재계산은 admin_centroid_pop.parquet 갱신 필요
+  - **데스크톱에서 해야 할 일**:
+    1. `python -m scoring.centroid_pop_weighted` (WorldPop tif 필요, admin_centroid_pop.parquet 재생성 — catchment_pop_1_5km 컬럼 추가)
+    2. `python -m scoring.pipeline` (새 점수 생성)
+    3. Top 30 확인 → 행신2동 류 catchment 이득 동 랭킹 변화 검증
+    4. `python -m publishers.notion_sync --top30 ...` + `python -m publishers.web_export`
 
-다음 합의된 작업: "A안 catchment 기반 스코어링" — 미착수
-
-A안 요지:
-- 문제: 행정동 경계가 인위적. "작은 동 + 인접 동 대단지" 케이스 과소평가 (행신2동 사례)
-- 해법: P_raw를 "동 인구" → "중심점 반경 1.5km WorldPop 합 × dong_ratio_40plus"로 전환
-        C_raw density 분모도 catchment_pop_total로 통일
-- 범위: scoring/centroid_pop_weighted.py 확장 + scoring/population.py, competition.py 수정 + docs/SCORING.md 갱신
-- 예상 비용: 1시간
+다음 합의된 작업: A안 결과 검증 + 민감도 분석 (반경 1.0/1.5/2.0km 비교)
 
 어떻게 진행할지 알려주세요:
-- "A안 진행해줘" → 바로 구현 시작
+- "A안 재계산" → 데스크톱에서 centroid_pop_weighted + pipeline 순서 실행, 결과 비교
 - "브리핑 업데이트해줘" → 토요일 정기 브리핑 (CLAUDE.md §Claude 브리핑 트리거 절차 참조)
 - "현재 상태 보여줘" → git log + 최근 Actions 실행 결과 요약
 - 그 외 새 아이디어 환영

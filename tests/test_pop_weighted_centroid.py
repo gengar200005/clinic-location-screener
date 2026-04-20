@@ -33,6 +33,7 @@ def test_cache_replaces_lat_lon_and_recomputes_5179(tmp_path, monkeypatch):
         "lon_pop": [127.01, 127.11],
         "pop_sum_in_polygon": [1000.0, 2000.0],
         "pop_weighted": [True, True],
+        "catchment_pop_1_5km": [50000.0, 80000.0],
     })
     pop.to_parquet(tmp_path / "admin_centroid_pop.parquet", index=False)
 
@@ -47,6 +48,9 @@ def test_cache_replaces_lat_lon_and_recomputes_5179(tmp_path, monkeypatch):
     # 보조 컬럼은 정리됨
     assert "lat_pop" not in out.columns
     assert "pop_weighted" not in out.columns
+    # catchment 컬럼은 유지 (P_raw · density 분모용)
+    assert "catchment_pop_1_5km" in out.columns
+    assert out.set_index("adm_cd").loc["A", "catchment_pop_1_5km"] == 50000.0
 
 
 def test_partial_cache_uses_geometric_for_missing(tmp_path, monkeypatch):

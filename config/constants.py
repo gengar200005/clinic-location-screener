@@ -30,6 +30,7 @@ W_POP_AGE40 = 0.4
 
 # ─── 임계치 ───
 COMPETITION_RADIUS_M = 500
+CATCHMENT_RADIUS_M = 1500     # 배후 상권 반경 (P_raw · density 분모 공통)
 MIN_POPULATION = 500          # 미만 동은 스코어링에서 제외 (공단·공원)
 COMMUTE_FALLBACK_MIN = 999    # ODSay 응답 실패 시 대입값
 

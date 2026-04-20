@@ -13,17 +13,20 @@ C_norm = 1 − percentile_rank(C_raw)   # 1 - rank: 경쟁 낮은 동이 높은 
 
 | 항 | 의미 | 데이터 |
 |---|---|---|
-| `density_per_10k` | 동 내 내과의원 수 / (인구 / 10,000) | HIRA + KOSIS |
+| `density_per_10k` | 동 내 내과의원 수 / (catchment_pop_1_5km / 10,000) | HIRA + WorldPop (P와 분모 통일) |
 | `n_clinic_within_500m` | 동 중심점 EPSG:5179 좌표에서 반경 500m 내 의원 수 | HIRA + admin_centroid |
 
 **서브가중치 0.5/0.5는 임의값**(8주차 이후 이상점 보며 조정).
 
 밀도만 보면 인구 적은 동(공원·공단)이 N=1만 있어도 폭등. 반경만 보면 강남대로변처럼 의원이 군집한 곳에서 동 경계와 무관하게 잡힘. 두 항 평균이 안전한 절충.
 
+**2026-04-20 변경**: 밀도 분모를 **동 인구 → 중심점 반경 1.5km catchment 총인구**로 전환. P_raw 와 분모 통일 — "작은 동 + 인접 대단지" 케이스에서 밀도가 실상권 인구로 정규화됨.
+
 ## P — 인구 (40+ 환자풀, 높을수록 ↑ 점수)
 
 ```
-P_raw = pop_40plus
+P_raw = catchment_pop_1_5km × ratio_40plus      (기본, 2026-04-20~)
+P_raw = pop_40plus                              (폴백, catchment 없을 때)
 P_norm = percentile_rank(P_raw)
 ```
 
@@ -32,9 +35,15 @@ P_norm = percentile_rank(P_raw)
 - 40+에서 GI/HTN/DM/검진 빈도 급증 → 소화기내과 유효 환자.
 - 50+에서 국가검진(위·대장내시경) 수요 집중.
 
-`pop_total × ratio_40plus = pop_40plus` 이므로 총인구·고령비율 두 정보 모두 자동 반영됨.
+**왜 catchment 기반? (2026-04-20 A안 적용)**
+행정동 경계는 인위적이어서, "작은 동 + 인접 동 대단지" 케이스가 동 단위 pop_40plus로는 과소평가됨 (행신2동 사례). catchment_pop_1_5km는 중심점 반경 1.5km WorldPop 픽셀 합으로, 실상권 규모의 배후세대를 포착.
 
-**필터**: `pop_total < 500` 동은 스코어링 제외 (공단·공원). `MIN_POPULATION` 상수.
+- `catchment_pop_1_5km`: WorldPop 100m 격자 합산 (pyproj 5179 버퍼 → 4326 역변환으로 위도 왜곡 보정)
+- `ratio_40plus`: 동 단위 KOSIS 비율을 그대로 적용 (catchment 내 연령 분포가 동 분포와 유사하다는 근사)
+
+중심점은 인구 가중 좌표(이전 개선)라 배후세대 집중 지점에서 출발하고, 1.5km 반경은 소화기내과의 일반적 진료권(도보/자차 10분).
+
+**필터**: `pop_total < 500` 동은 스코어링 제외 (공단·공원). `MIN_POPULATION` 상수. catchment 기반으로 바뀌어도 동 단위 pop_total 필터는 유지 — 동 자체가 공단·공원이면 개원 실지 자체가 불가능.
 
 ## T — 통근 (이촌역 기준, 짧을수록 ↑ 점수)
 
@@ -94,9 +103,23 @@ lon_pop = Σ(pop_i · lon_i) / Σ pop_i
 - ✅ **반경 500m 의원 카운트** (C 점수의 절반)
 - ✅ **통근 T_raw** (Kakao directions 도착점)
 - ✅ **반경 1km/2km 카운트 + flag**
-- ❌ P_raw (KOSIS 동 단위 통계 그대로) · density (동 단위 분모/분자)
+- ✅ **catchment_pop_1_5km** (P_raw · density 분모, 2026-04-20 추가)
 
 데이터 소스: docs/DATA_SOURCES.md §7. 캐시 영구 커밋 (`data/cache/admin_centroid_pop.parquet`), boundary 버전 갱신 시만 재계산.
+
+## Catchment 인구 — 배후 상권 (2026-04-20 적용)
+
+중심점 반경 `CATCHMENT_RADIUS_M` (기본 1.5km) 내 WorldPop 픽셀 합을 `catchment_pop_1_5km` 으로 저장. P_raw, density 분모로 공통 사용.
+
+```
+catchment_pop_1_5km(i) = Σ worldpop_j  ∀ j ∈ (dist(centroid_i, pixel_j) ≤ 1.5km)
+```
+
+- 반경 버퍼는 pyproj로 EPSG:5179(거리 정확) 상에서 계산 후 WGS84 역변환 (위도 왜곡 보정)
+- 행정동 경계와 무관 → "작은 동 + 인접 대단지" 케이스에서 실상권 규모 포착
+- 캐시: `admin_centroid_pop.parquet` 에 컬럼 추가, boundary 갱신 시만 재계산
+
+**왜 1.5km?** 소화기내과 1차 진료권 기준: 도보 15분 ≈ 1km, 자차 5분 ≈ 1.5km. 너무 작으면 경계 효과 못 깨고, 너무 크면 실제 출렁 범위 밖 인구까지 합산. 추후 민감도 분석 예정.
 
 ## 해석 보조 플래그
 
