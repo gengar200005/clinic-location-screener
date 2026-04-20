@@ -134,6 +134,9 @@
       const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (40+ ${(m.catchment_pop_40plus/1000).toFixed(0)}k)` : '';
       const medStr = `<b style="color:#c62828;">내과 의원 ${m.n_clinic_med}개 (의사 ${m.n_doctors_med}명)</b> / 전체 의원 ${m.n_clinic}`;
       const radiusMedStr = `1.5km 내과 의원 ${m.n_within_radius_med}개 (의사 ${m.n_doctors_within_radius_med}명) / 전체 ${m.n_within_radius_all}`;
+      const stationDanger = d.station && d.station.n_clinic_500m >= 10
+        ? `<br><span class="flag red">⚠ 역 500m 내 의원 ${d.station.n_clinic_500m}개 — 역세권 경쟁 강함 (동 점수에는 반영 약함)</span>`
+        : '';
       document.getElementById('hdr-body').innerHTML = `
         <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span>${sidoRankStr}</h1>
         <div class="meta">
@@ -143,6 +146,7 @@
           <span style="color:#888;font-size:11px;">(반경 의원: 500m ${m.n_clinic_500m} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km})</span><br>
           🚗 자차 ${m.t_raw}분${transitStr}
           ${d.station ? ` · 🚉 ${d.station.name} ${d.station.dist_m}m (역세권 의원 ${d.station.n_clinic_500m})` : ''}
+          ${stationDanger}
           ${flags.length ? '<br>' + flags.join('') : ''}
         </div>`;
 
@@ -221,10 +225,21 @@
         }).bindTooltip(isShops ? '1·2층 상가 영역 (1종 근생 매물 후보 zone)' : '의원 군집 영역 (폴백)', { sticky: true }).addTo(map);
       }
 
-      // 역
+      // 역 + 500m 역세권 원
       if (d.station) {
+        const isStationDense = d.station.n_clinic_500m >= 10;
+        const stationCircleColor = isStationDense ? '#c62828' : '#8e24aa';
+        L.circle([d.station.lat, d.station.lon], {
+          radius: 500,
+          color: stationCircleColor,
+          weight: 2,
+          opacity: 0.9,
+          fillColor: stationCircleColor,
+          fillOpacity: isStationDense ? 0.10 : 0.05,
+          dashArray: '6,4',
+        }).bindTooltip(`🚇 역 500m · 의원 ${d.station.n_clinic_500m}개${isStationDense ? ' ⚠ 역세권 경쟁 강함' : ''}`, { sticky: true }).addTo(map);
         L.marker([d.station.lat, d.station.lon], { icon: mkIcon('🚇', 32) })
-         .bindPopup(`<div class="popup-body"><b>🚇 ${d.station.name}</b><br>중심점에서 ${d.station.dist_m}m<br>역 500m 내 의원 ${d.station.n_clinic_500m}개</div>`).addTo(map);
+         .bindPopup(`<div class="popup-body"><b>🚇 ${d.station.name}</b><br>중심점에서 ${d.station.dist_m}m<br>역 500m 내 의원 ${d.station.n_clinic_500m}개${isStationDense ? '<br><b style="color:#c62828;">⚠ 역세권 경쟁 강함</b>' : ''}</div>`).addTo(map);
       }
 
       // 의원 핀 — 내과 = 빨강, 소화기 = 별표, 그 외 = 회색
