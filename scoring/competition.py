@@ -28,18 +28,27 @@ from config.constants import (
 logger = logging.getLogger(__name__)
 
 
-def count_clinics_per_dong(clinics_by_dong: pd.DataFrame) -> pd.DataFrame:
+def count_clinics_per_dong(
+    clinics_by_dong: pd.DataFrame,
+    internal_keyword: str | None = None,
+) -> pd.DataFrame:
     """클리닉 공간조인 결과 → 행정동별 개수 집계.
 
     입력: scoring.spatial_join.join_clinics_to_dong 산출 parquet
+    internal_keyword: 'yadmNm'에 이 키워드 포함된 의원만 카운트 (예: '내과').
+                      None이면 전체.
     출력: columns = [adm_cd, adm_nm, sido, sgg, n_clinic, n_clinic_gi]
     """
+    df = clinics_by_dong
+    if internal_keyword:
+        mask = df["yadmNm"].str.contains(internal_keyword, na=False)
+        df = df[mask]
     # is_gi: 병원명에 "소화기" 포함 태깅 (scrapers/hira_clinic.py에서 계산)
-    grouped = clinics_by_dong.groupby(["adm_cd", "sido", "sgg", "adm_nm"]).agg(
+    grouped = df.groupby(["adm_cd", "sido", "sgg", "adm_nm"]).agg(
         n_clinic=("yadmNm", "count"),
-        n_clinic_gi=("is_gi", "sum") if "is_gi" in clinics_by_dong.columns else ("yadmNm", "count"),
+        n_clinic_gi=("is_gi", "sum") if "is_gi" in df.columns else ("yadmNm", "count"),
     ).reset_index()
-    if "is_gi" not in clinics_by_dong.columns:
+    if "is_gi" not in df.columns:
         grouped["n_clinic_gi"] = 0
     return grouped
 
@@ -48,6 +57,7 @@ def count_clinics_within_radius(
     clinics_by_dong: pd.DataFrame,
     admin_centroid: pd.DataFrame,
     radius_m: int = COMPETITION_RADIUS_M,
+    internal_keyword: str | None = None,
 ) -> pd.DataFrame:
     """각 행정동 중심점에서 반경 `radius_m` 이내 클리닉 수.
 
@@ -60,8 +70,14 @@ def count_clinics_within_radius(
     구현: admin_centroid의 (x_5179, y_5179)와 clinics의 5179 변환을
     모두 넘파이로 벡터화. 653 × 6,669 = 약 435만 페어 — 메모리 허용.
 
+    internal_keyword: 'yadmNm'에 이 키워드 포함된 의원만 카운트 (예: '내과').
+
     출력: columns = [adm_cd, n_within_radius]
     """
+    if internal_keyword:
+        mask = clinics_by_dong["yadmNm"].str.contains(internal_keyword, na=False)
+        clinics_by_dong = clinics_by_dong[mask].copy()
+
     # clinics에 5179 좌표 부여 (없으면 on-the-fly 변환)
     if "x_5179" not in clinics_by_dong.columns:
         import geopandas as gpd

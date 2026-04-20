@@ -43,6 +43,7 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import yaml
 
 from config.constants import (
     DATA_CLEANED,
@@ -59,7 +60,26 @@ WEB_DATA_DIR = ROOT / "web" / "data"
 WEB_DETAIL_DIR = WEB_DATA_DIR / "detail"
 WEB_HEATMAP_PATH = WEB_DATA_DIR / "heatmap.json"
 WEB_BOUNDARIES_PATH = WEB_DATA_DIR / "boundaries.geojson"
+WEB_NARROW_PATH = WEB_DATA_DIR / "narrow_lists.json"
 RADIUS_M = 1000
+NEW_TOWNS_YAML = ROOT / "config" / "new_towns.yaml"
+T_RAW_MAX = 50  # 자차 통근 컷 (이상은 narrow_lists에서 제외)
+
+
+def load_new_towns() -> dict:
+    if not NEW_TOWNS_YAML.exists():
+        return {}
+    with open(NEW_TOWNS_YAML, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def tag_new_town(adm_nm: str, sgg: str, towns: dict) -> str:
+    text = f"{sgg} {adm_nm}"
+    for tag, kws in towns.items():
+        for kw in kws:
+            if kw in text:
+                return tag
+    return ""
 
 # 경계 단순화 tolerance (도 단위 ≈ 11m at lat 37). PLAN: ~1-2MB 목표.
 # 0.0005 ≈ 50m: 동 모양 식별 가능 + 파일 1MB 내외.
@@ -71,6 +91,11 @@ def _latest_top30() -> Path:
     if not files:
         raise FileNotFoundError(f"{DATA_SCORED}/top30_*.parquet 없음")
     return files[-1]
+
+
+def _top_n_from_scores(scores: pd.DataFrame, n: int = 50) -> pd.DataFrame:
+    """top30 parquet 대신 scores.parquet에서 직접 Top N 추출 (rank 기준)."""
+    return scores[scores["rank"] <= n].copy().sort_values("rank").reset_index(drop=True)
 
 
 def _latest_scores() -> Path:
@@ -184,11 +209,26 @@ def build_detail_json(
                 "n_clinic_500m": int(row.get("n_clinic_station_500m", 0)),
             }
 
+    # 답사 준비 외부 링크 (검색어 = adm_nm 자체)
+    nm_q = str(row["adm_nm"]).replace(" ", "+")
+    survey_links = {
+        "kakao_map": f"https://map.kakao.com/?q={nm_q}",
+        "naver_map": f"https://map.naver.com/v5/search/{nm_q}",
+        "naver_estate": (
+            f"https://land.naver.com/sales?ms={center_lat},{center_lon},16"
+            f"&filter=PWR&a=SG&b=A1&e=RETAIL"
+        ),
+    }
+
     out = {
         "adm_cd": adm_cd,
         "name": str(row["adm_nm"]),
         "rank": int(row["rank"]),
+        "rank_sido": int(row.get("rank_sido", -1)),
+        "sido": str(row["sido"]),
+        "sgg": str(row["sgg"]),
         "score": round(float(row["score"]), 4),
+        "town_tag": str(row.get("town_tag", "") or ""),
         "center": {"lat": center_lat, "lon": center_lon},
         "boundary": boundary_feat,
         "station": station_info,
@@ -199,18 +239,35 @@ def build_detail_json(
             "pop_total": int(row["pop_total"]),
             "pop_40plus": int(row["pop_40plus"]),
             "ratio_40plus": round(float(row["ratio_40plus"]), 4),
+            "catchment_pop_1_5km": (
+                int(row["catchment_pop_1_5km"])
+                if pd.notna(row.get("catchment_pop_1_5km")) else None
+            ),
+            "catchment_pop_40plus": (
+                int(row["catchment_pop_40plus"])
+                if pd.notna(row.get("catchment_pop_40plus")) else None
+            ),
+            "density_per_10k": (
+                round(float(row["density_per_10k"]), 3)
+                if pd.notna(row.get("density_per_10k")) else None
+            ),
             "t_raw": int(row["t_raw"]),
             "t_transit": (
                 int(row["t_transit"]) if pd.notna(row.get("t_transit")) else None
             ),
             "n_clinic": int(row["n_clinic"]),
-            "n_clinic_500m": int(row.get("n_clinic_500m", row.get("n_within_radius", 0))),
+            "n_clinic_med": int(row.get("n_clinic_med", 0)),
+            "n_clinic_gi": int(row.get("n_clinic_gi", 0)),
+            "n_clinic_500m": int(row.get("n_clinic_500m", 0)),
             "n_clinic_1km": int(row.get("n_clinic_1km", 0)),
             "n_clinic_2km": int(row.get("n_clinic_2km", 0)),
+            "n_within_radius_med": int(row.get("n_within_radius_med", 0)),
+            "n_within_radius_all": int(row.get("n_within_radius_all", 0)),
             "med_desert": bool(row.get("med_desert_flag", False)),
             "centroid_mismatch": bool(row.get("centroid_mismatch_flag", False)),
             "suburban": bool(row.get("suburban_cluster_flag", False)),
         },
+        "survey_links": survey_links,
         "clinics": clinic_list,
     }
     return out
@@ -230,6 +287,17 @@ def export_heatmap(
     # adm_nm "서울특별시 용산구 이촌1동" → 동명만 (마지막 토큰)
     df["short"] = df["adm_nm"].apply(lambda s: str(s).split(" ")[-1])
 
+    # 신도시 태그 + 시도순위 (이미 scores에 있으면 사용, 없으면 계산)
+    if "town_tag" not in df.columns:
+        towns = load_new_towns()
+        df["town_tag"] = df.apply(
+            lambda r: tag_new_town(r["adm_nm"], r["sgg"], towns), axis=1
+        )
+    if "rank_sido" not in df.columns:
+        df["rank_sido"] = (
+            df.groupby("sido")["score"].rank(method="min", ascending=False).astype(int)
+        )
+
     dongs = []
     for _, r in df.iterrows():
         dongs.append({
@@ -239,6 +307,7 @@ def export_heatmap(
             "sido": str(r["sido"]),
             "sgg": str(r["sgg"]),
             "rank": int(r["rank"]),
+            "rank_sido": int(r["rank_sido"]),
             "score": round(float(r["score"]), 4),
             "lat": round(float(r["lat"]), 6) if pd.notna(r["lat"]) else None,
             "lon": round(float(r["lon"]), 6) if pd.notna(r["lon"]) else None,
@@ -246,12 +315,14 @@ def export_heatmap(
             "p": round(float(r["p_norm"]), 4),
             "t": round(float(r["t_norm"]), 4),
             "n_clinic": int(r.get("n_clinic", 0)),
-            "n_clinic_500m": int(r.get("n_clinic_500m", r.get("n_within_radius", 0))),
+            "n_clinic_med": int(r.get("n_clinic_med", 0)),
+            "n_clinic_500m": int(r.get("n_clinic_500m", 0)),
             "pop_total": int(r.get("pop_total", 0)) if pd.notna(r.get("pop_total")) else None,
             "pop_40plus": int(r.get("pop_40plus", 0)) if pd.notna(r.get("pop_40plus")) else None,
             "t_raw": int(r["t_raw"]) if pd.notna(r["t_raw"]) else None,
             "med_desert": bool(r.get("med_desert_flag", False)),
             "suburban": bool(r.get("suburban_cluster_flag", False)),
+            "town_tag": str(r.get("town_tag", "") or ""),
         })
 
     # 메타: 날짜는 파일명에서 추출 (scores_YYYY-MM-DD.parquet)
@@ -327,33 +398,120 @@ def export_boundaries(
     return WEB_BOUNDARIES_PATH
 
 
-def run() -> int:
+def run(top_n: int = 50) -> int:
     WEB_DETAIL_DIR.mkdir(parents=True, exist_ok=True)
-    top30, centroid, clinics, stations, boundary_gdf = load_all()
+    _, centroid, clinics, stations, boundary_gdf = load_all()
 
-    # 1. Top 30 detail JSON (기존)
+    # 점수 + 신도시 태그 + 시도순위 enrich
+    scores_path = _latest_scores()
+    scores = pd.read_parquet(scores_path)
+    towns = load_new_towns()
+    scores["town_tag"] = scores.apply(
+        lambda r: tag_new_town(r["adm_nm"], r["sgg"], towns), axis=1
+    )
+    scores["rank_sido"] = (
+        scores.groupby("sido")["score"].rank(method="min", ascending=False).astype(int)
+    )
+
+    # 1. Top N detail JSON
+    top_df = _top_n_from_scores(scores, n=top_n)
     count = 0
-    for _, row in top30.iterrows():
+    for _, row in top_df.iterrows():
         data = build_detail_json(row, centroid, clinics, stations, boundary_gdf)
         out = WEB_DETAIL_DIR / f"{row['adm_cd']}.json"
         with open(out, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
         count += 1
         logger.info(
-            "  [%2d] %s → %s (%d clinics)",
+            "  [%2d] %s → %s (%d clinics, tag=%s, sido_rank=%d)",
             row["rank"], row["adm_nm"], out.name, len(data["clinics"]),
+            row["town_tag"] or "-", int(row["rank_sido"]),
         )
     logger.info("wrote %d detail JSON files", count)
 
-    # 2. heatmap.json (전체 동 점수 + 좌표)
-    scores_path = _latest_scores()
-    scores = pd.read_parquet(scores_path)
+    # 2. heatmap.json (전체 동 점수 + 좌표 + 메타)
     export_heatmap(scores, centroid, scores_path)
 
     # 3. boundaries.geojson (choropleth)
     export_boundaries(boundary_gdf, scores, centroid)
 
+    # 4. narrow_lists.json (5개 기준 Top10)
+    export_narrow_lists(scores)
+
     return count
+
+
+def export_narrow_lists(scores: pd.DataFrame) -> Path:
+    """5개 기준 Top10 묶음 JSON. 메인 페이지의 '기준' 탭이 사용.
+
+    기준: score / commute / new_town / desert / low_density
+    """
+    df = scores.copy()
+    df["adm_cd"] = df["adm_cd"].astype(str)
+    df = df[df["t_raw"] <= T_RAW_MAX].copy()
+
+    def _pack(sub: pd.DataFrame) -> list[dict]:
+        rows = []
+        for _, r in sub.iterrows():
+            rows.append({
+                "adm_cd": str(r["adm_cd"]),
+                "name": str(r["adm_nm"]),
+                "short": str(r["adm_nm"]).split(" ")[-1],
+                "sido": str(r["sido"]),
+                "sgg": str(r["sgg"]),
+                "rank": int(r["rank"]),
+                "rank_sido": int(r.get("rank_sido", 0)),
+                "score": round(float(r["score"]), 4),
+                "score_adj": round(float(r.get("score_adj", r["score"])), 4),
+                "t_raw": int(r["t_raw"]) if pd.notna(r["t_raw"]) else None,
+                "n_clinic": int(r.get("n_clinic", 0)),
+                "town_tag": str(r.get("town_tag", "") or ""),
+            })
+        return rows
+
+    lists: dict[str, list[dict]] = {}
+
+    # score
+    s = df.sort_values("score", ascending=False).head(10).copy()
+    s["score_adj"] = s["score"]
+    lists["score"] = _pack(s)
+
+    # commute (t_norm 가중 강화)
+    d2 = df.copy()
+    d2["score_adj"] = d2["score"] * (1 - 0.3 * (1 - d2["t_norm"]))
+    lists["commute"] = _pack(d2.sort_values("score_adj", ascending=False).head(10))
+
+    # new_town
+    nt = df[df["town_tag"] != ""].sort_values("score", ascending=False).head(10).copy()
+    nt["score_adj"] = nt["score"]
+    lists["new_town"] = _pack(nt)
+
+    # med_desert
+    md = df[df["med_desert_flag"] == True].sort_values("score", ascending=False).head(10).copy()
+    md["score_adj"] = md["score"]
+    lists["desert"] = _pack(md)
+
+    # low_density (인구 충분 + density 낮음)
+    p_med = df["p_raw"].median()
+    ld = df[df["p_raw"] >= p_med].sort_values("density_per_10k", ascending=True).head(10).copy()
+    ld["score_adj"] = ld["score"]
+    lists["low_density"] = _pack(ld)
+
+    payload = {
+        "criteria": {
+            "score": {"label": "종합 점수", "desc": "C+P+T 가중합"},
+            "commute": {"label": "통근 우선", "desc": "score × t_norm 가중"},
+            "new_town": {"label": "신도시", "desc": "1·2·3기 신도시·재개발"},
+            "desert": {"label": "의료사막", "desc": "med_desert 플래그"},
+            "low_density": {"label": "인구당 의원 적음", "desc": "잠재 미충족 수요"},
+        },
+        "lists": lists,
+    }
+    with open(WEB_NARROW_PATH, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+    size_kb = WEB_NARROW_PATH.stat().st_size / 1024
+    logger.info("narrow_lists.json: 5 criteria × 10 dongs, %.1f KB", size_kb)
+    return WEB_NARROW_PATH
 
 
 def main() -> int:

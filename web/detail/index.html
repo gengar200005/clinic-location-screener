@@ -35,6 +35,13 @@
     .loading { padding: 20px; text-align: center; color: #888; }
     .popup-body { font-size: 13px; line-height: 1.4; }
     .popup-body b { color: #1565c0; }
+    header .tag { display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 3px; font-size: 11px; background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+    header .sido-rank { color: #999; font-size: 11px; margin-left: 4px; }
+    .survey-links { padding: 8px 12px; background: #fffbe6; border-bottom: 1px solid #ffe082; display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+    .survey-links a { display: inline-flex; align-items: center; gap: 3px; padding: 4px 8px; background: #fff; border: 1px solid #ffd54f; border-radius: 4px; text-decoration: none; color: #5d4037; font-weight: 500; }
+    .survey-links a:hover { background: #fff8e1; }
+    .survey-links .est { background: #c8e6c9; border-color: #66bb6a; color: #1b5e20; }
+    .survey-links .hint { font-size: 11px; color: #6d4c41; margin-left: auto; align-self: center; }
     @media (min-width: 720px) {
       #app { flex-direction: row; }
       #map { flex: 1; height: 100%; }
@@ -46,6 +53,7 @@
 <body>
   <div id="app">
     <header id="hdr"><div class="loading">로딩…</div></header>
+    <div id="survey-links" class="survey-links" style="display:none;"></div>
     <div id="map"></div>
     <div id="list-wrap"><div id="list" class="loading">의원 데이터 로드 중…</div></div>
   </div>
@@ -81,15 +89,37 @@
       if (m.suburban) flags.push('<span class="flag">🏘 신도시밀집</span>');
       const short = d.name.split(' ').slice(1).join(' ');
       const transitStr = (m.t_transit != null && m.t_transit < 999) ? ` · 🚇 대중교통 ${m.t_transit}분` : '';
+      const sidoTagShort = d.sido === '서울특별시' ? '서울' : (d.sido === '경기도' ? '경기' : d.sido);
+      const sidoRankStr = d.rank_sido && d.rank_sido > 0 ? `<span class="sido-rank">${sidoTagShort} ${d.rank_sido}위</span>` : '';
+      const townTagMap = { gen_1: '1기 신도시', gen_2: '2기 신도시', gen_3: '3기 신도시', seoul_renew: '서울 재개발' };
+      const townBadge = d.town_tag ? `<span class="tag">🏗 ${townTagMap[d.town_tag] || d.town_tag}</span>` : '';
+      const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (40+ ${(m.catchment_pop_40plus/1000).toFixed(0)}k)` : '';
+      const medStr = `<b style="color:#c62828;">내과 ${m.n_clinic_med}</b> / 전체 ${m.n_clinic}`;
+      const radiusMedStr = `1.5km 내과 ${m.n_within_radius_med} / 전체 ${m.n_within_radius_all}`;
       document.getElementById('hdr').innerHTML = `
-        <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span></h1>
+        <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span>${sidoRankStr}</h1>
         <div class="meta">
-          40+ ${m.pop_40plus.toLocaleString()}명 (${(m.ratio_40plus*100).toFixed(0)}%) ·
-          의원 동내 ${m.n_clinic} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km} ·
+          ${townBadge}
+          40+ ${m.pop_40plus.toLocaleString()}명 (${(m.ratio_40plus*100).toFixed(0)}%)${catchStr}<br>
+          의원: 동내 ${medStr} · ${radiusMedStr}
+          <span style="color:#888;font-size:11px;">(반경 의원: 500m ${m.n_clinic_500m} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km})</span><br>
           🚗 자차 ${m.t_raw}분${transitStr}
-          ${d.station ? ` · 🚉 ${d.station.name} ${d.station.dist_m}m` : ''}
+          ${d.station ? ` · 🚉 ${d.station.name} ${d.station.dist_m}m (역세권 의원 ${d.station.n_clinic_500m})` : ''}
           ${flags.length ? '<br>' + flags.join('') : ''}
         </div>`;
+
+      // ── 답사 준비 링크 ──────────
+      if (d.survey_links) {
+        const sl = document.getElementById('survey-links');
+        sl.style.display = 'flex';
+        sl.innerHTML = `
+          <a href="${d.survey_links.kakao_map}" target="_blank">🗺 카카오맵</a>
+          <a href="${d.survey_links.naver_map}" target="_blank">🗺 네이버지도</a>
+          <a class="est" href="${d.survey_links.naver_estate}" target="_blank">🏢 네이버 부동산 (1종 근생 필터)</a>
+          <a href="../../docs/SURVEY_CHECKLIST.md" target="_blank">📋 체크리스트</a>
+          <span class="hint">⚠ 매물은 반드시 <b>제1종 근린생활시설</b>만 (의원 개설 가능)</span>
+        `;
+      }
 
       // ── Map ──────────
       const map = L.map('map', { zoomControl: true }).setView([d.center.lat, d.center.lon], 14);

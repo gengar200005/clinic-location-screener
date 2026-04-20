@@ -29,7 +29,11 @@ W_POP_TOTAL = 0.6
 W_POP_AGE40 = 0.4
 
 # ─── 임계치 ───
-COMPETITION_RADIUS_M = 500
+# 2026-04-20: COMPETITION_RADIUS_M 500 → 1500. 변경 이유:
+#   (1) 내과 의원 기준 c_raw 적용 시 500m 내 0개 동이 165개로 동률 c_norm 다발
+#   (2) P (1.5km 배후) vs C (500m) radius mismatch — 서울 도심 인구 인플레 원인
+#   1.5km 통일로 두 문제 동시 해결.
+COMPETITION_RADIUS_M = 1500
 CATCHMENT_RADIUS_M = 1500     # 배후 상권 반경 (P_raw · density 분모 공통)
 MIN_POPULATION = 500          # 미만 동은 스코어링에서 제외 (공단·공원)
 COMMUTE_FALLBACK_MIN = 999    # ODSay 응답 실패 시 대입값

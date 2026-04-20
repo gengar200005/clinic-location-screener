@@ -82,11 +82,27 @@
             <button data-v="서울특별시">서울</button>
             <button data-v="경기도">경기</button>
           </span>
+          <span style="color:#666;">상위</span>
+          <span class="seg" id="topn-seg">
+            <button data-v="30" class="on">30</button>
+            <button data-v="50">50</button>
+            <button data-v="100">100</button>
+          </span>
           <label>
             점수 ≥ <input type="range" id="min-score" min="0" max="0.8" step="0.05" value="0" style="width:80px;" />
             <span id="min-score-v">0</span>
           </label>
-          <label><input type="checkbox" id="top30-only" checked /> Top 30만</label>
+        </div>
+        <div class="controls" style="margin-top:6px;">
+          <span style="color:#666;">기준</span>
+          <span class="seg" id="criterion-seg">
+            <button data-v="score" class="on">점수</button>
+            <button data-v="commute">통근</button>
+            <button data-v="new_town">신도시</button>
+            <button data-v="desert">의료사막</button>
+            <button data-v="low_density">저밀도</button>
+          </span>
+          <span id="criterion-desc" style="color:#888;font-size:11px;"></span>
         </div>
 
         <div class="weights" id="weights-panel">
@@ -122,9 +138,11 @@
     'use strict';
 
     let heatmap = null, boundaries = null, geoLayer = null, map = null;
+    let narrowLists = null;
     let activeMarker = null, activeRow = null;
     const DEFAULT_W = { c: 0.45, p: 0.45, t: 0.10 };
-    const state = { sido: 'all', minScore: 0, top30Only: true, weights: { ...DEFAULT_W } };
+    const TOWN_LABELS = { gen_1: '1기', gen_2: '2기', gen_3: '3기', seoul_renew: '재개발' };
+    const state = { sido: 'all', minScore: 0, topN: 30, criterion: 'score', weights: { ...DEFAULT_W } };
 
     // ── Color scale (quintile-ish) ──
     function colorFor(score) {
@@ -179,7 +197,14 @@
       if (!dong) return false;
       if (state.sido !== 'all' && dong.sido !== state.sido) return false;
       if (dong.score < state.minScore) return false;
-      if (state.top30Only && dong.rank > 30) return false;
+      if (state.criterion !== 'score') {
+        // 기준 탭 활성: 해당 narrow_list에 들어간 동만 활성 표시
+        const list = narrowLists && narrowLists.lists[state.criterion];
+        if (!list) return false;
+        const ids = new Set(list.map(x => String(x.adm_cd)));
+        return ids.has(String(dong.adm_cd));
+      }
+      if (dong.rank > state.topN) return false;
       return true;
     }
 
@@ -215,25 +240,34 @@
           <div class="row-mini"><span>인구 40+</span><span>${dong.p.toFixed(2)}</span></div>
           <div class="row-mini"><span>통근 (이촌역)</span><span>${dong.t.toFixed(2)}</span></div>
           <hr style="border:0;border-top:1px solid #eee;margin:6px 0;">
-          <div class="row-mini"><span>의원 (동/500m)</span><span>${dong.n_clinic} / ${dong.n_clinic_500m}</span></div>
+          <div class="row-mini"><span>내과 (동내)</span><b style="color:#c62828;">${dong.n_clinic_med ?? '-'}</b></div>
+          <div class="row-mini"><span>전체 의원 (동/500m)</span><span>${dong.n_clinic} / ${dong.n_clinic_500m}</span></div>
           <div class="row-mini"><span>총인구 / 40+</span><span>${(dong.pop_total||0).toLocaleString()} / ${(dong.pop_40plus||0).toLocaleString()}</span></div>
           <div class="row-mini"><span>🚗 자차</span><span>${dong.t_raw}분</span></div>
-          ${dong.rank <= 30 ? `<a class="detail" href="detail/#${dong.adm_cd}">상세보기 →</a>` : ''}
+          ${dong.rank <= 50 ? `<a class="detail" href="detail/#${dong.adm_cd}">상세보기 →</a>` : ''}
         </div>`;
       layer.bindPopup(html, { maxWidth: 240 }).openPopup();
     }
 
     // ── List ──
     function renderList() {
-      const filtered = heatmap.dongs
-        .filter(d => {
-          if (state.sido !== 'all' && d.sido !== state.sido) return false;
-          if (d.score < state.minScore) return false;
-          if (state.top30Only && d.rank > 30) return false;
-          return true;
-        })
-        .sort((a, b) => a.rank - b.rank)
-        .slice(0, 100);
+      let filtered;
+      if (state.criterion !== 'score' && narrowLists) {
+        // 기준 탭: narrow_lists의 정렬·rank를 그대로 사용
+        const items = narrowLists.lists[state.criterion] || [];
+        filtered = items
+          .map(item => byCode.get(String(item.adm_cd)))
+          .filter(d => d && (state.sido === 'all' || d.sido === state.sido));
+      } else {
+        filtered = heatmap.dongs
+          .filter(d => {
+            if (state.sido !== 'all' && d.sido !== state.sido) return false;
+            if (d.score < state.minScore) return false;
+            if (d.rank > state.topN) return false;
+            return true;
+          })
+          .sort((a, b) => a.rank - b.rank);
+      }
 
       const list = document.getElementById('list');
       if (!filtered.length) {
@@ -243,12 +277,14 @@
       list.innerHTML = filtered.map(d => {
         const sidoTag = d.sido === '서울특별시' ? '서울' : '경기';
         const flags = (d.med_desert ? '<span class="flag">🏜</span>' : '') +
-                      (d.suburban ? '<span class="flag" style="background:#fff3e0;color:#ef6c00;">🏘</span>' : '');
+                      (d.suburban ? '<span class="flag" style="background:#fff3e0;color:#ef6c00;">🏘</span>' : '') +
+                      (d.town_tag ? `<span class="flag" style="background:#e8f5e9;color:#2e7d32;">🏗${TOWN_LABELS[d.town_tag]||d.town_tag}</span>` : '');
+        const sidoRank = d.rank_sido ? ` <span style="color:#999;font-weight:400;font-size:10px;">(${sidoTag}${d.rank_sido})</span>` : '';
         return `<div class="row" data-cd="${d.adm_cd}">
-          <div class="rank">${d.rank}</div>
+          <div class="rank">${d.rank}${sidoRank}</div>
           <div class="name">${flags}${d.short}<span class="sub">${sidoTag}·${d.sgg}</span></div>
           <div class="score">${d.score.toFixed(3)}</div>
-          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 의원 ${d.n_clinic} · 🚗 ${d.t_raw}분</div>
+          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}</b>/전체 ${d.n_clinic} · 🚗 ${d.t_raw}분</div>
         </div>`;
       }).join('');
 
@@ -313,9 +349,22 @@
         sliderV.textContent = slider.value;
         applyFilter();
       });
-      document.getElementById('top30-only').addEventListener('change', e => {
-        state.top30Only = e.target.checked;
-        applyFilter();
+      document.querySelectorAll('#topn-seg button').forEach(b => {
+        b.addEventListener('click', () => {
+          document.querySelectorAll('#topn-seg button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+          state.topN = parseInt(b.dataset.v, 10);
+          applyFilter();
+        });
+      });
+      document.querySelectorAll('#criterion-seg button').forEach(b => {
+        b.addEventListener('click', () => {
+          document.querySelectorAll('#criterion-seg button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+          state.criterion = b.dataset.v;
+          updateCriterionDesc();
+          applyFilter();
+        });
       });
 
       // 가중치 슬라이더
@@ -347,6 +396,13 @@
       });
     }
 
+    function updateCriterionDesc() {
+      const el = document.getElementById('criterion-desc');
+      if (!narrowLists) { el.textContent = ''; return; }
+      const c = narrowLists.criteria[state.criterion];
+      el.textContent = c ? c.desc : '';
+    }
+
     // ── Bootstrap ──
     initMap();
     bindControls();
@@ -354,10 +410,13 @@
     Promise.all([
       fetch('data/heatmap.json').then(r => r.json()),
       fetch('data/boundaries.geojson').then(r => r.json()),
-    ]).then(([h, b]) => {
+      fetch('data/narrow_lists.json').then(r => r.json()).catch(() => null),
+    ]).then(([h, b, nl]) => {
       heatmap = h;
       boundaries = b;
+      narrowLists = nl;
       heatmap.dongs.forEach(d => byCode.set(String(d.adm_cd), d));
+      updateCriterionDesc();
 
       // Header meta
       document.getElementById('gen').textContent = `· ${h.generated_at} 갱신`;

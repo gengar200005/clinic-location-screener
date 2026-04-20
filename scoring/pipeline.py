@@ -61,9 +61,24 @@ def run(date_str: str) -> tuple[Path, Path]:
     logger.info("load: %d dongs, %d clinics", len(admin_centroid), len(clinics_by_dong))
 
     # 1. 경쟁 지표
-    logger.info("=== 1. competition ===")
+    # n_clinic / n_within_radius (전체 의원) — display·반경 플래그용
+    # n_clinic_med / n_within_radius_med (병원명 "내과" 포함만) — c_raw 점수용
+    # 가정: 1차 의료기관 내과 전문의 90%+ = 소화기. 따라서 내과 키워드만으로 충분.
+    INTERNAL_KW = "내과"
+    logger.info("=== 1. competition (점수=내과만, 표시=전체) ===")
     n_by_dong = count_clinics_per_dong(clinics_by_dong)
     within = count_clinics_within_radius(clinics_by_dong, admin_centroid)
+    n_by_dong_med = count_clinics_per_dong(clinics_by_dong, internal_keyword=INTERNAL_KW)
+    within_med = count_clinics_within_radius(
+        clinics_by_dong, admin_centroid, internal_keyword=INTERNAL_KW
+    )
+    n_total_clinics = len(clinics_by_dong)
+    n_med_clinics = clinics_by_dong["yadmNm"].str.contains(INTERNAL_KW, na=False).sum()
+    logger.info(
+        "내과 의원 (이름에 '%s'): %d / %d (%.1f%%)",
+        INTERNAL_KW, n_med_clinics, n_total_clinics, 100 * n_med_clinics / n_total_clinics,
+    )
+
     # 의원 0개 동도 포함시키기 위해 admin_centroid 기준으로 outer merge
     base_cols = ["adm_cd", "adm_cd10", "sido", "sgg", "adm_nm"]
     # catchment 컬럼이 있으면 포함 (P_raw · density 분모용)
@@ -73,8 +88,13 @@ def run(date_str: str) -> tuple[Path, Path]:
         n_by_dong[["adm_cd", "n_clinic", "n_clinic_gi"]],
         on="adm_cd", how="left",
     )
-    base[["n_clinic", "n_clinic_gi"]] = (
-        base[["n_clinic", "n_clinic_gi"]].fillna(0).astype(int)
+    # 내과 카운트 머지
+    base = base.merge(
+        n_by_dong_med[["adm_cd", "n_clinic"]].rename(columns={"n_clinic": "n_clinic_med"}),
+        on="adm_cd", how="left",
+    )
+    base[["n_clinic", "n_clinic_gi", "n_clinic_med"]] = (
+        base[["n_clinic", "n_clinic_gi", "n_clinic_med"]].fillna(0).astype(int)
     )
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
@@ -84,7 +104,8 @@ def run(date_str: str) -> tuple[Path, Path]:
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
 
-    # 3. 경쟁 점수 (density 분모 = catchment_pop 있으면 catchment, 아니면 p_raw)
+    # 3. 경쟁 점수 (내과 의원 기준)
+    # density 분모 = catchment_pop 있으면 catchment, 아니면 p_raw
     if catchment_cols and base[catchment_cols[0]].notna().any():
         density_col = catchment_cols[0]
         logger.info("density 분모 = %s (배후 상권 기반)", density_col)
@@ -92,11 +113,29 @@ def run(date_str: str) -> tuple[Path, Path]:
         density_col = "p_raw"
         logger.info("density 분모 = p_raw (catchment 없음 — 폴백)")
     pop_for_comp = base[["adm_cd", density_col]].rename(columns={density_col: "population"})
-    comp = compute_competition_raw(base, within, population=pop_for_comp)
+
+    # c_raw는 내과 기준: base의 n_clinic을 임시로 n_clinic_med로 덮어쓰고 함수 호출
+    base_for_comp = base.copy()
+    base_for_comp["n_clinic"] = base_for_comp["n_clinic_med"]
+    comp = compute_competition_raw(base_for_comp, within_med, population=pop_for_comp)
+    # comp의 n_within_radius (내과 기준), density_per_10k (내과 기준), c_raw 머지
     base = base.merge(
-        comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw"]],
+        comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw"]].rename(
+            columns={
+                "n_within_radius": "n_within_radius_med",
+                "density_per_10k": "density_per_10k_med",
+            }
+        ),
         on="adm_cd", how="left",
     )
+    # 전체 의원 기준 within_radius도 메타로 보존 (display)
+    base = base.merge(
+        within.rename(columns={"n_within_radius": "n_within_radius_all"}),
+        on="adm_cd", how="left",
+    )
+    # 호환성: 기존 컬럼명 n_within_radius / density_per_10k는 내과 기준 값으로 노출 (점수 모델과 일관)
+    base["n_within_radius"] = base["n_within_radius_med"]
+    base["density_per_10k"] = base["density_per_10k_med"]
 
     # 4. 통근 지표 (점수는 자차 primary, 대중교통은 보조 display)
     logger.info("=== 3. commute ===")
@@ -146,7 +185,9 @@ def run(date_str: str) -> tuple[Path, Path]:
         "c_raw", "p_raw", "t_raw", "t_transit",
         "pop_total", "pop_40plus", "ratio_40plus",
         "catchment_pop_1_5km", "catchment_pop_40plus",
-        "n_clinic", "n_clinic_gi", "n_within_radius", "density_per_10k",
+        "n_clinic", "n_clinic_gi", "n_clinic_med",
+        "n_within_radius", "n_within_radius_med", "n_within_radius_all",
+        "density_per_10k",
         "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",
         "med_desert_flag", "centroid_mismatch_flag", "suburban_cluster_flag",
         "nearest_station", "station_dist_m", "n_clinic_station_500m",
