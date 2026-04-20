@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v8-2026-04-20';
+const VERSION = 'v9-2026-04-20';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -48,6 +48,8 @@ self.addEventListener('fetch', e => {
   const isData =
     url.pathname.endsWith('/heatmap.json') ||
     url.pathname.endsWith('/boundaries.geojson') ||
+    url.pathname.endsWith('/narrow_lists.json') ||
+    url.pathname.endsWith('/all_clinics.json') ||
     url.pathname.includes('/data/detail/');
 
   if (isData) {

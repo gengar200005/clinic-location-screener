@@ -61,6 +61,7 @@ WEB_DETAIL_DIR = WEB_DATA_DIR / "detail"
 WEB_HEATMAP_PATH = WEB_DATA_DIR / "heatmap.json"
 WEB_BOUNDARIES_PATH = WEB_DATA_DIR / "boundaries.geojson"
 WEB_NARROW_PATH = WEB_DATA_DIR / "narrow_lists.json"
+WEB_ALL_CLINICS_PATH = WEB_DATA_DIR / "all_clinics.json"
 RADIUS_M = 1000
 NEW_TOWNS_YAML = ROOT / "config" / "new_towns.yaml"
 T_RAW_MAX = 50  # 자차 통근 컷 (이상은 narrow_lists에서 제외)
@@ -528,7 +529,50 @@ def run(top_n: int = 50) -> int:
     # 4. narrow_lists.json (5개 기준 Top10)
     export_narrow_lists(scores)
 
+    # 5. all_clinics.json (지도 클릭 시 클라이언트 측 거리 필터용)
+    export_all_clinics(clinics)
+
     return count
+
+
+def export_all_clinics(clinics: pd.DataFrame) -> Path:
+    """전체 의원을 compact JSON으로. 상세 페이지 지도 클릭 시 1km 필터에 사용."""
+    items = []
+    for _, cl in clinics.iterrows():
+        try:
+            lat = float(cl["YPos"]); lon = float(cl["XPos"])
+        except (TypeError, ValueError):
+            continue
+        if not (33 < lat < 40 and 124 < lon < 132):
+            continue  # 좌표 outlier 제거
+        name = str(cl.get("yadmNm", ""))
+        is_internal = "내과" in name
+        is_gi = bool(cl.get("is_gi", False))
+        hosp_url = cl.get("hospUrl")
+        hosp_url = str(hosp_url) if pd.notna(hosp_url) and str(hosp_url).strip() else None
+        if hosp_url and not hosp_url.startswith(("http://", "https://")):
+            hosp_url = "http://" + hosp_url
+        addr = str(cl.get("addr", "") or "")
+        estb = str(cl.get("estbDd", "") or "")
+        estb_year = estb[:4] if len(estb) >= 4 and estb.isdigit() else None
+        items.append({
+            "n": name,
+            "la": round(lat, 6),
+            "lo": round(lon, 6),
+            "k": str(cl.get("clCdNm", "")),
+            "i": is_internal,
+            "g": is_gi,
+            "d": int(cl.get("drTotCnt")) if pd.notna(cl.get("drTotCnt")) else None,
+            "a": addr,
+            "t": str(cl.get("telno", "") or ""),
+            "y": estb_year,
+            "u": hosp_url,
+        })
+    with open(WEB_ALL_CLINICS_PATH, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, separators=(",", ":"))
+    size_kb = WEB_ALL_CLINICS_PATH.stat().st_size / 1024
+    logger.info("all_clinics.json: %d clinics, %.0f KB", len(items), size_kb)
+    return WEB_ALL_CLINICS_PATH
 
 
 def export_narrow_lists(scores: pd.DataFrame) -> Path:

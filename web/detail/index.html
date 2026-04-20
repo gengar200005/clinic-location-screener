@@ -73,7 +73,11 @@
       <div id="filter-bar" class="filter-bar" style="display:none;">
         <label><input type="checkbox" id="only-internal" /> 내과만</label>
         <label><input type="checkbox" id="sort-internal-first" checked /> 내과 우선 정렬</label>
+        <button id="reset-anchor" type="button" style="display:none;background:#1565c0;color:#fff;border:0;padding:4px 8px;border-radius:3px;font-size:11px;cursor:pointer;">동 기준 복귀</button>
         <span class="count" id="filter-count"></span>
+      </div>
+      <div id="anchor-hint" style="display:none;padding:6px 12px;background:#e8f5e9;border-bottom:1px solid #66bb6a;font-size:12px;color:#1b5e20;">
+        💡 지도 클릭 시 그 지점 기준 반경 1km 의원이 표시됩니다.
       </div>
       <div id="list" class="loading">의원 데이터 로드 중…</div>
     </div>
@@ -93,13 +97,26 @@
       className: '', iconSize: [size, size], iconAnchor: [size/2, size/2],
     });
 
-    fetch(dataUrl).then(r => {
-      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
-      return r.json();
-    }).then(d => render(d)).catch(e => {
+    let allClinics = null;  // 전체 의원 (지도 클릭 시 거리 필터용)
+
+    Promise.all([
+      fetch(dataUrl).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch('../data/all_clinics.json').then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([d, all]) => {
+      allClinics = all;
+      render(d);
+    }).catch(e => {
       document.getElementById('hdr-body').innerHTML = `<h1>오류</h1><div class="meta">${dataUrl} — ${e}</div>`;
       document.getElementById('list').innerHTML = `<div class="loading">데이터 로드 실패</div>`;
     });
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
 
     function render(d) {
       // ── Header ──────────
@@ -243,8 +260,9 @@
       }
       filterBar.style.display = 'flex';
 
-      function renderClinicList() {
-        let items = d.clinics.slice();
+      function renderClinicList(source) {
+        const base = source || d.clinics;
+        let items = base.slice();
         if (onlyInternal.checked) items = items.filter(c => c.is_internal);
         if (sortInternalFirst.checked) {
           items.sort((a, b) => {
@@ -252,8 +270,9 @@
             return a.dist - b.dist;
           });
         }
-        const intCnt = d.clinics.filter(c => c.is_internal).length;
-        countEl.textContent = `내과 ${intCnt}개 / 전체 ${d.clinics.length}개`;
+        const intCnt = base.filter(c => c.is_internal).length;
+        const tag = source ? '🎯 1km 내' : '동 기준';
+        countEl.textContent = `${tag} · 내과 ${intCnt}개 / 전체 ${base.length}개`;
 
         listEl.innerHTML = '';
         items.forEach((c) => {
@@ -291,9 +310,60 @@
         });
       }
 
-      onlyInternal.addEventListener('change', renderClinicList);
-      sortInternalFirst.addEventListener('change', renderClinicList);
+      onlyInternal.addEventListener('change', () => renderClinicList());
+      sortInternalFirst.addEventListener('change', () => renderClinicList());
       renderClinicList();
+
+      // ── 지도 클릭 → custom anchor 모드 ──────────
+      let clickMarker = null;
+      let clickCircles = [];
+      const resetBtn = document.getElementById('reset-anchor');
+      const anchorHint = document.getElementById('anchor-hint');
+      if (allClinics) anchorHint.style.display = 'block';
+
+      function clearClickAnchor() {
+        if (clickMarker) { map.removeLayer(clickMarker); clickMarker = null; }
+        clickCircles.forEach(c => map.removeLayer(c));
+        clickCircles = [];
+        resetBtn.style.display = 'none';
+        renderClinicList();  // 동 기준으로 복귀
+      }
+
+      resetBtn.addEventListener('click', clearClickAnchor);
+
+      map.on('click', (e) => {
+        if (!allClinics) return;
+        const { lat, lng } = e.latlng;
+        // 기존 마커·원 정리
+        if (clickMarker) map.removeLayer(clickMarker);
+        clickCircles.forEach(c => map.removeLayer(c));
+        clickCircles = [];
+
+        // 새 anchor 마커
+        clickMarker = L.marker([lat, lng], { icon: mkIcon('🎯', 36) })
+          .bindPopup(`<div class="popup-body"><b>🎯 임의 anchor</b><br>${lat.toFixed(5)}, ${lng.toFixed(5)}</div>`)
+          .addTo(map);
+        // 반경 원 (500m, 1km)
+        clickCircles.push(L.circle([lat, lng], { radius: 500, color: '#43a047', weight: 2, opacity: 0.7, fillColor: '#43a047', fillOpacity: 0.05, dashArray: '4,4' }).addTo(map));
+        clickCircles.push(L.circle([lat, lng], { radius: 1000, color: '#1e88e5', weight: 2, opacity: 0.7, fillColor: '#1e88e5', fillOpacity: 0.04, dashArray: '4,4' }).addTo(map));
+        resetBtn.style.display = 'inline-block';
+
+        // 1km 안 의원 필터 + 거리 부여
+        const RADIUS_M = 1000;
+        const filtered = [];
+        for (const c of allClinics) {
+          const dm = haversine(lat, lng, c.la, c.lo);
+          if (dm <= RADIUS_M) {
+            filtered.push({
+              name: c.n, lat: c.la, lon: c.lo, dist: Math.round(dm),
+              kind: c.k, is_gi: c.g, is_internal: c.i, drs: c.d,
+              addr: c.a, tel: c.t, estb_year: c.y, hosp_url: c.u,
+              search_url: `https://search.naver.com/search.naver?query=${encodeURIComponent((c.n||'')+' '+((c.a||'').split(',')[0]||''))}`,
+            });
+          }
+        }
+        renderClinicList(filtered);
+      });
     }
   })();
   </script>
