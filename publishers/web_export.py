@@ -225,10 +225,13 @@ def build_detail_json(
     nm_q = str(row["adm_nm"]).replace(" ", "+")
     survey_links = {
         "kakao_map": f"https://map.kakao.com/?q={nm_q}",
-        "naver_map": f"https://map.naver.com/v5/search/{nm_q}",
+        # 네이버 지도 신버전 (/p/search/)
+        "naver_map": f"https://map.naver.com/p/search/{nm_q}",
+        # 네이버 부동산 신버전 (new.land.naver.com) — 상가 1종 근생
+        # ms=lat,lon,zoom · a=SG(상가) · b=B1(월세) · e=RETAIL
         "naver_estate": (
-            f"https://land.naver.com/sales?ms={center_lat},{center_lon},16"
-            f"&filter=PWR&a=SG&b=A1&e=RETAIL"
+            f"https://new.land.naver.com/offices?"
+            f"ms={center_lat},{center_lon},15&a=SG&b=B1&e=RETAIL"
         ),
     }
 

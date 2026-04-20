@@ -134,10 +134,9 @@
         const sl = document.getElementById('survey-links');
         sl.style.display = 'flex';
         sl.innerHTML = `
-          <a href="${d.survey_links.kakao_map}" target="_blank">🗺 카카오맵</a>
-          <a href="${d.survey_links.naver_map}" target="_blank">🗺 네이버지도</a>
-          <a class="est" href="${d.survey_links.naver_estate}" target="_blank">🏢 네이버 부동산 (1종 근생 필터)</a>
-          <a href="../../docs/SURVEY_CHECKLIST.md" target="_blank">📋 체크리스트</a>
+          <a href="${d.survey_links.kakao_map}" target="_blank" rel="noopener">🗺 카카오맵</a>
+          <a href="${d.survey_links.naver_map}" target="_blank" rel="noopener">🗺 네이버지도</a>
+          <a class="est" href="${d.survey_links.naver_estate}" target="_blank" rel="noopener">🏢 네이버부동산 (상가)</a>
           <span class="hint">⚠ 매물은 반드시 <b>제1종 근린생활시설</b>만 (의원 개설 가능)</span>
         `;
       }
