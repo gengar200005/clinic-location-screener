@@ -292,6 +292,7 @@ def build_detail_json(
                 "lon": float(sta.iloc[0]["lon"]),
                 "dist_m": int(row["station_dist_m"]),
                 "n_clinic_500m": int(row.get("n_clinic_station_500m", 0)),
+                "n_doctors_500m_med": int(row.get("n_doctors_station_500m_med", 0)),
             }
 
     # 답사 준비 외부 링크 (검색어 = adm_nm 자체)
@@ -351,6 +352,7 @@ def build_detail_json(
             "n_within_radius_med": int(row.get("n_within_radius_med", 0)),
             "n_within_radius_all": int(row.get("n_within_radius_all", 0)),
             "n_doctors_within_radius_med": int(row.get("n_doctors_within_radius_med", 0)),
+            "n_doctors_station_500m_med": int(row.get("n_doctors_station_500m_med", 0)),
             "med_desert": bool(row.get("med_desert_flag", False)),
             "centroid_mismatch": bool(row.get("centroid_mismatch_flag", False)),
             "suburban": bool(row.get("suburban_cluster_flag", False)),

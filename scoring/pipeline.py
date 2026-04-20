@@ -110,7 +110,18 @@ def run(date_str: str) -> tuple[Path, Path]:
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
 
-    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 40+ 인구)
+    # 2b. 역세권 메타 — c_raw에 페널티로 들어가므로 미리 계산
+    # (캐시 없으면 station_penalty=None → 페널티 항 0)
+    station_meta = None
+    try:
+        from scoring.station_metrics import compute_for_dongs as station_metrics, STATION_CACHE
+        if STATION_CACHE.exists():
+            logger.info("=== 2b. station metrics (c_raw 페널티 입력) ===")
+            station_meta = station_metrics(admin_centroid, clinics_by_dong)
+    except FileNotFoundError:
+        logger.info("역 캐시 없음 → station 페널티 0")
+
+    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 40+ 인구 + 역세권 페널티)
     # density 분모 우선순위:
     #   1) catchment_pop_40plus (40+ 환자풀 — 내과 진료 베이스)
     #   2) catchment_pop_*km (전체 인구 폴백)
@@ -132,9 +143,15 @@ def run(date_str: str) -> tuple[Path, Path]:
     within_for_comp = within_med[["adm_cd", "n_doctors_within"]].rename(
         columns={"n_doctors_within": "n_within_radius"}
     )
-    comp = compute_competition_raw(base_for_comp, within_for_comp, population=pop_for_comp)
+    comp = compute_competition_raw(
+        base_for_comp,
+        within_for_comp,
+        population=pop_for_comp,
+        station_penalty=station_meta,  # 캐시 없으면 None → 페널티 0
+    )
     base = base.merge(
-        comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw"]].rename(
+        comp[["adm_cd", "n_within_radius", "density_per_10k", "c_raw",
+              "n_doctors_station_500m_med"]].rename(
             columns={
                 "n_within_radius": "n_doctors_within_radius_med",
                 "density_per_10k": "density_per_10k_med",
@@ -171,15 +188,12 @@ def run(date_str: str) -> tuple[Path, Path]:
         base = base.merge(transit, on="adm_cd", how="left")
         logger.info("  + t_transit merged (%d matched)", before)
 
-    # 5. 역세권 메타 지표 (캐시 있으면만)
-    try:
-        from scoring.station_metrics import compute_for_dongs as station_metrics, STATION_CACHE
-        if STATION_CACHE.exists():
-            logger.info("=== 3b. station metrics ===")
-            st = station_metrics(admin_centroid, clinics_by_dong)
-            base = base.merge(st, on="adm_cd", how="left")
-    except FileNotFoundError:
-        logger.info("역 캐시 없음 → 스킵")
+    # 5. 역세권 메타 컬럼 머지 (위에서 계산한 station_meta — display용)
+    if station_meta is not None:
+        # n_doctors_station_500m_med는 c_raw 머지로 이미 들어왔으므로 제외
+        st_display_cols = [c for c in station_meta.columns
+                           if c != "n_doctors_station_500m_med"]
+        base = base.merge(station_meta[st_display_cols], on="adm_cd", how="left")
 
     # 6. 확장 반경 지표 + 해석 플래그
     logger.info("=== 3c. radius coverage ===")
@@ -212,6 +226,7 @@ def run(date_str: str) -> tuple[Path, Path]:
         "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",
         "med_desert_flag", "centroid_mismatch_flag", "suburban_cluster_flag",
         "nearest_station", "station_dist_m", "n_clinic_station_500m",
+        "n_doctors_station_500m_med",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]

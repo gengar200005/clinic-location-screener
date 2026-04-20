@@ -20,9 +20,15 @@ W_COMPETITION = 0.45
 W_POPULATION = 0.45
 W_COMMUTE = 0.1
 
-# 경쟁 서브가중치: 밀도 vs 반경
+# 경쟁 서브가중치: 밀도 vs 반경 vs 역세권 페널티
+# 2026-04-21 추가: W_COMP_STATION (역 500m 내과 의사 수 보수 가중)
+#   배경: 동 centroid가 여러 subcluster mean이라 역세권 밀집이 묻힘.
+#         답사 가면 점수 상위권도 역 근처 내과 매우 많음 — 체감 경쟁이 점수보다 강함.
+#   안전장치: 0.2× — density·radius 항(각 0.5) 대비 절반 미만으로 보수적 적용.
+#         이전 sensitivity 분석에서 centroid 자체를 역으로 옮기면 과잉 페널티(NG)였음.
 W_COMP_DENSITY = 0.5
 W_COMP_RADIUS = 0.5
+W_COMP_STATION = 0.2
 
 # 인구 서브가중치: 총인구 vs 40+ 비율
 W_POP_TOTAL = 0.6

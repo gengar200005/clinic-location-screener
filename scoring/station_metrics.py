@@ -42,9 +42,11 @@ def compute_station_clinic_counts(
     clinics_by_dong: pd.DataFrame,
     radius_m: int = STATION_RADIUS_M,
 ) -> pd.DataFrame:
-    """각 역에서 반경 radius_m 내 의원 수.
+    """각 역에서 반경 radius_m 내 의원 수 + 내과 의사 수.
 
-    반환: stations + ['n_clinic_station']
+    반환: stations + ['n_clinic_station', 'n_doctors_station_med']
+      - n_clinic_station: 전체 의원 수 (display용, 기존 호환)
+      - n_doctors_station_med: 내과 의원의 의사 수 합 (c_raw 페널티 입력)
     """
     # 의원 좌표를 EPSG:5179로
     if "x_5179" not in clinics_by_dong.columns:
@@ -71,8 +73,17 @@ def compute_station_clinic_counts(
     within = (dx * dx + dy * dy) <= (radius_m ** 2)
     n_clinic = within.sum(axis=1).astype(int)
 
+    # 내과 의사 수 합 (c_raw 페널티 입력 — 점수 모델은 의사 수 가중)
+    is_internal = clinics_by_dong["yadmNm"].str.contains("내과", na=False).to_numpy()
+    drs = pd.to_numeric(
+        clinics_by_dong.get("drTotCnt", 0), errors="coerce"
+    ).fillna(0).astype(int).to_numpy()
+    drs_med = (drs * is_internal).astype("float32")  # 내과 아니면 0
+    n_doctors_med = (within * drs_med[None, :]).sum(axis=1).astype(int)
+
     out = stations.copy()
     out["n_clinic_station"] = n_clinic
+    out["n_doctors_station_med"] = n_doctors_med
     return out
 
 
@@ -82,7 +93,8 @@ def compute_nearest_station(
 ) -> pd.DataFrame:
     """각 행정동 → 최근접역 맵.
 
-    반환: [adm_cd, nearest_station, station_dist_m, n_clinic_station_500m]
+    반환: [adm_cd, nearest_station, station_dist_m,
+           n_clinic_station_500m, n_doctors_station_500m_med]
     """
     dong_x = admin_centroid["x_5179"].to_numpy(dtype="float32")
     dong_y = admin_centroid["y_5179"].to_numpy(dtype="float32")
@@ -100,6 +112,11 @@ def compute_nearest_station(
         "nearest_station": stations_with_count["name"].values[nearest_idx],
         "station_dist_m": nearest_dist_m,
         "n_clinic_station_500m": stations_with_count["n_clinic_station"].values[nearest_idx],
+        "n_doctors_station_500m_med": (
+            stations_with_count["n_doctors_station_med"].values[nearest_idx]
+            if "n_doctors_station_med" in stations_with_count.columns
+            else 0
+        ),
     })
     return out
 

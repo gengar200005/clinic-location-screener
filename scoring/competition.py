@@ -1,9 +1,12 @@
 """경쟁 지표 C 계산.
 
-C_raw = 0.5 · (N_clinic / (P / 10,000))  +  0.5 · N_clinic^500m
+C_raw = w_density · (N / (P/10k)) + w_radius · N_radius + w_station · N_station_500m
 
-- 첫째 항(밀도): 인구 1만명당 내과 수. 인구 데이터 필요 (population module).
-- 둘째 항(반경): 동 중심점 반경 500m 내 내과 수. 인구 독립.
+- 밀도 항 (W_COMP_DENSITY): 인구 1만명당 의사 수
+- 반경 항 (W_COMP_RADIUS): 1.5km 내 의사 수
+- 역세권 페널티 (W_COMP_STATION, 2026-04-21 추가):
+    최근접역 500m 내 내과 의사 수. 동 centroid가 의료상권 중심과 어긋날 때
+    역세권 밀집을 c_raw가 놓치는 문제 보정. 가중치 0.2× (보수적).
 
 인구 데이터가 아직 없을 때는 `compute_radius_only()` 로 두 번째 항만 계산 가능
 (3주차 인구 스크래퍼 완성 전 간이 검증용).
@@ -23,6 +26,7 @@ from config.constants import (
     DATA_CLEANED,
     W_COMP_DENSITY,
     W_COMP_RADIUS,
+    W_COMP_STATION,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,14 +137,26 @@ def compute_competition_raw(
     n_by_dong: pd.DataFrame,
     within_radius: pd.DataFrame,
     population: pd.DataFrame | None = None,
+    station_penalty: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """C_raw = w_density · (N_clinic / (P/10000)) + w_radius · N_clinic^500m
+    """C_raw = w_density · (N/P_10k) + w_radius · N_radius + w_station · N_station
 
-    population: adm_cd + population 컬럼. None이면 밀도 항 제외하고 반경 항만 사용
-    (간이 검증용, 실제 파이프라인에선 population 필수).
+    - population: adm_cd + population 컬럼. None이면 밀도 항 제외 (간이 모드).
+    - station_penalty: adm_cd + n_doctors_station_500m_med (선택).
+        역 캐시 없으면 None — 역세권 항 0으로 처리.
     """
     df = n_by_dong.merge(within_radius, on="adm_cd", how="left")
     df["n_within_radius"] = df["n_within_radius"].fillna(0)
+
+    # 역세권 페널티 머지 (없으면 0)
+    if station_penalty is not None:
+        df = df.merge(
+            station_penalty[["adm_cd", "n_doctors_station_500m_med"]],
+            on="adm_cd", how="left",
+        )
+        df["n_doctors_station_500m_med"] = df["n_doctors_station_500m_med"].fillna(0)
+    else:
+        df["n_doctors_station_500m_med"] = 0
 
     if population is not None:
         df = df.merge(population[["adm_cd", "population"]], on="adm_cd", how="left")
@@ -150,11 +166,15 @@ def compute_competition_raw(
         df["c_raw"] = (
             W_COMP_DENSITY * df["density_per_10k"]
             + W_COMP_RADIUS * df["n_within_radius"]
+            + W_COMP_STATION * df["n_doctors_station_500m_med"]
         )
     else:
         logger.warning("population 없음 — 반경 항만 사용 (간이 모드)")
         df["density_per_10k"] = np.nan
-        df["c_raw"] = df["n_within_radius"].astype(float)
+        df["c_raw"] = (
+            df["n_within_radius"].astype(float)
+            + W_COMP_STATION * df["n_doctors_station_500m_med"]
+        )
 
     return df
 
