@@ -45,6 +45,22 @@ python -m publishers.web_export
 
 매주 토요일 03:00 KST — `.github/workflows/weekly_pipeline.yml`
 
+## 새 기기에서 시작하기
+
+```bash
+git clone https://github.com/gengar200005/clinic-location-screener.git ~/work/clinic-location-screener
+cd ~/work/clinic-location-screener
+python -m venv .venv
+source .venv/Scripts/activate       # Windows Git Bash (cmd: .venv\Scripts\activate)
+pip install -r requirements.txt
+cp .env.example .env                # 키 채우기 (HIRA_KEY, KOSIS_KEY 등)
+bash scripts/resume.sh              # git pull + venv + .env + pytest smoke 한 방
+```
+
+그 다음 `claude` 실행 → `/session-start`로 현재 맥락 자동 파악. 종료 시 `/session-end [한 줄 요약]`.
+
+환경 동기화 대상 4가지: **코드**(GitHub) · **데이터**(`data/` — 일부 커밋, cache/scored 필수) · **맥락**(CLAUDE.md + SESSION_LOG.md) · **시크릿**(.env, 수동).
+
 ## 상세 설계
 
-[docs/PLAN.md](docs/PLAN.md)
+[docs/PLAN.md](docs/PLAN.md) · [SESSION_LOG.md](SESSION_LOG.md) · [docs/decisions/](docs/decisions/)

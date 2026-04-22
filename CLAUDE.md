@@ -8,6 +8,28 @@
 
 **최종 목표 (2027-05 개원)**: PWA 히트맵 + Notion DB (Top 30) + GitHub Actions 주간 배치.
 
+## 현재 상태 (2026-04-22 업데이트)
+
+**Phase 5 — 역세권 페널티 반영 완료.** c_raw에 W_COMP_STATION=0.2 역세권 500m 페널티 활성화, Top30 재계산·웹 재배포 완료 (커밋 `23b5551`, 브랜치 `claude/resume-clinic-screener-890DX`). main 병합 / sensitivity 분석 / 답사 중 다음 선택 대기.
+
+## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
+
+- 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
+- 2026-04-20: A안 catchment 확정 + 답사 UX 완성 + 역세권 페널티 항 추가
+- 2026-04-19: Post-MVP 1차 (T 0.2→0.1 + WorldPop centroid + Notion 3-zone)
+
+## 최근 주요 결정 (자세한 건 [docs/decisions/](docs/decisions/))
+
+- [ADR-001] catchment 1.5km 기반 P_raw + C density 분모 통일 (2026-04-20)
+- [ADR-002] T 가중치 0.2 → 0.1 (2026-04-19)
+- [ADR-003] 역세권 500m 경쟁 페널티 W_COMP_STATION=0.2 (2026-04-20 추가, 2026-04-22 반영)
+
+## 진행 중 이슈
+
+- 브랜치 `claude/resume-clinic-screener-890DX` → main 병합 타이밍 미정 (GH Pages 반영 조건)
+- W_COMP_STATION 0.1/0.2/0.3 sensitivity 미수행
+- 답사 실시 대기 (Top30 서울 belt + 경기 부천/용인)
+
 ## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 
 ```
