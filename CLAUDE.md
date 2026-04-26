@@ -10,11 +10,11 @@
 
 ## 현재 상태 (2026-04-26 업데이트)
 
-**Phase 6 — 중심점 1·2층 상가 가중 채택 + 배포 완료** (ADR-004). `CENTROID_MODE="shops"` 정식 적용. 인구 가중 mean이 아파트단지·산에 찍히는 문제 해결, 토지 분류상 개원 가능 위치만 anchor. `scores_2026-04-26.parquet` 생성 + PWA·Notion 모두 새 Top30 반영 완료 (커밋 `945b365`). **답사 실시 대기**.
+**Phase 6 — 중심점 1·2층 상가 가중 채택 + 배포 완료** (ADR-004). `CENTROID_MODE="shops"` 정식 적용. 인구 가중 mean이 아파트단지·산에 찍히는 문제 해결, 토지 분류상 개원 가능 위치만 anchor. `scores_2026-04-26.parquet` 생성 + PWA·Notion 모두 새 Top30 반영 완료 (커밋 `945b365`). 사후로 root URL redirect 추가(`3d9eb6f`) + 네이버 부동산 링크 월세 통일(`ce0a393`/`5724429`). **답사 실시 대기**.
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
-- 2026-04-26: W_STATION sensitivity 검증 + 1·2층 상가 가중 중심점 채택 (ADR-004)
+- 2026-04-26: W_STATION sensitivity 검증 + ADR-004 (shops 중심점) + 배포 + PWA root redirect + 네이버 월세 통일
 - 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
 - 2026-04-20: A안 catchment 확정 + 답사 UX 완성 + 역세권 페널티 항 추가
 - 2026-04-19: Post-MVP 1차 (T 0.2→0.1 + WorldPop centroid + Notion 3-zone)

@@ -25,6 +25,10 @@
 - `publishers/notion_embed` → 페이지 본문 30개 자동 영역 갱신 (full 28, partial 2 — 답사 기록 보존).
 - 커밋 `945b365` push → GH Pages 자동 배포 (https://gengar200005.github.io/clinic-location-screener/).
 
+### 사후 조정 (세션 말미 추가)
+- **PWA root URL이 README.md를 렌더링하던 문제 해결** (커밋 `3d9eb6f`). root에 `index.html` redirect 추가 → root URL 그대로 두고 자동으로 `/web/` PWA로 이동. 진짜 PWA URL은 `https://gengar200005.github.io/clinic-location-screener/web/`.
+- **네이버 부동산 링크 전세→월세 통일** (커밋 `ce0a393`, `5724429`). 상가 매물은 거의 월세라 전세(B1) 필터로는 빈 결과. PWA(`publishers/web_export`)와 답사 카드(`scripts/gen_survey_cards`) 둘 다 `new.land.naver.com/offices?b=B2&e=RETAIL` 패턴으로 통일. 50개 detail JSON 재생성.
+
 ### 다음 세션 할 일
 - Kakao Mobility 재호출 — t_raw 좌표 기반 정확도 향상 (다음 cron에서 자동 갱신 여부 확인). 또는 출근시간 정확도 검증 시 TMAP 재검토 (사용자 직감 확인).
 - 답사 실시 (관악 대학동·노원 중계2·3동·마포 상암동·성북 정릉2동·부천 신흥동 신규 진입 동 우선).
@@ -33,6 +37,7 @@
 ### 미해결
 - t_raw가 인구 가중 시점 캐시 그대로 — 좌표 1km 이동의 통근시간 영향 ±2분 수준이라 점수 영향 미미 (ADR-004 caveat 명시).
 - `centroid_mismatch_flag`·`med_desert_flag` 의미 변화 (이제 shops 중심 기준). PWA 표시·답사 가이드 업데이트 필요할 수도.
+- 사용자 기억상 "출근시간은 TMAP이 더 정확"이라 판단했으나 실제 코드/문서는 Kakao primary (TMAP은 무료 키 시간대 예측 미지원으로 deprecated). 추후 실체감 확인 후 재결정.
 
 ---
 
