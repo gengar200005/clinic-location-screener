@@ -18,11 +18,17 @@
 - 중심점 옵션: pop 유지 / hybrid (0.5·pop + 0.5·shops) / shops 정식 채택. 데이터로 shops 우수성 확인 → 정식.
 - shops 데이터 vs 국토부 LURIS 용도지역: LURIS는 무겁고 자동갱신 어려움. 1·2층 상가로 사실상 같은 정보.
 
+### 배포 (세션 말미)
+- pytest 26/26 그린.
+- `publishers/web_export` → web/data/* (heatmap·boundaries·detail·narrow_lists·all_clinics) 갱신.
+- `publishers/notion_sync` → Notion DB sync (created 5, updated 25, dropped 50).
+- `publishers/notion_embed` → 페이지 본문 30개 자동 영역 갱신 (full 28, partial 2 — 답사 기록 보존).
+- 커밋 `945b365` push → GH Pages 자동 배포 (https://gengar200005.github.io/clinic-location-screener/).
+
 ### 다음 세션 할 일
-- pytest 회귀 확인 (centroid 변경에 따른 fixture 영향).
-- 웹 재배포 여부 결정 (PWA heatmap.json + Notion sync). 답사 앞두고 새 Top30 반영할지.
-- Kakao Mobility 재호출 — t_raw 좌표 기반 정확도 향상 (다음 cron에서 자동인지 확인).
-- 답사 실시 (관악 대학동·노원 중계2·3동 등 신규 진입 동 우선).
+- Kakao Mobility 재호출 — t_raw 좌표 기반 정확도 향상 (다음 cron에서 자동 갱신 여부 확인). 또는 출근시간 정확도 검증 시 TMAP 재검토 (사용자 직감 확인).
+- 답사 실시 (관악 대학동·노원 중계2·3동·마포 상암동·성북 정릉2동·부천 신흥동 신규 진입 동 우선).
+- 답사 후 W_COMP_SUBCLUSTER 활성화 여부 결정 (데이터 관찰 후).
 
 ### 미해결
 - t_raw가 인구 가중 시점 캐시 그대로 — 좌표 1km 이동의 통근시간 영향 ±2분 수준이라 점수 영향 미미 (ADR-004 caveat 명시).

@@ -10,7 +10,7 @@
 
 ## 현재 상태 (2026-04-26 업데이트)
 
-**Phase 6 — 중심점 1·2층 상가 가중 채택 완료** (ADR-004). `CENTROID_MODE="shops"` 정식 적용. 인구 가중 mean이 아파트단지·산에 찍히는 문제 해결, 토지 분류상 개원 가능 위치만 anchor. `scores_2026-04-26.parquet` 생성, Top30 25/30 유지·5 교체. 답사 실시 대기 (웹 재배포 여부 미정).
+**Phase 6 — 중심점 1·2층 상가 가중 채택 + 배포 완료** (ADR-004). `CENTROID_MODE="shops"` 정식 적용. 인구 가중 mean이 아파트단지·산에 찍히는 문제 해결, 토지 분류상 개원 가능 위치만 anchor. `scores_2026-04-26.parquet` 생성 + PWA·Notion 모두 새 Top30 반영 완료 (커밋 `945b365`). **답사 실시 대기**.
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
@@ -29,10 +29,9 @@
 ## 진행 중 이슈
 
 - W_COMP_STATION sensitivity 검증 완료 (2026-04-26): W∈[0.1, 0.3] 구간 Top30 동일 → 0.2 유지. Stable core 25/30. 상세는 `scripts/sensitivity_w_station.py`.
-- pytest 회귀 확인 (centroid 변경에 따른 fixture 영향).
-- 웹 재배포 여부 결정 (PWA heatmap.json + Notion sync). 답사 앞두고 새 Top30 반영할지.
-- t_raw — Kakao 캐시가 다음 cron에서 새 좌표로 자동 갱신되는지 확인 필요.
-- 답사 실시 대기. 신규 진입 동 우선: 관악 대학동(두 클러스터), 노원 중계2·3동, 마포 상암동, 성북 정릉2동.
+- t_raw — Kakao 캐시가 다음 cron에서 새 shops 좌표로 자동 갱신되는지 확인 필요. 또는 출근시간 정확도 의문 시 TMAP 재검토 (현재 deprecated, 무료 키 시간대 예측 미지원).
+- **답사 실시 대기.** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴).
+- 답사 후 W_COMP_SUBCLUSTER 활성화 여부 결정.
 
 ## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 
