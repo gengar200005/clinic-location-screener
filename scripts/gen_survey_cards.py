@@ -85,7 +85,8 @@ def gen_card(row, nearby_clinics: pd.DataFrame, centroid_lat: float, centroid_lo
     # 지도 링크
     kakao_url = f"https://map.kakao.com/?map_type=TYPE_MAP&q={adm_nm}"
     naver_url = f"https://map.naver.com/v5/search/{adm_nm}"
-    naver_estate_url = f"https://land.naver.com/sales?ms={centroid_lat},{centroid_lon},16&filter=PWR&a=SG&b=A1&e=RETAIL"
+    # b=B2 (월세) — 상가 매물은 거의 월세. 매매(A1)·전세(B1)로는 빈 결과.
+    naver_estate_url = f"https://new.land.naver.com/offices?ms={centroid_lat},{centroid_lon},16&a=SG&b=B2&e=RETAIL"
 
     # 가까운 의원 5개 (해당 동 내)
     clinic_lines = []
