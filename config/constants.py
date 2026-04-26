@@ -40,6 +40,19 @@ W_COMP_SUBCLUSTER = 0.0
 W_POP_TOTAL = 0.6
 W_POP_AGE40 = 0.4
 
+# ─── 중심점 모드 ───
+# 행정동 중심점을 어떻게 결정할지. 모든 거리 계산(catchment, 반경 의원, t_raw)의 기준점.
+#   "shops": 1·2층 상가 평균 좌표 (소상공인진흥공단). 토지 분류상 실제 개원 가능 위치.
+#            ADR-004 (2026-04-26): 인구 가중 mean이 아파트 단지·산에 찍히는 문제 해결.
+#            ablation: Top30 25/30 유지, 5 교체 (모두 합리적). 관악 대학동(인구↔상가
+#            1049m) 같은 두 클러스터 동에서 진짜 보정 효과.
+#   "pop":   인구 가중 mean (admin_centroid_pop.parquet). ADR-004 이전 기본값.
+#   "geom":  기하 centroid (admin_centroid.parquet). ADR-004 이전 폴백.
+# Caveat (ADR-004):
+#   - shift_m > 800m 동(두 클러스터)은 답사 시 양쪽 봐야
+#   - med_desert_flag 동은 별도 주의 (1.5km < 5 AND 2km < 30)
+CENTROID_MODE = "shops"
+
 # ─── 임계치 ───
 # 2026-04-20: COMPETITION_RADIUS_M 500 → 1500. 변경 이유:
 #   (1) 내과 의원 기준 c_raw 적용 시 500m 내 0개 동이 165개로 동률 c_norm 다발

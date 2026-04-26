@@ -131,6 +131,78 @@ def apply_pop_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def apply_shops_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
+    """data/cache/admin_centroid_shops.parquet 있으면 lat/lon 교체 + 5179 재계산.
+
+    1·2층 상가 평균 좌표를 중심점으로 사용 (ADR-004). 인구 가중 mean이 의료상권과
+    어긋나는 동에서 답사 좌표·반경 의원 카운트가 더 정확.
+
+    `catchment_pop_*km` 컬럼이 있으면 함께 merge (P_raw · density 분모용).
+    cache 없으면 인구 가중 폴백 (apply_pop_weighted_centroid 호출).
+    """
+    from config.constants import DATA_CACHE, EPSG_WGS84
+    shops_path = DATA_CACHE / "admin_centroid_shops.parquet"
+    if not shops_path.exists():
+        logger.warning(
+            "admin_centroid_shops.parquet 없음 → 인구 가중 폴백 "
+            "(`python -m scoring.centroid_shops_weighted` 으로 생성)"
+        )
+        return apply_pop_weighted_centroid(centroid)
+
+    shops = pd.read_parquet(shops_path)
+    shops["adm_cd"] = shops["adm_cd"].astype(str)
+    out = centroid.copy()
+    out["adm_cd"] = out["adm_cd"].astype(str)
+    before_n = len(out)
+
+    merge_cols = ["adm_cd", "lat_shops", "lon_shops", "anchor"]
+    catchment_cols = [c for c in shops.columns if c.startswith("catchment_pop_")]
+    merge_cols += catchment_cols
+
+    out = out.merge(shops[merge_cols], on="adm_cd", how="left")
+    matched = out["lat_shops"].notna().sum()
+    n_shops = (out["anchor"] == "shops").sum()
+    n_pop = (out["anchor"] == "pop").sum()
+    n_geom = (out["anchor"] == "geom").sum()
+    logger.info(
+        "shops-weighted 적용: %d / %d 동 (anchor: shops %d / pop %d / geom %d)",
+        matched, before_n, n_shops, n_pop, n_geom,
+    )
+
+    # lat/lon 교체 (NaN인 동은 기존 유지)
+    out["lat"] = out["lat_shops"].where(out["lat_shops"].notna(), out["lat"])
+    out["lon"] = out["lon_shops"].where(out["lon_shops"].notna(), out["lon"])
+
+    # 5179 좌표 재계산
+    gdf = gpd.GeoDataFrame(
+        out, geometry=gpd.points_from_xy(out["lon"], out["lat"]), crs=EPSG_WGS84,
+    ).to_crs(EPSG_KOREA)
+    out["x_5179"] = gdf.geometry.x.values
+    out["y_5179"] = gdf.geometry.y.values
+
+    # catchment 컬럼은 유지, 나머지 보조 컬럼만 정리
+    out = out.drop(columns=["lat_shops", "lon_shops", "anchor"])
+    return out
+
+
+def apply_centroid_overlay(centroid: pd.DataFrame) -> pd.DataFrame:
+    """CENTROID_MODE에 따라 적절한 overlay 함수 호출.
+
+    "shops": apply_shops_weighted_centroid
+    "pop":   apply_pop_weighted_centroid
+    "geom":  no-op (기하 centroid 그대로)
+    """
+    from config.constants import CENTROID_MODE
+    if CENTROID_MODE == "shops":
+        return apply_shops_weighted_centroid(centroid)
+    if CENTROID_MODE == "pop":
+        return apply_pop_weighted_centroid(centroid)
+    if CENTROID_MODE == "geom":
+        logger.info("CENTROID_MODE=geom → overlay 없음 (기하 중심점)")
+        return centroid
+    raise ValueError(f"unknown CENTROID_MODE={CENTROID_MODE!r}")
+
+
 def build_admin_centroid(
     geojson_path: Path,
     out_path: Path | None = None,

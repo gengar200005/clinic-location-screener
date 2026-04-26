@@ -8,12 +8,13 @@
 
 **최종 목표 (2027-05 개원)**: PWA 히트맵 + Notion DB (Top 30) + GitHub Actions 주간 배치.
 
-## 현재 상태 (2026-04-22 업데이트)
+## 현재 상태 (2026-04-26 업데이트)
 
-**Phase 5 — 역세권 페널티 반영 완료.** c_raw에 W_COMP_STATION=0.2 역세권 500m 페널티 활성화, Top30 재계산·웹 재배포 완료 (커밋 `23b5551`, 브랜치 `claude/resume-clinic-screener-890DX`). main 병합 / sensitivity 분석 / 답사 중 다음 선택 대기.
+**Phase 6 — 중심점 1·2층 상가 가중 채택 완료** (ADR-004). `CENTROID_MODE="shops"` 정식 적용. 인구 가중 mean이 아파트단지·산에 찍히는 문제 해결, 토지 분류상 개원 가능 위치만 anchor. `scores_2026-04-26.parquet` 생성, Top30 25/30 유지·5 교체. 답사 실시 대기 (웹 재배포 여부 미정).
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
+- 2026-04-26: W_STATION sensitivity 검증 + 1·2층 상가 가중 중심점 채택 (ADR-004)
 - 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
 - 2026-04-20: A안 catchment 확정 + 답사 UX 완성 + 역세권 페널티 항 추가
 - 2026-04-19: Post-MVP 1차 (T 0.2→0.1 + WorldPop centroid + Notion 3-zone)
@@ -23,12 +24,15 @@
 - [ADR-001] catchment 1.5km 기반 P_raw + C density 분모 통일 (2026-04-20)
 - [ADR-002] T 가중치 0.2 → 0.1 (2026-04-19)
 - [ADR-003] 역세권 500m 경쟁 페널티 W_COMP_STATION=0.2 (2026-04-20 추가, 2026-04-22 반영)
+- [ADR-004] CENTROID_MODE="shops" — 1·2층 상가 평균 좌표를 모든 거리 측정 기준점으로 (2026-04-26)
 
 ## 진행 중 이슈
 
-- 브랜치 `claude/resume-clinic-screener-890DX` → main 병합 타이밍 미정 (GH Pages 반영 조건)
-- W_COMP_STATION 0.1/0.2/0.3 sensitivity 미수행
-- 답사 실시 대기 (Top30 서울 belt + 경기 부천/용인)
+- W_COMP_STATION sensitivity 검증 완료 (2026-04-26): W∈[0.1, 0.3] 구간 Top30 동일 → 0.2 유지. Stable core 25/30. 상세는 `scripts/sensitivity_w_station.py`.
+- pytest 회귀 확인 (centroid 변경에 따른 fixture 영향).
+- 웹 재배포 여부 결정 (PWA heatmap.json + Notion sync). 답사 앞두고 새 Top30 반영할지.
+- t_raw — Kakao 캐시가 다음 cron에서 새 좌표로 자동 갱신되는지 확인 필요.
+- 답사 실시 대기. 신규 진입 동 우선: 관악 대학동(두 클러스터), 노원 중계2·3동, 마포 상암동, 성북 정릉2동.
 
 ## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 
