@@ -298,12 +298,13 @@ def build_detail_json(
     # 답사 준비 외부 링크 (검색어 = adm_nm 자체)
     nm_q = str(row["adm_nm"]).replace(" ", "+")
     # 네이버 부동산은 상가 추정 anchor 좌표 사용 (의원 군집 = 1종 근생 매물 가능 영역)
+    # b=B2 (월세) 기본 — 상가 매물은 전세(B1)로 잡으면 거의 없어 빈 결과 뜸
     survey_links = {
         "kakao_map": f"https://map.kakao.com/?q={nm_q}",
         "naver_map": f"https://map.naver.com/p/search/{nm_q}",
         "naver_estate": (
             f"https://new.land.naver.com/offices?"
-            f"ms={anchor_lat},{anchor_lon},16&a=SG&b=B1&e=RETAIL"
+            f"ms={anchor_lat},{anchor_lon},16&a=SG&b=B2&e=RETAIL"
         ),
     }
 
