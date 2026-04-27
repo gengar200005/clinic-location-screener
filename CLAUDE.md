@@ -8,12 +8,13 @@
 
 **최종 목표 (2027-05 개원)**: PWA 히트맵 + Notion DB (Top 30) + GitHub Actions 주간 배치.
 
-## 현재 상태 (2026-04-26 업데이트)
+## 현재 상태 (2026-04-27 업데이트)
 
-**Phase 6 — 중심점 1·2층 상가 가중 채택 + 배포 완료** (ADR-004). `CENTROID_MODE="shops"` 정식 적용. 인구 가중 mean이 아파트단지·산에 찍히는 문제 해결, 토지 분류상 개원 가능 위치만 anchor. `scores_2026-04-26.parquet` 생성 + PWA·Notion 모두 새 Top30 반영 완료 (커밋 `945b365`). 사후로 root URL redirect 추가(`3d9eb6f`) + 네이버 부동산 링크 월세 통일(`ce0a393`/`5724429`). **답사 실시 대기**.
+**Phase 7 — GI 의원 페널티 가중 채택** (ADR-005, 커밋 `e7b9d0f`). 마스터 콘셉트(소화기+내시경)에 맞춰 c_raw에 `W_GI_MULTIPLIER=2.0` 도입. `is_gi` 식별을 의원명 키워드(0건)에서 HIRA 의료장비 데이터셋(`data.go.kr 15051055`) 기반 A304(위)∩A320(대장) 보유로 재정의. ykiho 매칭 98.5%, 내과 의원 56%가 GI 후보. ablation Top30 1개 교체 (구로 수궁동 ↔ 금천 독산4동). 같은 세션에 estbDd(개원일) 컬럼 도입은 **보류** — 가설(끓는/정체 시장 식별)이 데이터로 부정됨. **답사 실시 + detail 페이지 GI 컬럼 노출 대기**.
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
+- 2026-04-27: ADR-005 (GI 의원 페널티 W=2.0) + estbDd 보류 + HIRA 의료장비 데이터셋 활용
 - 2026-04-26: W_STATION sensitivity 검증 + ADR-004 (shops 중심점) + 배포 + PWA root redirect + 네이버 월세 통일
 - 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
 - 2026-04-20: A안 catchment 확정 + 답사 UX 완성 + 역세권 페널티 항 추가
@@ -25,13 +26,16 @@
 - [ADR-002] T 가중치 0.2 → 0.1 (2026-04-19)
 - [ADR-003] 역세권 500m 경쟁 페널티 W_COMP_STATION=0.2 (2026-04-20 추가, 2026-04-22 반영)
 - [ADR-004] CENTROID_MODE="shops" — 1·2층 상가 평균 좌표를 모든 거리 측정 기준점으로 (2026-04-26)
+- [ADR-005] GI 의원 페널티 W_GI_MULTIPLIER=2.0 — HIRA 의료장비 데이터셋 A304∩A320 보유로 is_gi 재정의 (2026-04-27)
 
 ## 진행 중 이슈
 
+- **detail 페이지 GI 컬럼 노출 대기**: `publishers/notion_detail.py` + `publishers/web_export.py`에 `is_gi`/`n_doctors_med_weighted`/`has_egd`/`has_colo` 추가. ADR-005 caveat 3에서 명시한 "c_raw 절대값 직접 비교" 활용에 필요.
 - W_COMP_STATION sensitivity 검증 완료 (2026-04-26): W∈[0.1, 0.3] 구간 Top30 동일 → 0.2 유지. Stable core 25/30. 상세는 `scripts/sensitivity_w_station.py`.
 - t_raw — Kakao 캐시가 다음 cron에서 새 shops 좌표로 자동 갱신되는지 확인 필요. 또는 출근시간 정확도 의문 시 TMAP 재검토 (현재 deprecated, 무료 키 시간대 예측 미지원).
-- **답사 실시 대기.** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴).
-- 답사 후 W_COMP_SUBCLUSTER 활성화 여부 결정.
+- **답사 실시 대기.** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴), 금천 독산4동(W=2.0에서 신규 진입).
+- 답사 후 W_COMP_SUBCLUSTER 활성화 여부 결정 + W_GI_MULTIPLIER fine-tune (1.8~2.2 범위).
+- **HIRA 의료장비 데이터셋 갱신 주기 = 연 1회**: 매년 12월 31일 기준 익년 2월 공개. 신규 의원 GI 분류에 1~14개월 지연.
 
 ## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 
@@ -94,7 +98,7 @@ cp .env.example .env              # 키 채우기
 2. **HIRA 시도코드는 행정안전부 표준과 다름**: 서울=`110000`(공통), **경기=`310000`** (행안부는 410000이나 HIRA에선 세종). `scrapers/hira_clinic.py`에 하드코딩.
 3. **HIRA API 응답은 XML**: `_type=json` 미지원. `xml.etree.ElementTree` 파싱.
 4. **HIRA 파라미터 이름은 소문자**: `serviceKey` (대문자 S는 401 Unauthorized).
-5. **HIRA 진료과목 코드**: 내과=`01` (통합). 소화기내과 별도 코드 없음 — 병원명에 "소화기" 포함 여부로 `is_gi` 컬럼 태깅.
+5. **HIRA 진료과목 코드**: 내과=`01` (통합). 소화기내과 별도 코드 없음. 의원명 "소화기" 키워드는 0건 — `is_gi`는 **HIRA 의료장비 데이터셋 (`data.go.kr 15051055`) 기반 A304(식도·위·십이지장경)∩A320(결장경) 보유**로 식별 (ADR-005, 2026-04-27). `scrapers/hira_equipment.py` → `data/cleaned/clinic_equipment.parquet` (.gitignore) → `spatial_join`에서 ykiho join.
 6. **대상 지역 필터**: `sggnm.str.startswith(tuple(target_list))`. 성남·고양·부천·안양은 구가 있어 `"성남시 분당구"` 형식이므로 exact match 안 됨.
 7. **공간조인 기준**: 행정동 폴리곤 `within` (GeoPandas sjoin predicate).
 8. **경쟁 지표 서브가중치**: 0.5 (밀도: 1만명당) + 0.5 (반경 500m 내). 8주차 이후 조정 예정.

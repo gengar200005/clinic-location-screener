@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-04-27 — GI 의원 페널티 가중 (ADR-005) + estbDd 보류
+
+### 결정
+- **estbDd(개원일) 컬럼 도입 보류**. 가설("끓는 시장 vs 정체 시장 식별 → 세대교체 기회 동")을 데이터로 검증한 결과 부정됨. 정체 1순위 후보 노원 월계2동이 현재 score rank 1, 끓는 시장 강남 역삼/대치는 rank 630+ → 끓음/정체 라벨이 score와 약한 역상관. 점수 모델이 이미 인구·경쟁을 옳게 평가 중이라 추가 컬럼은 인지부하만 늘어남. 진단 도구로의 가치는 4분면 해석을 사용자가 매번 해야 해서 약함.
+- **`W_GI_MULTIPLIER = 2.0` 채택** (ADR-005, 커밋 `e7b9d0f`). 마스터 콘셉트(소화기+내시경)에 맞춰 GI 후보 의원 의사수에 ×2.0 가중. c_raw의 4개 항(density 분자, 1.5km 반경, 역세권 500m, subcluster max)에 동일 적용.
+- **`is_gi` 식별을 의원명 키워드(0건)에서 HIRA 의료장비 데이터셋(`data.go.kr 15051055`) 기반 A304∩A320 보유로 재정의**. ykiho 매칭 98.5%. 위내시경(A304) 보유 81.9% / 대장내시경(A320) 56.1% / 둘 다 56.1% — 56%가 GI 후보로 잡힘.
+- **신규 파일**: `scrapers/hira_equipment.py`, `scripts/ablation_gi_weight.py`, `docs/decisions/005-gi-weight.md`, `data/cleaned/clinic_equipment.parquet` (69,819 의료기관, .gitignore).
+- **변경**: `config/constants.py` (W_GI_MULTIPLIER + GI_EQUIPMENT_CODE_EGD/COLO), `scoring/spatial_join.py` (is_gi 머지), `scoring/competition.py` (`_weighted_doctors` 헬퍼 + 3개 함수에 gi_multiplier), `scoring/station_metrics.py`, `scoring/pipeline.py` (n_doctors_med_weighted 컬럼 + `--gi-multiplier` CLI), `tests/test_competition.py` (가중 케이스 8개, 17 passed).
+- pytest 34/34 그린.
+
+### 검토한 대안
+- **estbDd display**: 추가 컬럼만 노출(점수 미반영) → 기각. 사용자가 "잘 이해 안 된다"고 한 것이 신호 — 4분면 해석 framework 안 와닿으면 노출해도 의사결정에 안 쓰임.
+- **GI 식별 방식**:
+  - HIRA OpenAPI 의원명 키워드 매칭 → "소화기" 0건으로 사용 불가
+  - HIRA OpenAPI `MadmDtlInfoService2`(상세정보) endpoint → 사용자 service 미신청 상태 (HTTP 500). 신청 시 1~2시간 대기 필요
+  - 홈페이지 키워드 크롤링 → hospUrl coverage 13.4%만 (한국 동네 의원 자체 홈페이지 보유율 낮음 + 폐쇄 도메인)로 fatal
+  - 카카오 로컬 API 카테고리 → 미시도 (HIRA 데이터셋 더 직접적)
+  - **HIRA 의료장비 상세 현황 CSV (15051055)** 채택 — API 신청 불필요, 712k 행, ykiho 매칭 가능
+- **GI 정의 강화 (옵션 B)**: A304∩A320 + (ERCP A316 ∪ 에스상 결장경 A305 ∪ 내시경 ≥ 2대)로 진짜 시술량 多 의원 좁힘 → 후속 검토 (이번엔 옵션 A 채택)
+- **W ablation**: {1.0, 1.5, 2.0, 2.5}. W=1.0(0교체), W=1.5(1), **W=2.0(1)**, W=2.5(3). W=2.0이 직관과 일치 + ranking 안정성 균형.
+- **Claude in Chrome으로 data.go.kr 자동 다운로드 시도** → 권한 prompt + 로그인 필요로 connection 끊김. 사용자가 직접 다운로드 (5분).
+
+### 다음 세션 할 일
+- **detail 페이지 노출**: `publishers/notion_detail.py` + `publishers/web_export.py`에 `is_gi`/`n_doctors_med_weighted`/`has_egd`/`has_colo` 표시 추가. ADR-005 caveat 3에서 명시한 "사용자가 c_raw 절대값으로 직접 비교"를 가능하게.
+- **답사 실시**. 이전 세션 미완: 관악 대학동·노원 중계2·3동·마포 상암동·성북 정릉2동·부천 신흥동.
+- **W=2.0 답사 검증 후 fine-tune**: 답사·상담 데이터 쌓이면 0.1 단위로 1.8~2.2 범위 조정.
+- 답사 후 `W_COMP_SUBCLUSTER` 활성화 여부 결정 (이전 세션 이월).
+
+### 미해결
+- A304∩A320이 진짜 시술량 큰 GI 전문 의원과 일치하지 않음. 검진용 1대씩 굴리는 일반 내과 + 시술량 多 의원이 같이 잡힘. 진짜 차별화는 시술량·평판인데 데이터로 측정 불가 — 임대료·HIRA 비급여 진료비 정보 도입 시 fine-tune 가능.
+- W=2.0이 percentile 정규화 특성상 Top30 ranking 변동 작음 (1개 교체뿐). 진짜 시그널은 c_raw 절대값과 n_doctors_med_weighted — detail 페이지 노출 전엔 사용자가 직접 확인 어려움.
+- estbDd 작업은 사용자 추후 결정. 데이터(estbDd) 자체는 hira_*.parquet에 이미 수집되어 있음 (별도 스크래퍼 불필요). 진행 시 ad-hoc 스크립트로 충분.
+- HIRA 의료장비 데이터셋 갱신 주기 = 연 1회 (매년 12월 31일 기준 익년 2월 공개). 신규 의원 GI 분류에 약 1~14개월 지연.
+
+---
+
 ## 2026-04-26 — 중심점 sensitivity·shops 가중 채택
 
 ### 결정
