@@ -385,6 +385,8 @@ def build_blocks(
         # 각 의원을 bullet item으로
         for _, cl in nearby.iterrows():
             is_gi = bool(cl.get("is_gi", False))
+            has_egd = bool(cl.get("has_egd", False))
+            has_colo = bool(cl.get("has_colo", False))
             marker = "⭐ " if is_gi else ""
             name = str(cl.get("yadmNm", ""))
             kind = str(cl.get("clCdNm", ""))  # 병원·의원·한의원 등
@@ -403,6 +405,15 @@ def build_blocks(
             except Exception:
                 kakao_marker = None
 
+            # 내시경 보유 표기 (ADR-005): 위·대장 둘 다 / 한쪽만 구분
+            scope_tag = ""
+            if has_egd and has_colo:
+                scope_tag = " 위·대장✓"
+            elif has_egd:
+                scope_tag = " 위✓"
+            elif has_colo:
+                scope_tag = " 대장✓"
+
             # Line 1: 거리 · 이름(링크) · 종별 · 의사수
             line1 = [
                 _rt(f"{dist:>4}m", bold=True),
@@ -415,6 +426,8 @@ def build_blocks(
             if estb_year:
                 line1.append(_rt(f", {estb_year} 개원"))
             line1.append(_rt(")"))
+            if scope_tag:
+                line1.append(_rt(scope_tag, bold=True, color="red"))
 
             blocks.append(_bullet(line1))
             # Line 2 (sub-bullet): 주소 + 전화
@@ -457,6 +470,21 @@ def build_blocks(
         _rt(f"1km {int(row.get('n_clinic_1km', 0))}개  ·  "),
         _rt(f"2km {int(row.get('n_clinic_2km', 0))}개"),
     ]))
+    # GI 가중 의사 수 + c_raw 절대값 (ADR-005)
+    n_med = int(row.get("n_doctors_med", 0))
+    n_w = row.get("n_doctors_med_weighted")
+    n_gi = int(row.get("n_clinic_gi", 0))
+    c_raw_v = row.get("c_raw")
+    gi_line = [
+        _rt("내과 의사: ", bold=True),
+        _rt(f"{n_med}명"),
+    ]
+    if pd.notna(n_w):
+        gi_line.append(_rt(f"  ·  GI 가중 {float(n_w):.1f}명", bold=True, color="red"))
+    gi_line.append(_rt(f"  ·  GI 의원 {n_gi}개"))
+    if pd.notna(c_raw_v):
+        gi_line.append(_rt(f"  ·  c_raw {float(c_raw_v):.2f}"))
+    blocks.append(_bullet(gi_line))
     blocks.append(_bullet([
         _rt("통근: ", bold=True),
         _rt(f"자차 {int(row['t_raw'])}분"),

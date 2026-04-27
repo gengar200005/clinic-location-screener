@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-04-27 (이어서 #2) — detail 페이지 GI 컬럼 노출 + barrier·약국·신규개원 페널티 모두 기각
+
+### 결정
+- **detail 페이지 GI 컬럼 노출** (ADR-005 caveat 3 "c_raw 절대값 직접 비교" 활성화):
+  - `publishers/web_export.py`: clinic 단위에 `has_egd`/`has_colo` + 동 metrics에 `n_doctors_med_weighted`/`c_raw` 추가. heatmap.json + all_clinics.json도 동일 필드 노출.
+  - `publishers/notion_detail.py`: 의원 라인에 `위·대장✓`/`위✓`/`대장✓` 빨간 굵은 표기 + 동 점수 섹션에 `내과 의사 N명 · GI 가중 M.M명 · GI 의원 K개 · c_raw 절대값` 라인.
+  - 50개 detail JSON 갱신 + Notion 29/30 페이지 본문 전체 재생성.
+- **답사 진입 준비 완료**. 6개 신규 진입 동 모두 갱신 (대학·중계2·3·상암·정릉2·신흥·독산4동).
+
+### 검토한 대안 (모두 기각, 답사 retrospective 데이터 쌓기로 전환)
+- **barrier 마스킹 (한강·산)**: 효과 추정 small. Top30에 한강변·산악 인접 동 거의 없어 모델이 이미 P/C로 잘 거름. polygon 수집 + 마스킹 알고리즘 + ablation 4~8시간 vs ranking 변동 미미 — 폐기.
+- **신규 개원 페널티 (W_NEW_PENALTY rate)**: Top30 30개 중 29개가 최근 3년 신규 0 → c_raw가 이미 자동 페널티 작동 중. 추가 변수는 double-count.
+- **약국 데이터 도입 (Phase 1 display 컬럼)**: 외래 상권 신호 ≠ 정착 환자 신호. 모델 P/C 정의와 결 다름. 의료사막+약국 多 케이스(종로 1·2·3·4가동, 강남 삼성2동)는 임차료 高·주거 인구 X로 일반 내과 부적합. 인지부하만 늘림 — 폐기. 이 작업 흔적은 SESSION_LOG에 기록 X (사용자 결정).
+- **신규 변수 도입의 공통 함정**: 회의 데이터 시그널 존재 ✓ but 사용자 의사결정 영향 ✗ — ADR-005 estbDd 보류와 같은 패턴 반복. **결론: 새 변수 추가 ≠ 보완. 답사 → retrospective gap 분석이 정상 경로**.
+
+### 다음 세션 할 일
+- **답사 실시** (Top30 6개 신규 진입 동 우선). detail 페이지 GI 표시 vs 현장 인상 gap 기록 — 답사 retrospective 첫 데이터.
+- 답사 후 W_GI_MULTIPLIER fine-tune 또는 자기잠식 패턴 발견 시 c_raw 재정의 검토.
+- **rank 25 금천 독산4동 Notion 페이지 추가**: ADR-005 W=2.0 신규 진입이라 DB에 page 미존재. 다음 cron 또는 `notion_sync` 1회 실행으로 추가 후 `notion_detail --only 25` 재실행.
+
+### 미해결
+- 월계2동(rank 1) 답사 시 핵심 질문: NW 광운대역세권으로 진료 수요 흡수 패턴(자기잠식) 확인. 모델은 미충족 수요 인식 OK, 답사로만 검증 가능.
+- 답사 5~10건 쌓이면 manual 입력 컬럼(임차료·동네 인상·간판 카운트) 답사 카드에 추가 검토.
+
+---
+
 ## 2026-04-27 (이어서) — ADR-005 1년 지연 사후 검증 + 데이터 신선도 caveat
 
 ### 결정

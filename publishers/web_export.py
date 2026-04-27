@@ -171,6 +171,8 @@ def _clinic_entry(cl: pd.Series, dist_m: int) -> dict:
         "dist": int(dist_m),
         "kind": str(cl.get("clCdNm", "")),
         "is_gi": bool(cl.get("is_gi", False)),
+        "has_egd": bool(cl.get("has_egd", False)),
+        "has_colo": bool(cl.get("has_colo", False)),
         "is_internal": "내과" in name,  # 점수 모델과 동일 정의
         "drs": int(cl.get("drTotCnt")) if pd.notna(cl.get("drTotCnt")) else None,
         "addr": addr,
@@ -346,7 +348,15 @@ def build_detail_json(
             "n_clinic": int(row["n_clinic"]),
             "n_clinic_med": int(row.get("n_clinic_med", 0)),
             "n_doctors_med": int(row.get("n_doctors_med", 0)),
+            "n_doctors_med_weighted": (
+                round(float(row["n_doctors_med_weighted"]), 2)
+                if pd.notna(row.get("n_doctors_med_weighted")) else None
+            ),
             "n_clinic_gi": int(row.get("n_clinic_gi", 0)),
+            "c_raw": (
+                round(float(row["c_raw"]), 3)
+                if pd.notna(row.get("c_raw")) else None
+            ),
             "n_clinic_500m": int(row.get("n_clinic_500m", 0)),
             "n_clinic_1km": int(row.get("n_clinic_1km", 0)),
             "n_clinic_2km": int(row.get("n_clinic_2km", 0)),
@@ -412,6 +422,11 @@ def export_heatmap(
             "n_clinic": int(r.get("n_clinic", 0)),
             "n_clinic_med": int(r.get("n_clinic_med", 0)),
             "n_doctors_med": int(r.get("n_doctors_med", 0)),
+            "n_doctors_med_weighted": (
+                round(float(r["n_doctors_med_weighted"]), 2)
+                if pd.notna(r.get("n_doctors_med_weighted")) else None
+            ),
+            "n_clinic_gi": int(r.get("n_clinic_gi", 0)),
             "n_clinic_500m": int(r.get("n_clinic_500m", 0)),
             "pop_total": int(r.get("pop_total", 0)) if pd.notna(r.get("pop_total")) else None,
             "pop_40plus": int(r.get("pop_40plus", 0)) if pd.notna(r.get("pop_40plus")) else None,
@@ -567,6 +582,8 @@ def export_all_clinics(clinics: pd.DataFrame) -> Path:
             "k": str(cl.get("clCdNm", "")),
             "i": is_internal,
             "g": is_gi,
+            "e": bool(cl.get("has_egd", False)),
+            "c": bool(cl.get("has_colo", False)),
             "d": int(cl.get("drTotCnt")) if pd.notna(cl.get("drTotCnt")) else None,
             "a": addr,
             "t": str(cl.get("telno", "") or ""),
