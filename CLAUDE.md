@@ -10,15 +10,15 @@
 
 ## 현재 상태 (2026-04-27 업데이트)
 
-**Phase 7 — GI 의원 페널티 가중 채택** (ADR-005, 커밋 `e7b9d0f`). 마스터 콘셉트(소화기+내시경)에 맞춰 c_raw에 `W_GI_MULTIPLIER=2.0` 도입. `is_gi` 식별을 의원명 키워드(0건)에서 HIRA 의료장비 데이터셋(`data.go.kr 15051055`) 기반 A304(위)∩A320(대장) 보유로 재정의. ykiho 매칭 98.5%, 내과 의원 56%가 GI 후보. ablation Top30 1개 교체 (구로 수궁동 ↔ 금천 독산4동). 같은 세션에 estbDd(개원일) 컬럼 도입은 **보류** — 가설(끓는/정체 시장 식별)이 데이터로 부정됨. **답사 실시 + detail 페이지 GI 컬럼 노출 대기**.
+**답사 진입 준비 완료**. ADR-005(W_GI_MULTIPLIER=2.0) caveat 3 해소를 위해 detail 페이지에 GI 컬럼 노출 — 의원 라인에 `위·대장✓` 빨간 굵은 표기 + 동 점수에 `n_doctors_med_weighted`/`c_raw` 절대값. Notion 29/30 페이지 갱신 (rank 25 독산4동만 DB 페이지 미존재로 skip). 50개 detail JSON + heatmap·all_clinics 모두 새 필드 포함. **새 변수 도입(barrier·약국·신규개원 페널티)은 모두 검토 후 기각** — 신호는 있으나 c_raw에 이미 반영되거나 모델 P/C 정의와 결 다름. 다음 단계: **답사 실시 → retrospective gap 분석**.
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
+- 2026-04-27: detail GI 컬럼 노출 + barrier·약국·신규개원 페널티 모두 기각 + 데이터 신선도 caveat 4곳
 - 2026-04-27: ADR-005 (GI 의원 페널티 W=2.0) + estbDd 보류 + HIRA 의료장비 데이터셋 활용
 - 2026-04-26: W_STATION sensitivity 검증 + ADR-004 (shops 중심점) + 배포 + PWA root redirect + 네이버 월세 통일
 - 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
 - 2026-04-20: A안 catchment 확정 + 답사 UX 완성 + 역세권 페널티 항 추가
-- 2026-04-19: Post-MVP 1차 (T 0.2→0.1 + WorldPop centroid + Notion 3-zone)
 
 ## 최근 주요 결정 (자세한 건 [docs/decisions/](docs/decisions/))
 
@@ -30,12 +30,14 @@
 
 ## 진행 중 이슈
 
-- **detail 페이지 GI 컬럼 노출 대기**: `publishers/notion_detail.py` + `publishers/web_export.py`에 `is_gi`/`n_doctors_med_weighted`/`has_egd`/`has_colo` 추가. ADR-005 caveat 3에서 명시한 "c_raw 절대값 직접 비교" 활용에 필요.
-- W_COMP_STATION sensitivity 검증 완료 (2026-04-26): W∈[0.1, 0.3] 구간 Top30 동일 → 0.2 유지. Stable core 25/30. 상세는 `scripts/sensitivity_w_station.py`.
-- t_raw — Kakao 캐시가 다음 cron에서 새 shops 좌표로 자동 갱신되는지 확인 필요. 또는 출근시간 정확도 의문 시 TMAP 재검토 (현재 deprecated, 무료 키 시간대 예측 미지원).
-- **답사 실시 대기.** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴), 금천 독산4동(W=2.0에서 신규 진입).
-- 답사 후 W_COMP_SUBCLUSTER 활성화 여부 결정 + W_GI_MULTIPLIER fine-tune (1.8~2.2 범위).
-- **HIRA 의료장비 데이터셋 갱신 주기 = 연 1회**: 매년 12월 31일 기준 익년 2월 공개. 신규 의원 GI 분류에 1~14개월 지연.
+- **답사 실시 대기 (최우선).** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴), 금천 독산4동(W=2.0에서 신규 진입). 답사 후 retrospective gap 분석 → 모델 약점 자연스럽게 식별.
+- **rank 25 금천 독산4동 Notion 페이지 추가 필요** — DB에 page 미존재로 detail 갱신 skip됨. `python -m publishers.notion_sync` 1회 실행 후 `notion_detail --only 25` 재실행.
+- 월계2동(rank 1) 자기잠식 의문: NW 광운대역세권으로 진료 수요 흡수 가능성. 답사로만 검증.
+- W_COMP_STATION sensitivity 검증 완료 (2026-04-26): W∈[0.1, 0.3] 구간 Top30 동일 → 0.2 유지.
+- t_raw — Kakao 캐시가 다음 cron에서 새 shops 좌표로 자동 갱신되는지 확인 필요.
+- 답사 후 W_GI_MULTIPLIER fine-tune (1.8~2.2 범위) + W_COMP_SUBCLUSTER 활성화 여부 결정.
+- **HIRA 의료장비 데이터셋 갱신 주기 = 연 1회**: 신규 의원 GI 분류에 1~14개월 지연. 단 신규 의원도 c_raw 의사 수에 카운트되어 페널티 자동 작동하므로 critical 결함 아님 (사후 검증 완료, 2026-04-27).
+- **새 변수 도입 회의 패턴**: barrier 마스킹·약국·신규개원 페널티 모두 기각. 신호는 있으나 c_raw double-count 또는 모델 P/C 정의와 결 다름. 답사 retrospective 데이터 쌓기로 전환.
 
 ## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 
