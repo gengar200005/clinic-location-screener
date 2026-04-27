@@ -41,12 +41,14 @@ def compute_station_clinic_counts(
     stations: pd.DataFrame,
     clinics_by_dong: pd.DataFrame,
     radius_m: int = STATION_RADIUS_M,
+    gi_multiplier: float = 1.0,
 ) -> pd.DataFrame:
     """각 역에서 반경 radius_m 내 의원 수 + 내과 의사 수.
 
     반환: stations + ['n_clinic_station', 'n_doctors_station_med']
       - n_clinic_station: 전체 의원 수 (display용, 기존 호환)
-      - n_doctors_station_med: 내과 의원의 의사 수 합 (c_raw 페널티 입력)
+      - n_doctors_station_med: 내과 의원의 의사 수 합 (c_raw 페널티 입력).
+        gi_multiplier > 1이면 GI 의원(is_gi=True) 의사수가 가중된 값.
     """
     # 의원 좌표를 EPSG:5179로
     if "x_5179" not in clinics_by_dong.columns:
@@ -74,11 +76,11 @@ def compute_station_clinic_counts(
     n_clinic = within.sum(axis=1).astype(int)
 
     # 내과 의사 수 합 (c_raw 페널티 입력 — 점수 모델은 의사 수 가중)
+    # GI 가중: gi_multiplier > 1이면 is_gi=True 의원의 dr이 부풀려짐
+    from scoring.competition import _weighted_doctors
     is_internal = clinics_by_dong["yadmNm"].str.contains("내과", na=False).to_numpy()
-    drs = pd.to_numeric(
-        clinics_by_dong.get("drTotCnt", 0), errors="coerce"
-    ).fillna(0).astype(int).to_numpy()
-    drs_med = (drs * is_internal).astype("float32")  # 내과 아니면 0
+    drs_w = _weighted_doctors(clinics_by_dong, gi_multiplier=gi_multiplier)
+    drs_med = (drs_w * is_internal).astype("float32")  # 내과 아니면 0
     n_doctors_med = (within * drs_med[None, :]).sum(axis=1).astype(int)
 
     out = stations.copy()
@@ -124,9 +126,15 @@ def compute_nearest_station(
 def compute_for_dongs(
     admin_centroid: pd.DataFrame,
     clinics_by_dong: pd.DataFrame,
+    gi_multiplier: float = 1.0,
 ) -> pd.DataFrame:
-    """Top-level: admin_centroid + clinics_by_dong → 역 지표 DataFrame."""
+    """Top-level: admin_centroid + clinics_by_dong → 역 지표 DataFrame.
+
+    gi_multiplier: GI 의원 의사수 가중치. n_doctors_station_500m_med 컬럼에 반영.
+    """
     stations = load_stations()
     logger.info("stations: %d", len(stations))
-    stations = compute_station_clinic_counts(stations, clinics_by_dong)
+    stations = compute_station_clinic_counts(
+        stations, clinics_by_dong, gi_multiplier=gi_multiplier,
+    )
     return compute_nearest_station(admin_centroid, stations)

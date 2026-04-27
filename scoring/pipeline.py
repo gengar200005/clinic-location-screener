@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from config.constants import DATA_CLEANED, DATA_SCORED
+from config.constants import DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
 from scoring.commute import load_commute, merge_commute
 from scoring.competition import (
     compute_competition_raw,
@@ -44,7 +44,7 @@ def _require(path: Path, how: str) -> None:
         raise FileNotFoundError(f"{path} 없음. 먼저: {how}")
 
 
-def run(date_str: str) -> tuple[Path, Path]:
+def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Path]:
     DATA_SCORED.mkdir(parents=True, exist_ok=True)
 
     centroid_path = DATA_CLEANED / "admin_centroid.parquet"
@@ -63,17 +63,31 @@ def run(date_str: str) -> tuple[Path, Path]:
 
     # 1. 경쟁 지표
     # 전체 의원: n_clinic, n_within_radius_all — display·플래그용
-    # 내과 의원: n_clinic_med (의원 수), n_doctors_med (의사 수 합) — 점수 input
-    # 가정: 1차 의료기관 내과 전문의 90%+ = 소화기. 키워드만으로 충분.
+    # 내과 의원: n_clinic_med (의원 수), n_doctors_med (의사 수 합) — display + 회귀
+    # 내과 의원 가중: n_doctors_med_weighted = n_doctors_med + (W_GI-1)×n_doctors_gi
+    #   c_raw 의사수 입력은 weighted 사용. ADR-005.
     INTERNAL_KW = "내과"
-    logger.info("=== 1. competition (점수=내과 의사 수, 표시=전체 의원) ===")
+    logger.info(
+        "=== 1. competition (점수=내과 의사 수 ×W_GI=%.1f, 표시=전체 의원) ===",
+        gi_multiplier,
+    )
     n_by_dong = count_clinics_per_dong(clinics_by_dong)
     within = count_clinics_within_radius(clinics_by_dong, admin_centroid)
+    # 비가중 (display·회귀)
     n_by_dong_med = count_clinics_per_dong(
         clinics_by_dong, internal_keyword=INTERNAL_KW, sum_doctors=True
     )
     within_med = count_clinics_within_radius(
         clinics_by_dong, admin_centroid, internal_keyword=INTERNAL_KW, sum_doctors=True
+    )
+    # 가중 (c_raw 입력)
+    n_by_dong_med_w = count_clinics_per_dong(
+        clinics_by_dong, internal_keyword=INTERNAL_KW, sum_doctors=True,
+        gi_multiplier=gi_multiplier,
+    )
+    within_med_w = count_clinics_within_radius(
+        clinics_by_dong, admin_centroid, internal_keyword=INTERNAL_KW,
+        sum_doctors=True, gi_multiplier=gi_multiplier,
     )
     n_total_clinics = len(clinics_by_dong)
     n_med_clinics = clinics_by_dong["yadmNm"].str.contains(INTERNAL_KW, na=False).sum()
@@ -94,14 +108,22 @@ def run(date_str: str) -> tuple[Path, Path]:
         n_by_dong[["adm_cd", "n_clinic", "n_clinic_gi"]],
         on="adm_cd", how="left",
     )
-    # 내과 카운트 + 의사 수 머지
+    # 내과 카운트 + 의사 수 머지 (비가중)
     base = base.merge(
         n_by_dong_med[["adm_cd", "n_clinic", "n_doctors"]].rename(
             columns={"n_clinic": "n_clinic_med", "n_doctors": "n_doctors_med"}
         ),
         on="adm_cd", how="left",
     )
-    int_cols = ["n_clinic", "n_clinic_gi", "n_clinic_med", "n_doctors_med"]
+    # 가중 의사 수 머지 (c_raw 입력 — n_doctors_med_weighted)
+    base = base.merge(
+        n_by_dong_med_w[["adm_cd", "n_doctors"]].rename(
+            columns={"n_doctors": "n_doctors_med_weighted"}
+        ),
+        on="adm_cd", how="left",
+    )
+    int_cols = ["n_clinic", "n_clinic_gi", "n_clinic_med",
+                "n_doctors_med", "n_doctors_med_weighted"]
     base[int_cols] = base[int_cols].fillna(0).astype(int)
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
@@ -117,15 +139,19 @@ def run(date_str: str) -> tuple[Path, Path]:
     try:
         from scoring.station_metrics import compute_for_dongs as station_metrics, STATION_CACHE
         if STATION_CACHE.exists():
-            logger.info("=== 2b. station metrics (c_raw 페널티 입력) ===")
-            station_meta = station_metrics(admin_centroid, clinics_by_dong)
+            logger.info("=== 2b. station metrics (c_raw 페널티 입력, GI 가중 적용) ===")
+            station_meta = station_metrics(
+                admin_centroid, clinics_by_dong, gi_multiplier=gi_multiplier,
+            )
     except FileNotFoundError:
         logger.info("역 캐시 없음 → station 페널티 0")
 
     # 2c. subcluster max — 동 내 가장 밀집된 500m disk 내과 의사 수
     # 컬럼은 항상 출력. c_raw 영향은 W_COMP_SUBCLUSTER 활성화 후 (기본 0).
-    logger.info("=== 2c. subcluster max density (c_raw 페널티 입력, W=0이면 영향 없음) ===")
-    subcluster_meta = compute_subcluster_max_doctors(admin_centroid, clinics_by_dong)
+    logger.info("=== 2c. subcluster max density (GI 가중 적용) ===")
+    subcluster_meta = compute_subcluster_max_doctors(
+        admin_centroid, clinics_by_dong, gi_multiplier=gi_multiplier,
+    )
     logger.info(
         "subcluster max 의사 수: median %.0f, p90 %.0f, max %.0f",
         subcluster_meta["n_doctors_subcluster_max_med"].median(),
@@ -149,10 +175,10 @@ def run(date_str: str) -> tuple[Path, Path]:
         logger.info("density 분모 = p_raw (catchment 없음)")
     pop_for_comp = base[["adm_cd", density_col]].rename(columns={density_col: "population"})
 
-    # c_raw 입력: 의사 수 가중 (n_doctors_med, n_doctors_within_radius_med)
+    # c_raw 입력: 의사 수 GI 가중 (n_doctors_med_weighted, within_med_w)
     base_for_comp = base.copy()
-    base_for_comp["n_clinic"] = base_for_comp["n_doctors_med"]
-    within_for_comp = within_med[["adm_cd", "n_doctors_within"]].rename(
+    base_for_comp["n_clinic"] = base_for_comp["n_doctors_med_weighted"]
+    within_for_comp = within_med_w[["adm_cd", "n_doctors_within"]].rename(
         columns={"n_doctors_within": "n_within_radius"}
     )
     comp = compute_competition_raw(
@@ -238,7 +264,8 @@ def run(date_str: str) -> tuple[Path, Path]:
         "c_raw", "p_raw", "t_raw", "t_transit",
         "pop_total", "pop_40plus", "ratio_40plus",
         "catchment_pop_1_5km", "catchment_pop_40plus",
-        "n_clinic", "n_clinic_gi", "n_clinic_med", "n_doctors_med",
+        "n_clinic", "n_clinic_gi", "n_clinic_med",
+        "n_doctors_med", "n_doctors_med_weighted",
         "n_within_radius", "n_within_radius_med", "n_within_radius_all",
         "n_doctors_within_radius_med", "density_per_10k",
         "n_clinic_500m", "n_clinic_1km", "n_clinic_2km",
@@ -274,8 +301,10 @@ def main() -> int:
     )
     parser = argparse.ArgumentParser(description="개원 입지 스코어링 파이프라인")
     parser.add_argument("--date", default=date.today().isoformat())
+    parser.add_argument("--gi-multiplier", type=float, default=W_GI_MULTIPLIER,
+                        help=f"GI 의원 의사수 가중치 (기본: {W_GI_MULTIPLIER}, 1.0=가중 없음)")
     args = parser.parse_args()
-    run(args.date)
+    run(args.date, gi_multiplier=args.gi_multiplier)
     return 0
 
 

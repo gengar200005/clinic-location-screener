@@ -5,9 +5,11 @@ API·파일 의존 없이 합성 DataFrame으로 공식 검증.
 import pandas as pd
 
 from scoring.competition import (
+    _weighted_doctors,
     compute_competition_raw,
     compute_subcluster_max_doctors,
     count_clinics_per_dong,
+    count_clinics_within_radius,
 )
 
 
@@ -144,3 +146,124 @@ def test_competition_subcluster_penalty_zero_default():
     assert out["n_doctors_subcluster_max_med"].iloc[0] == 99
     # W_COMP_SUBCLUSTER=0이라 99×0=0 → c_raw = 3.0 (density 1.0 + radius 2.0)
     assert abs(out["c_raw"].iloc[0] - 3.0) < 1e-9
+
+
+# ─────────── GI 가중치 (W_GI_MULTIPLIER) 단위 테스트 — ADR-005 ───────────
+
+def test_weighted_doctors_no_gi_column():
+    """is_gi 컬럼 없으면 drTotCnt 그대로 (회귀 호환)."""
+    df = pd.DataFrame({"drTotCnt": [3, 5, 2]})
+    result = _weighted_doctors(df, gi_multiplier=2.0)
+    assert list(result) == [3, 5, 2]
+
+
+def test_weighted_doctors_multiplier_one_is_passthrough():
+    """gi_multiplier=1.0이면 가중치 없이 dr 그대로."""
+    df = pd.DataFrame({"drTotCnt": [3, 5, 2], "is_gi": [True, False, True]})
+    result = _weighted_doctors(df, gi_multiplier=1.0)
+    assert list(result) == [3, 5, 2]
+
+
+def test_weighted_doctors_gi_amplified():
+    """is_gi=True 의원의 dr만 W배. 일반 의원은 그대로.
+
+    W=2.0, GI=[True,False,True], dr=[3,5,2] → [6, 5, 4].
+    """
+    df = pd.DataFrame({"drTotCnt": [3, 5, 2], "is_gi": [True, False, True]})
+    result = _weighted_doctors(df, gi_multiplier=2.0)
+    assert list(result) == [6.0, 5.0, 4.0]
+
+
+def test_weighted_doctors_partial_multiplier():
+    """W=1.5: GI 의원만 ×1.5."""
+    df = pd.DataFrame({"drTotCnt": [4, 2], "is_gi": [True, False]})
+    result = _weighted_doctors(df, gi_multiplier=1.5)
+    assert list(result) == [6.0, 2.0]
+
+
+def test_count_clinics_per_dong_with_gi_multiplier():
+    """count_clinics_per_dong: gi_multiplier로 의사수 가중.
+
+    GI 의사 2명, 일반 내과 의사 3명 → W=2.0이면 4+3=7.
+    공식 검증: n_doctors_med_weighted = n_doctors_med + (W-1)×n_doctors_gi.
+    """
+    df = pd.DataFrame({
+        "adm_cd": ["A", "A", "A", "A"],
+        "sido": ["S"] * 4, "sgg": ["X"] * 4, "adm_nm": ["a"] * 4,
+        "yadmNm": ["GI내과", "일반내과", "외과", "GI내과2"],
+        "drTotCnt": [2, 3, 10, 1],
+        "is_gi": [True, False, False, True],
+    })
+    out_unweighted = count_clinics_per_dong(
+        df, internal_keyword="내과", sum_doctors=True, gi_multiplier=1.0
+    )
+    out_weighted = count_clinics_per_dong(
+        df, internal_keyword="내과", sum_doctors=True, gi_multiplier=2.0
+    )
+    # 비가중: 2+3+1 = 6
+    assert out_unweighted.loc[0, "n_doctors"] == 6
+    # 가중 W=2: GI(2,1) ×2 + 일반(3) = 4+2+3 = 9
+    assert out_weighted.loc[0, "n_doctors"] == 9
+    # 식 검증: 6 + (2-1)×3 = 9
+    n_doctors_gi = 2 + 1   # GI 의사 합
+    expected = 6 + (2.0 - 1.0) * n_doctors_gi
+    assert out_weighted.loc[0, "n_doctors"] == expected
+
+
+def test_count_clinics_within_radius_with_gi_multiplier():
+    """count_clinics_within_radius도 동일 가중 — 반경 안 의사 수에 적용."""
+    admin = pd.DataFrame({
+        "adm_cd": ["A"], "x_5179": [0.0], "y_5179": [0.0],
+    })
+    clinics = pd.DataFrame({
+        "yadmNm": ["GI내과", "일반내과"],
+        "drTotCnt": [4, 2],
+        "is_gi": [True, False],
+        "x_5179": [100.0, 200.0],   # 둘 다 1.5km 안
+        "y_5179": [0.0, 0.0],
+    })
+    w1 = count_clinics_within_radius(
+        clinics, admin, internal_keyword="내과", sum_doctors=True, gi_multiplier=1.0
+    )
+    w2 = count_clinics_within_radius(
+        clinics, admin, internal_keyword="내과", sum_doctors=True, gi_multiplier=2.0
+    )
+    assert w1["n_doctors_within"].iloc[0] == 6   # 4+2
+    assert w2["n_doctors_within"].iloc[0] == 10  # 8+2 (GI 4 → 8)
+
+
+def test_count_clinics_within_radius_excludes_outside_radius():
+    """반경 1.5km 밖 GI 의원은 가중치 적용해도 합산 X (경계 보장)."""
+    admin = pd.DataFrame({"adm_cd": ["A"], "x_5179": [0.0], "y_5179": [0.0]})
+    clinics = pd.DataFrame({
+        "yadmNm": ["GI내과", "GI내과 멀리"],
+        "drTotCnt": [3, 100],
+        "is_gi": [True, True],
+        "x_5179": [100.0, 5000.0],   # 두 번째는 5km 밖
+        "y_5179": [0.0, 0.0],
+    })
+    w = count_clinics_within_radius(
+        clinics, admin, internal_keyword="내과", sum_doctors=True, gi_multiplier=2.0
+    )
+    # 안에 있는 GI만: 3 ×2 = 6
+    assert w["n_doctors_within"].iloc[0] == 6
+
+
+def test_compute_subcluster_with_gi_multiplier():
+    """compute_subcluster_max_doctors도 gi_multiplier 인식.
+
+    같은 cluster (200m 안) GI 5명 + 일반 3명 = 8명 비가중,
+    W=2.0이면 GI 5×2 + 3 = 13명.
+    """
+    admin = pd.DataFrame({"adm_cd": ["A"], "x_5179": [0.0], "y_5179": [0.0]})
+    clinics = pd.DataFrame({
+        "yadmNm": ["GI내과", "일반내과"],
+        "drTotCnt": [5, 3],
+        "is_gi": [True, False],
+        "x_5179": [0.0, 100.0],
+        "y_5179": [0.0, 0.0],
+    })
+    out_unw = compute_subcluster_max_doctors(admin, clinics, gi_multiplier=1.0)
+    out_w = compute_subcluster_max_doctors(admin, clinics, gi_multiplier=2.0)
+    assert out_unw.loc[0, "n_doctors_subcluster_max_med"] == 8
+    assert out_w.loc[0, "n_doctors_subcluster_max_med"] == 13

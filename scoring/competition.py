@@ -33,26 +33,43 @@ from config.constants import (
 logger = logging.getLogger(__name__)
 
 
+def _weighted_doctors(df: pd.DataFrame, gi_multiplier: float = 1.0) -> np.ndarray:
+    """drTotCnt를 GI 의원에 대해 가중. is_gi=True면 ×gi_multiplier, 아니면 ×1.
+
+    is_gi 컬럼 없으면 가중치 없이 drTotCnt 그대로 반환 (회귀 호환).
+    """
+    drs = pd.to_numeric(
+        df.get("drTotCnt", 0), errors="coerce"
+    ).fillna(0).astype(int).to_numpy(dtype="float32")
+    if "is_gi" not in df.columns or gi_multiplier == 1.0:
+        return drs
+    is_gi = df["is_gi"].fillna(False).astype(bool).to_numpy()
+    return drs + (gi_multiplier - 1.0) * drs * is_gi
+
+
 def count_clinics_per_dong(
     clinics_by_dong: pd.DataFrame,
     internal_keyword: str | None = None,
     sum_doctors: bool = False,
+    gi_multiplier: float = 1.0,
 ) -> pd.DataFrame:
     """클리닉 공간조인 결과 → 행정동별 개수 집계.
 
     입력: scoring.spatial_join.join_clinics_to_dong 산출 parquet
     internal_keyword: 'yadmNm'에 이 키워드 포함된 의원만 카운트 (예: '내과').
     sum_doctors: True면 drTotCnt 합도 같이 반환 (n_doctors 컬럼).
+    gi_multiplier: GI 의원(is_gi=True) 의사수 가중치. 1.0이면 가중 없음.
+        n_doctors가 가중 적용된 값. 가중 미적용 회귀치는 별도 호출로.
+
     출력: columns = [adm_cd, adm_nm, sido, sgg, n_clinic, n_clinic_gi(, n_doctors)]
     """
     df = clinics_by_dong
     if internal_keyword:
         mask = df["yadmNm"].str.contains(internal_keyword, na=False)
         df = df[mask]
-    # is_gi: 병원명에 "소화기" 포함 태깅 (scrapers/hira_clinic.py에서 계산)
     if sum_doctors:
         df = df.copy()
-        df["_dr"] = pd.to_numeric(df.get("drTotCnt", 0), errors="coerce").fillna(0).astype(int)
+        df["_dr"] = _weighted_doctors(df, gi_multiplier=gi_multiplier)
         agg_kwargs = {
             "n_clinic": ("yadmNm", "count"),
             "n_doctors": ("_dr", "sum"),
@@ -73,6 +90,7 @@ def count_clinics_within_radius(
     radius_m: int = COMPETITION_RADIUS_M,
     internal_keyword: str | None = None,
     sum_doctors: bool = False,
+    gi_multiplier: float = 1.0,
 ) -> pd.DataFrame:
     """각 행정동 중심점에서 반경 `radius_m` 이내 클리닉 수.
 
@@ -126,10 +144,9 @@ def count_clinics_within_radius(
         "n_within_radius": n_within,
     })
     if sum_doctors:
-        dr = pd.to_numeric(
-            clinics_by_dong.get("drTotCnt", 0), errors="coerce"
-        ).fillna(0).astype(int).to_numpy(dtype="float32")
+        dr = _weighted_doctors(clinics_by_dong, gi_multiplier=gi_multiplier)
         # within_mask: (n_dong, n_clinic). 각 동에 대해 마스크된 의원의 dr 합.
+        # gi_multiplier > 1이면 GI 의원 dr이 부풀려진 값. astype(int)는 round-down.
         out["n_doctors_within"] = (within_mask * dr[None, :]).sum(axis=1).astype(int)
     return out
 
@@ -139,6 +156,7 @@ def compute_subcluster_max_doctors(
     clinics_by_dong: pd.DataFrame,
     radius_m: int = 1500,
     cluster_radius_m: int = 500,
+    gi_multiplier: float = 1.0,
 ) -> pd.DataFrame:
     """동 내 가장 밀집된 subcluster의 내과 의사 수.
 
@@ -171,9 +189,7 @@ def compute_subcluster_max_doctors(
     cl_med = clinics_by_dong[is_internal]
     cl_x = cl_med["x_5179"].to_numpy(dtype="float32")
     cl_y = cl_med["y_5179"].to_numpy(dtype="float32")
-    drs = pd.to_numeric(
-        cl_med.get("drTotCnt", 0), errors="coerce"
-    ).fillna(0).astype(int).to_numpy()
+    drs = _weighted_doctors(cl_med, gi_multiplier=gi_multiplier)
 
     dong_x = admin_centroid["x_5179"].to_numpy(dtype="float32")
     dong_y = admin_centroid["y_5179"].to_numpy(dtype="float32")

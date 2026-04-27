@@ -203,6 +203,45 @@ def apply_centroid_overlay(centroid: pd.DataFrame) -> pd.DataFrame:
     raise ValueError(f"unknown CENTROID_MODE={CENTROID_MODE!r}")
 
 
+def _merge_equipment_flags(clinics: pd.DataFrame) -> pd.DataFrame:
+    """clinic_equipment.parquet에서 has_egd/has_colo/is_gi를 ykiho로 머지.
+
+    is_gi는 A304(위)∩A320(대장) 둘 다 보유 의원. HIRA 의원명에 "소화기"
+    키워드는 0건이라 키워드 매칭은 사용 불가, 장비 보유로 식별 (ADR-005).
+
+    캐시 없으면 has_egd/has_colo/is_gi 모두 False로 채움 (호환).
+    """
+    eqp_path = DATA_CLEANED / "clinic_equipment.parquet"
+    if not eqp_path.exists():
+        logger.warning(
+            "clinic_equipment.parquet 없음 → is_gi 모두 False. "
+            "`python -m scrapers.hira_equipment` 먼저 실행해야 GI 가중치 작동."
+        )
+        clinics = clinics.copy()
+        clinics["has_egd"] = False
+        clinics["has_colo"] = False
+        clinics["is_gi"] = False
+        return clinics
+
+    eqp = pd.read_parquet(eqp_path)
+    before_is_gi = clinics.get("is_gi")
+    if before_is_gi is not None:
+        clinics = clinics.drop(columns=["is_gi"])
+    merged = clinics.merge(
+        eqp[["ykiho", "has_egd", "has_colo", "is_gi"]],
+        on="ykiho", how="left",
+    )
+    for col in ("has_egd", "has_colo", "is_gi"):
+        merged[col] = merged[col].fillna(False)
+    matched = merged["ykiho"].isin(eqp["ykiho"]).sum()
+    logger.info(
+        "equipment join: %d / %d 의원 매칭 (위 %d, 대장 %d, is_gi %d)",
+        matched, len(merged), int(merged["has_egd"].sum()),
+        int(merged["has_colo"].sum()), int(merged["is_gi"].sum()),
+    )
+    return merged
+
+
 def build_admin_centroid(
     geojson_path: Path,
     out_path: Path | None = None,
@@ -283,6 +322,8 @@ def join_clinics_to_dong(
         cmap["sgg"]: STD_COLS["sgg"],
         cmap["name"]: STD_COLS["name"],
     })
+
+    joined = _merge_equipment_flags(joined)
 
     joined.to_parquet(out_path, index=False)
     logger.info("saved %s (%d rows)", out_path, len(joined))
