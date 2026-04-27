@@ -42,6 +42,8 @@
 | 한도 | 요청당 40,000행 (3,622동 × 13밴드 = 47,086 → 2회 분할 호출) |
 | 저장 | `data/raw/population/kosis_pop_age_YYYY-MM-DD.parquet` (.gitignore) |
 
+**한계**: `ratio_40plus`는 catchment 가중 평균이 아닌 동 단위 적용. 추후 catchment 가중 ratio 산출 검토 (TODO).
+
 ## 4. ODSay 대중교통 (odsay.com)
 
 | 항목 | 값 |
@@ -95,6 +97,8 @@
 - 평균 219m 이동, 64개 동(~10%)이 500m+ 보정
 - Top 30 flag 합 28 → 11 (centroid_mismatch 5→3, suburban_cluster 11→4, med_desert 12→4)
 - 임장 좌표 = 진짜 배후세대 중심 (아파트단지 위주)
+
+**한계**: 2020 추계 → 6년 경과. 보정 검토: SK텔레콤 유동인구 API(유료) 또는 행안부 동별 인구로 픽셀 가중치 보정.
 
 ## 8. 좌표계
 

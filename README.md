@@ -15,6 +15,14 @@
 - ODSay 대중교통 API — 이촌역 기준 소요시간
 - vuski/admdongkor — 행정동 경계 GeoJSON (EPSG:4326)
 
+### 데이터 신선도 한계
+
+- **WorldPop 2020 (6년 묵음)**: 신도시·재개발 지역 ±20% 오차 가능
+- **KOSIS `ratio_40plus`는 동 단위** → catchment에 그대로 적용 (인접 동 연령구조 다르면 오차)
+- **HIRA 분기 갱신 vs 주 1회 수집** (변화 없는 주가 대부분)
+
+상세는 [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) 각 절 하단 참조.
+
 ## 구조
 
 ```
