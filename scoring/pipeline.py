@@ -23,6 +23,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from config.constants import DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
@@ -104,6 +105,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     base_cols = ["adm_cd", "adm_cd10", "sido", "sgg", "adm_nm"]
     catchment_cols = [c for c in admin_centroid.columns if c.startswith("catchment_pop_")]
     base_cols += catchment_cols
+    if "anchor_pop_dist_m" in admin_centroid.columns:
+        base_cols.append("anchor_pop_dist_m")
     base = admin_centroid[base_cols].merge(
         n_by_dong[["adm_cd", "n_clinic", "n_clinic_gi"]],
         on="adm_cd", how="left",
@@ -132,6 +135,12 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     pop_raw = load_kosis_population()
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
+
+    # catchment vs 동 인구 비율 — 1.5km이 자기 동 외에 얼마나 끌어왔나 (진단용)
+    if "catchment_pop_1_5km" in base.columns and "pop_total" in base.columns:
+        base["catch_dong_ratio"] = (
+            base["catchment_pop_1_5km"] / base["pop_total"].replace(0, np.nan)
+        ).round(2)
 
     # 2b. 역세권 메타 — c_raw에 페널티로 들어가므로 미리 계산
     # (캐시 없으면 station_penalty=None → 페널티 항 0)
@@ -264,6 +273,7 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         "c_raw", "p_raw", "t_raw", "t_transit",
         "pop_total", "pop_40plus", "ratio_40plus",
         "catchment_pop_1_5km", "catchment_pop_40plus",
+        "catch_dong_ratio", "anchor_pop_dist_m",
         "n_clinic", "n_clinic_gi", "n_clinic_med",
         "n_doctors_med", "n_doctors_med_weighted",
         "n_within_radius", "n_within_radius_med", "n_within_radius_all",

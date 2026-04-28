@@ -21,7 +21,11 @@ Fallback 순서:
 
 출력: data/cache/admin_centroid_shops.parquet (영구 커밋)
 - columns: adm_cd, lat_shops, lon_shops, anchor (str: "shops"|"pop"|"geom"),
-           catchment_pop_1_5km
+           catchment_pop_1_5km,
+           anchor_pop_dist_m (shops anchor와 인구 가중 중심점 거리, EPSG:5179)
+             — 상암 같은 비주거 monoculture anchor 진단용. 큰 값일수록
+               anchor가 거주 분포 밖 (오피스·공원·강 한가운데). pop fallback
+               동은 0, geom fallback 동은 NaN.
 
 사용:
     python -m scoring.centroid_shops_weighted
@@ -132,7 +136,7 @@ def build() -> pd.DataFrame:
 
     picked = df.apply(pick, axis=1, result_type="expand")
     picked.columns = ["lat_shops", "lon_shops", "anchor"]
-    df = pd.concat([df[["adm_cd"]], picked], axis=1)
+    df = pd.concat([df[["adm_cd", "lat_pop", "lon_pop"]], picked], axis=1)
 
     # catchment 계산
     logger.info("computing catchment for %d dongs...", len(df))
@@ -143,6 +147,19 @@ def build() -> pd.DataFrame:
         for lon, lat in zip(df["lon_shops"], df["lat_shops"]):
             cps.append(_catchment_pop(lon, lat, src, CATCHMENT_RADIUS_M))
     df[CATCHMENT_COL] = cps
+
+    # anchor와 인구 가중 중심점 거리 — 비주거 anchor 진단용
+    df["anchor_pop_dist_m"] = np.nan
+    if "lat_pop" in df.columns:
+        has_pop = df["lat_pop"].notna()
+        if has_pop.any():
+            sub = df.loc[has_pop]
+            xa, ya = _TO_5179(sub["lon_shops"].values, sub["lat_shops"].values)
+            xp, yp = _TO_5179(sub["lon_pop"].values, sub["lat_pop"].values)
+            df.loc[has_pop, "anchor_pop_dist_m"] = np.sqrt(
+                (np.asarray(xa) - np.asarray(xp)) ** 2
+                + (np.asarray(ya) - np.asarray(yp)) ** 2
+            ).round(0)
 
     df.to_parquet(OUT_PATH, index=False)
     n_shops = (df["anchor"] == "shops").sum()

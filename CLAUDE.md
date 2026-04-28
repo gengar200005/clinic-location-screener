@@ -38,6 +38,7 @@
 - 답사 후 W_GI_MULTIPLIER fine-tune (1.8~2.2 범위) + W_COMP_SUBCLUSTER 활성화 여부 결정.
 - **HIRA 의료장비 데이터셋 갱신 주기 = 연 1회**: 신규 의원 GI 분류에 1~14개월 지연. 단 신규 의원도 c_raw 의사 수에 카운트되어 페널티 자동 작동하므로 critical 결함 아님 (사후 검증 완료, 2026-04-27).
 - **새 변수 도입 회의 패턴**: barrier 마스킹·약국·신규개원 페널티 모두 기각. 신호는 있으나 c_raw double-count 또는 모델 P/C 정의와 결 다름. 답사 retrospective 데이터 쌓기로 전환.
+- **anchor 비주거 mismatch 진단 컬럼 추가 (2026-04-28)**: `anchor_pop_dist_m` (shops anchor↔동 인구 무게중심 거리) + `catch_dong_ratio` (catchment_pop_1.5km / pop_total). flag화는 보류 — 큰 동(신정3동류)에서 false positive 우려. Top 30 중 두 척도 동시 outlier=상암동 단 1개 (712m, 4.49). 답사 retrospective에서 임계 검증 후 flag 결정.
 
 ## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
 

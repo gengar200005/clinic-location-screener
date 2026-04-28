@@ -158,6 +158,8 @@ def apply_shops_weighted_centroid(centroid: pd.DataFrame) -> pd.DataFrame:
     merge_cols = ["adm_cd", "lat_shops", "lon_shops", "anchor"]
     catchment_cols = [c for c in shops.columns if c.startswith("catchment_pop_")]
     merge_cols += catchment_cols
+    if "anchor_pop_dist_m" in shops.columns:
+        merge_cols.append("anchor_pop_dist_m")
 
     out = out.merge(shops[merge_cols], on="adm_cd", how="left")
     matched = out["lat_shops"].notna().sum()
