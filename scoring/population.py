@@ -47,7 +47,8 @@ def load_kosis_population(parquet_path: Path | None = None) -> pd.DataFrame:
     if parquet_path is not None:
         df = pd.read_parquet(parquet_path)
     else:
-        age_files = sorted(pop_dir.glob("kosis_pop_age_*.parquet"))
+        age_files = sorted(p for p in pop_dir.glob("kosis_pop_age_*.parquet")
+                           if not p.name.startswith("kosis_pop_age_at_"))  # 과거 시점 파일 제외
         if age_files:
             df = pd.read_parquet(age_files[-1])
             logger.info("population source: %s (연령대 포함)", age_files[-1].name)
@@ -200,3 +201,128 @@ def merge_population(
         logger.warning("P_raw = pop_total (50~69세 데이터 없음)")
 
     return merged
+
+
+# ─── v7: 50~69세 3년 추세 ───────────────────────────────────────────
+TREND_PRD_LAG_MONTHS = 36
+TREND_BOUNDARY_SUSPECT = 0.30   # 총인구 |변화| > 30% → 경계 변경(분동·합동) 의심
+
+
+def load_population_then(prd_de: str | None = None) -> pd.DataFrame | None:
+    """kosis_pop_age_at_{YYYYMM}.parquet (가장 최근 파일 또는 지정 월)."""
+    pop_dir = DATA_RAW / "population"
+    files = sorted(pop_dir.glob(f"kosis_pop_age_at_{prd_de or '*'}.parquet"))
+    if not files:
+        return None
+    return pd.read_parquet(files[-1])
+
+
+def compute_trend(dong_table: pd.DataFrame, then: pd.DataFrame) -> pd.DataFrame:
+    """[adm_cd, pop_5069_then, trend_5069_3y, trend_flag].
+
+    - 과거 코드 매핑은 crosswalk_codes (코드 일치 → 시도 내 동 이름).
+    - trend_flag: ok / no_match(분동 등으로 과거 동 없음) / boundary_suspect(총인구 ±30% 초과)
+      → aggregate_unmatched_trend에서 rapid_change(경계 불변 실제 급변) / aggregated(권역 합산)로 보완
+    - boundary_suspect·no_match 는 trend NaN (근거 불충분).
+    """
+    then = then.astype({"adm_cd10": str})
+    codes = crosswalk_codes(dong_table, then)
+    t = then.set_index("adm_cd10")
+    out = pd.DataFrame({"adm_cd": dong_table["adm_cd"].astype(str).values})
+    out["pop_5069_then"] = codes.map(t["pop_5069"]).values
+    pop_total_then = codes.map(t["pop_total"]).values
+    now_5069 = dong_table["pop_5069"].astype(float).values
+    now_total = dong_table["pop_total"].astype(float).values
+
+    total_change = now_total / pop_total_then - 1
+    out["trend_5069_3y"] = now_5069 / out["pop_5069_then"].astype(float) - 1
+    out["trend_flag"] = "ok"
+    out.loc[out["pop_5069_then"].isna(), "trend_flag"] = "no_match"
+    out.loc[(out["trend_flag"] == "ok") & (abs(total_change) > TREND_BOUNDARY_SUSPECT), "trend_flag"] = "boundary_suspect"
+    out["_trend_raw"] = out["trend_5069_3y"]   # aggregate 단계의 급변(실제 변화) 판정용, 이후 drop
+    out.loc[out["trend_flag"] != "ok", "trend_5069_3y"] = pd.NA
+    logger.info(
+        "50~69세 3년 추세: %s, 중앙 %+.1f%%",
+        out["trend_flag"].value_counts().to_dict(),
+        100 * out["trend_5069_3y"].astype(float).median(),
+    )
+    return out
+
+
+TREND_BOUNDARY_THEN = "ver20230701"   # KOSIS 과거 시점(2023-09)과 같은 동 체계의 경계
+
+
+def aggregate_unmatched_trend(trend: pd.DataFrame, base: pd.DataFrame, then: pd.DataFrame) -> pd.DataFrame:
+    """no_match / boundary_suspect 동 → 과거 경계 기준 상위 권역 단위 추세로 보완.
+
+    예: 부천은 2023년 광역동(10개) → 2024-01 3구 37동 부활. 현재 동의 대표점이 속한
+    과거 동 G를 찾고, G 안에 대표점이 있는 현재 동 전체의 50~69세 합 / G의 과거 값 − 1.
+    권역 총인구도 ±30% 넘게 어긋나면(부분 중첩) 그대로 근거 불충분.
+    trend_flag = "aggregated" (권역 합산 추세, 동 고유값 아님).
+    """
+    import geopandas as gpd
+
+    from config.constants import EPSG_WGS84
+
+    target = trend["trend_flag"].isin(["no_match", "boundary_suspect"])
+    if not target.any():
+        return trend.drop(columns="_trend_raw", errors="ignore")
+    bdir = DATA_RAW / "admin_boundary"
+    old_path = bdir / f"HangJeongDong_{TREND_BOUNDARY_THEN}.geojson"
+    new_files = sorted(p for p in bdir.glob("HangJeongDong_*.geojson") if p != old_path)
+    if not old_path.exists() or not new_files:
+        logger.warning("과거 경계 %s 없음 → 권역 보완 생략", old_path.name)
+        return trend.drop(columns="_trend_raw", errors="ignore")
+
+    old = gpd.read_file(old_path).to_crs(EPSG_WGS84)[["adm_cd2", "geometry"]]
+    new = gpd.read_file(new_files[-1]).to_crs(EPSG_WGS84)[["adm_cd", "adm_cd2", "adm_nm", "geometry"]]
+    new = new[new["adm_cd2"].astype(str).str[:2].isin(base["adm_cd10"].astype(str).str[:2].unique())]
+    pts = new.copy()
+    pts["geometry"] = new.geometry.representative_point()
+    pts = gpd.sjoin(pts, old.rename(columns={"adm_cd2": "old_cd"}), predicate="within", how="left")
+
+    # 현재 KOSIS 50~69세 (후보 외 동 포함) — 코드 crosswalk
+    now = load_kosis_population()
+    now_codes = crosswalk_codes(
+        pts.rename(columns={"adm_cd2": "adm_cd10"})[["adm_cd10", "adm_nm"]].reset_index(drop=True), now,
+    )
+    nowt = now.set_index(now["adm_cd10"].astype(str))
+    pts = pts.reset_index(drop=True)
+    pts["now_5069"] = now_codes.map(nowt["pop_5069"]).values
+    pts["now_total"] = now_codes.map(nowt["pop_total"]).values
+    agg = pts.groupby("old_cd").agg(now_5069=("now_5069", "sum"), now_total=("now_total", "sum"),
+                                    n_now=("adm_cd", "size"), any_missing=("now_5069", lambda s: s.isna().any()))
+    t = then.astype({"adm_cd10": str}).set_index("adm_cd10")
+    agg["then_5069"] = t["pop_5069"].reindex(agg.index).values
+    agg["then_total"] = t["pop_total"].reindex(agg.index).values
+    agg["trend"] = agg["now_5069"] / agg["then_5069"] - 1
+    ok = (~agg["any_missing"]) & agg["then_5069"].notna() & \
+         ((agg["now_total"] / agg["then_total"] - 1).abs() <= TREND_BOUNDARY_SUSPECT)
+
+    old_of = pts.set_index(pts["adm_cd"].astype(str))["old_cd"]
+    out = trend.copy()
+
+    # boundary_suspect 중 같은 코드·같은 면적(±10%)이면 경계 불변 → 재건축·입주 등 실제 급변
+    from config.constants import EPSG_KOREA
+    area_new = new.to_crs(EPSG_KOREA).set_index(new["adm_cd2"].astype(str)).area
+    area_old = old.to_crs(EPSG_KOREA).set_index(old["adm_cd2"].astype(str)).area
+    cd10 = base.set_index(base["adm_cd"].astype(str))["adm_cd10"].astype(str)
+    n_rapid = 0
+    for i in out.index[out["trend_flag"] == "boundary_suspect"]:
+        c = cd10.get(out.at[i, "adm_cd"])
+        if c in area_new.index and c in area_old.index and abs(area_new[c] / area_old[c] - 1) <= 0.10:
+            out.at[i, "trend_5069_3y"] = out.at[i, "_trend_raw"]
+            out.at[i, "trend_flag"] = "rapid_change"
+            n_rapid += 1
+    logger.info("추세 급변(경계 불변, 실제 변화): %d 동", n_rapid)
+    target = out["trend_flag"].isin(["no_match", "boundary_suspect"])
+
+    n_fixed = 0
+    for i in out.index[target]:
+        g = old_of.get(out.at[i, "adm_cd"])
+        if isinstance(g, str) and g in agg.index and ok.get(g, False):
+            out.at[i, "trend_5069_3y"] = agg.at[g, "trend"]
+            out.at[i, "trend_flag"] = "aggregated"
+            n_fixed += 1
+    logger.info("추세 권역 보완: %d / %d 동 (과거 경계 %s)", n_fixed, int(target.sum()), TREND_BOUNDARY_THEN)
+    return out.drop(columns="_trend_raw")

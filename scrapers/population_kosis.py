@@ -43,8 +43,8 @@ AGE_CODE_5069 = ["55", "60", "65", "70"]   # 50~54, 55~59, 60~64, 65~69세 (4밴
     wait=wait_exponential(multiplier=2, min=2, max=30),
     reraise=True,
 )
-def _fetch_raw(api_key: str, obj_l2: str) -> list[dict]:
-    """KOSIS API 호출. obj_l2는 단일 코드 또는 콤마 리스트."""
+def _fetch_raw(api_key: str, obj_l2: str, prd_de: str | None = None) -> list[dict]:
+    """KOSIS API 호출. obj_l2는 단일 코드. prd_de(YYYYMM) 지정 시 해당 월, 없으면 최신."""
     params = {
         "method": "getList",
         "apiKey": api_key,
@@ -56,8 +56,11 @@ def _fetch_raw(api_key: str, obj_l2: str) -> list[dict]:
         "format": "json",
         "jsonVD": "Y",
         "prdSe": "M",
-        "newEstPrdCnt": "1",
     }
+    if prd_de:
+        params.update(startPrdDe=prd_de, endPrdDe=prd_de)
+    else:
+        params["newEstPrdCnt"] = "1"
     resp = requests.get(BASE_URL, params=params, timeout=90)
     resp.raise_for_status()
     data = resp.json()
@@ -157,6 +160,31 @@ def fetch_population_age(date_str: str, force: bool = False) -> Path:
         int(merged["pop_5069"].median()),
         merged["ratio_5069"].median(),
     )
+    return out
+
+
+def fetch_population_age_at(prd_de: str, force: bool = False) -> Path:
+    """특정 월(YYYYMM)의 총인구 + 50~69세 + 동 이름 (추세 비교용).
+
+    출력: kosis_pop_age_at_{prd_de}.parquet [adm_cd10, dong_nm, pop_total, pop_5069, PRD_DE]
+    """
+    load_dotenv()
+    api_key = os.environ.get("KOSIS_KEY")
+    if not api_key:
+        raise RuntimeError(".env의 KOSIS_KEY 미설정.")
+    out = DATA_RAW / "population" / f"kosis_pop_age_at_{prd_de}.parquet"
+    if out.exists() and not force:
+        logger.info("skip: %s exists", out)
+        return out
+
+    total = _clean(pd.DataFrame(_fetch_raw(api_key, "0", prd_de)))
+    frames = [_clean(pd.DataFrame(_fetch_raw(api_key, code, prd_de))) for code in AGE_CODE_5069]
+    age = pd.concat(frames, ignore_index=True).groupby("C1")["DT"].sum().rename("pop_5069")
+    df = total.rename(columns={"C1": "adm_cd10", "C1_NM": "dong_nm", "DT": "pop_total"})
+    df = df.merge(age, left_on="adm_cd10", right_index=True, how="left")
+    df = df[["adm_cd10", "dong_nm", "pop_total", "pop_5069", "PRD_DE"]]
+    df.to_parquet(out, index=False)
+    logger.info("saved %s (%d dongs, PRD_DE=%s)", out, len(df), df["PRD_DE"].unique().tolist())
     return out
 
 

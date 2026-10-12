@@ -132,6 +132,14 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     pop_raw = load_kosis_population()
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
+    # 2a. 50~69세 3년 추세 (v7, 표시 전용 — 가중치 미정)
+    from scoring.population import aggregate_unmatched_trend, compute_trend, load_population_then
+    then = load_population_then()
+    if then is not None:
+        trend = aggregate_unmatched_trend(compute_trend(base, then), base, then)
+        base = base.merge(trend, on="adm_cd", how="left")
+    else:
+        logger.warning("과거 인구 없음 → 추세 생략 (`fetch_population_age_at`)")
 
     # 2b. 역세권 메타 — c_raw에 페널티로 들어가므로 미리 계산
     # (캐시 없으면 station_penalty=None → 페널티 항 0)
@@ -299,6 +307,7 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         "n_doctors_subcluster_max_med", "n_clinics_subcluster_max_med",
         "n_open_5y", "n_open_5y_alive", "n_close_5y", "net_open_5y",
         "survival_5y", "survival_sample_flag",
+        "pop_5069_then", "trend_5069_3y", "trend_flag",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]
