@@ -23,6 +23,10 @@ COMMUTE_WEEKDAY = 1            # 0=월 … 화요일
 COMMUTE_AM_DEPART = (7, 30)    # 출근: 이촌 → 후보
 COMMUTE_PM_DEPART = (18, 30)   # 퇴근: 후보 → 이촌
 
+# ─── v7 생존율 (scoring/survival.py) ───
+SURVIVAL_YEARS = 5           # 최근 N년 개설·폐업
+SURVIVAL_MIN_OPENED = 3      # 반경 내 개설 수가 이보다 적으면 생존율 NaN (표본 부족)
+
 # ─── 스코어 가중치 (합 = 1.0) ───
 # 2026-04-19 조정: T=0.2 → 0.1 (T 민감도 분석 결과 16/30 동 교체로 결정적 변수임을 확인).
 # T는 임장 우선순위 보조용 tie-breaker로 약화. C·P 동등 0.45.

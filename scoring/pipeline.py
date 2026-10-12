@@ -251,6 +251,16 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
                            if c != "n_doctors_station_500m_med"]
         base = base.merge(station_meta[st_display_cols], on="adm_cd", how="left")
 
+    # 5b. 생존율·순증 (v7, 표시 전용 — 점수 미반영).
+    #     2026-10-12 검증: 최근 개설 내과의 5년 내 폐업률 3~8% → 동 반경 단위 생존율은
+    #     표본(평균 개설 3곳)이 너무 작아 변별력 없음. net_open(개설−폐업)은 진입 압력 참고치.
+    try:
+        from scoring.survival import compute_survival, load_internal_clinic_history
+        history, ref = load_internal_clinic_history()
+        base = base.merge(compute_survival(admin_centroid, history, ref), on="adm_cd", how="left")
+    except FileNotFoundError as e:
+        logger.warning("생존율 생략: %s", e)
+
     # 6. 확장 반경 지표 + 해석 플래그
     logger.info("=== 3c. radius coverage ===")
     from scoring.radius_metrics import compute_radius_counts, add_coverage_flags
@@ -287,6 +297,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         "nearest_station", "station_dist_m", "n_clinic_station_500m",
         "n_doctors_station_500m_med",
         "n_doctors_subcluster_max_med", "n_clinics_subcluster_max_med",
+        "n_open_5y", "n_open_5y_alive", "n_close_5y", "net_open_5y",
+        "survival_5y", "survival_sample_flag",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]
