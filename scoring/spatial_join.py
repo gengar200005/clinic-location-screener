@@ -15,28 +15,21 @@ from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
-import yaml
 
 from config.constants import (
     DATA_CLEANED,
     DATA_RAW,
     EPSG_KOREA,
     EPSG_WGS84,
-    ROOT,
+    ORIGIN_LAT,
+    ORIGIN_LNG,
 )
+from config.regions import context_sido, is_excluded, prefilter_km
 
 logger = logging.getLogger(__name__)
 
-TARGET_REGIONS_YAML = ROOT / "config" / "target_regions.yaml"
-
 # 표준화된 출력 컬럼명
 STD_COLS = {"code": "adm_cd", "sido": "sido", "sgg": "sgg", "name": "adm_nm"}
-
-
-def load_target_regions() -> dict[str, list[str]]:
-    with open(TARGET_REGIONS_YAML, encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    return {"서울특별시": cfg.get("seoul", []), "경기도": cfg.get("gyeonggi", [])}
 
 
 def _detect_columns(gdf: gpd.GeoDataFrame) -> dict[str, str]:
@@ -56,28 +49,56 @@ def _detect_columns(gdf: gpd.GeoDataFrame) -> dict[str, str]:
     return resolved
 
 
-def _filter_target(gdf: gpd.GeoDataFrame, cmap: dict[str, str]) -> gpd.GeoDataFrame:
-    """target_regions.yaml에 지정된 시도·시군구만 남긴다.
-
-    주의: 성남·고양·부천·안양은 구가 있어 sggnm이 "성남시 분당구" 형식.
-    startswith 매칭으로 일반시·광역시 모두 포착.
-    """
-    targets = load_target_regions()
-    mask = False
-    for sido, sgg_list in targets.items():
-        sido_mask = gdf[cmap["sido"]] == sido
-        sgg_mask = gdf[cmap["sgg"]].str.startswith(tuple(sgg_list))
-        mask = mask | (sido_mask & sgg_mask)
+def _filter_context(gdf: gpd.GeoDataFrame, cmap: dict[str, str]) -> gpd.GeoDataFrame:
+    """context_sido 전체 (의원 공간조인·반경 카운트용)."""
+    mask = gdf[cmap["sido"]].isin(context_sido())
     return gdf[mask].copy().reset_index(drop=True)
 
 
-def _load_target_polygons(geojson_path: Path) -> tuple[gpd.GeoDataFrame, dict[str, str]]:
+def _filter_target(gdf: gpd.GeoDataFrame, cmap: dict[str, str]) -> gpd.GeoDataFrame:
+    """후보 사전 집합: context_sido − exclude_sgg − prefilter_km 밖.
+
+    최종 후보는 여기에 통근 60분 필터(scoring/commute.py)를 추가 적용.
+    sggnm은 "성남시분당구"처럼 구 포함 형식이라 is_excluded는 startswith.
+    """
+    ctx = _filter_context(gdf, cmap)
+    excluded = [
+        is_excluded(sido, sgg)
+        for sido, sgg in zip(ctx[cmap["sido"]], ctx[cmap["sgg"]])
+    ]
+    out = ctx[~pd.Series(excluded, index=ctx.index)]
+    logger.info("exclude_sgg 제외: %d동", sum(excluded))
+
+    km = prefilter_km()
+    if km is not None:
+        origin = gpd.GeoSeries(
+            gpd.points_from_xy([ORIGIN_LNG], [ORIGIN_LAT]), crs=EPSG_WGS84,
+        ).to_crs(EPSG_KOREA).iloc[0]
+        dist = out.to_crs(EPSG_KOREA).geometry.representative_point().distance(origin)
+        n_before = len(out)
+        out = out[dist <= km * 1000]
+        logger.info("prefilter %.0fkm: %d → %d동", km, n_before, len(out))
+    return out.copy().reset_index(drop=True)
+
+
+def _read_boundary(geojson_path: Path) -> tuple[gpd.GeoDataFrame, dict[str, str]]:
     gdf = gpd.read_file(geojson_path)
     gdf = gdf.set_crs(EPSG_WGS84) if gdf.crs is None else gdf.to_crs(EPSG_WGS84)
-    cmap = _detect_columns(gdf)
+    return gdf, _detect_columns(gdf)
+
+
+def _load_target_polygons(geojson_path: Path) -> tuple[gpd.GeoDataFrame, dict[str, str]]:
+    gdf, cmap = _read_boundary(geojson_path)
     filtered = _filter_target(gdf, cmap)
     logger.info("filtered %d / %d dongs", len(filtered), len(gdf))
     return filtered, cmap
+
+
+def _load_context_polygons(geojson_path: Path) -> tuple[gpd.GeoDataFrame, dict[str, str]]:
+    gdf, cmap = _read_boundary(geojson_path)
+    ctx = _filter_context(gdf, cmap)
+    logger.info("context %d / %d dongs (%s)", len(ctx), len(gdf), ", ".join(context_sido()))
+    return ctx, cmap
 
 
 def _find_latest_geojson() -> Path | None:
@@ -283,7 +304,12 @@ def join_clinics_to_dong(
     geojson_path: Path,
     out_path: Path | None = None,
 ) -> gpd.GeoDataFrame:
-    """HIRA 클리닉 좌표를 대상 행정동 폴리곤에 매핑."""
+    """HIRA 클리닉 좌표를 context_sido 행정동 폴리곤에 매핑.
+
+    v7: 후보 동만이 아니라 context 전체에 조인. 제외 시군구(예: 성남)·사전필터 밖
+    의원도 경계 인근 후보의 반경 경쟁 카운트에 들어가야 하기 때문.
+    동별 집계는 pipeline에서 후보 동 기준으로 left merge.
+    """
     if out_path is None:
         out_path = DATA_CLEANED / "clinics_by_dong.parquet"
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -303,7 +329,7 @@ def join_clinics_to_dong(
     )
 
     logger.info("loading polygons %s", geojson_path)
-    dongs, cmap = _load_target_polygons(geojson_path)
+    dongs, cmap = _load_context_polygons(geojson_path)
 
     # 공간조인: 클리닉 점이 어느 동 폴리곤 within인지
     cols_to_keep = ["geometry", cmap["code"], cmap["sido"], cmap["sgg"], cmap["name"]]

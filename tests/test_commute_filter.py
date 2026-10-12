@@ -1,0 +1,53 @@
+"""v7 통근 60분 필터 + 대상 지역 제외 규칙."""
+import pandas as pd
+
+from config.regions import is_excluded
+from scoring.commute import classify_commute
+
+
+def _row(car_am, car_pm, tr_am, tr_pm):
+    return {"adm_cd": "x", "t_car_am": car_am, "t_car_pm": car_pm,
+            "t_transit_am": tr_am, "t_transit_pm": tr_pm}
+
+
+def _classify(*rows):
+    return classify_commute(pd.DataFrame(rows), 60)
+
+
+def test_both_directions_must_pass():
+    # 자차 출근 40분이어도 퇴근 70분이면 자차 불합격, 대중교통 75분 → 제외
+    out = _classify(_row(40, 70, 75, 75)).iloc[0]
+    assert not out["commute_ok_car"]
+    assert not out["commute_ok"]
+    assert out["commute_status"] == "exceed"
+
+
+def test_either_mode_is_enough():
+    # 자차 출퇴근 모두 60 이내, 대중교통 초과 → 후보
+    out = _classify(_row(55, 60, 80, 85)).iloc[0]
+    assert out["commute_ok_car"] and not out["commute_ok_transit"]
+    assert out["commute_ok"]
+    assert out["t_car"] == 60 and out["t_raw"] == 60
+
+
+def test_missing_leg_is_unknown_not_pass():
+    # 대중교통 퇴근 구간 결측 → 대중교통 판정 불가. 자차 초과 → unknown
+    out = _classify(_row(70, 70, 50, None)).iloc[0]
+    assert not out["commute_ok"]
+    assert out["commute_status"] == "unknown"
+
+
+def test_missing_leg_but_other_mode_ok():
+    out = _classify(_row(30, 35, None, None)).iloc[0]
+    assert out["commute_ok"] and out["commute_status"] == "ok"
+
+
+def test_gyeongbu_exclusion_prefix_match():
+    assert is_excluded("경기도", "성남시분당구")
+    assert is_excluded("경기도", "수원시 팔달구")
+    assert is_excluded("경기도", "안성시")
+    assert not is_excluded("경기도", "고양시일산서구")
+    assert not is_excluded("경기도", "광명시")
+    # 경기 광주시만 제외 — 다른 시도 이름과 혼동 금지
+    assert not is_excluded("인천광역시", "광주시")
+    assert not is_excluded("서울특별시", "중구")

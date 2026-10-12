@@ -17,7 +17,7 @@
     "station": {"name": "이촌", "lat": ..., "lon": ..., "dist_m": 880,
                 "n_clinic_500m": 9},
     "metrics": {"c_norm": ..., "p_norm": ..., "t_norm": ...,
-                "pop_total": ..., "pop_40plus": ..., "ratio_40plus": ...,
+                "pop_total": ..., "pop_5069": ..., "ratio_5069": ...,
                 "t_raw": ..., "n_clinic": ..., "n_clinic_500m": ...,
                 "n_clinic_1km": ..., "n_clinic_2km": ...,
                 "med_desert": bool, "centroid_mismatch": bool, "suburban": bool},
@@ -327,15 +327,15 @@ def build_detail_json(
             "p_norm": round(float(row["p_norm"]), 4),
             "t_norm": round(float(row["t_norm"]), 4),
             "pop_total": int(row["pop_total"]),
-            "pop_40plus": int(row["pop_40plus"]),
-            "ratio_40plus": round(float(row["ratio_40plus"]), 4),
+            "pop_5069": int(row["pop_5069"]),
+            "ratio_5069": round(float(row["ratio_5069"]), 4),
             "catchment_pop_1_5km": (
                 int(row["catchment_pop_1_5km"])
                 if pd.notna(row.get("catchment_pop_1_5km")) else None
             ),
-            "catchment_pop_40plus": (
-                int(row["catchment_pop_40plus"])
-                if pd.notna(row.get("catchment_pop_40plus")) else None
+            "catchment_pop_5069": (
+                int(row["catchment_pop_5069"])
+                if pd.notna(row.get("catchment_pop_5069")) else None
             ),
             "density_per_10k": (
                 round(float(row["density_per_10k"]), 3)
@@ -429,7 +429,7 @@ def export_heatmap(
             "n_clinic_gi": int(r.get("n_clinic_gi", 0)),
             "n_clinic_500m": int(r.get("n_clinic_500m", 0)),
             "pop_total": int(r.get("pop_total", 0)) if pd.notna(r.get("pop_total")) else None,
-            "pop_40plus": int(r.get("pop_40plus", 0)) if pd.notna(r.get("pop_40plus")) else None,
+            "pop_5069": int(r.get("pop_5069", 0)) if pd.notna(r.get("pop_5069")) else None,
             "t_raw": int(r["t_raw"]) if pd.notna(r["t_raw"]) else None,
             "med_desert": bool(r.get("med_desert_flag", False)),
             "suburban": bool(r.get("suburban_cluster_flag", False)),

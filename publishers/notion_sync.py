@@ -54,6 +54,8 @@ PROP_P = "인구점수"
 PROP_T = "통근점수"
 PROP_N_CLINIC = "의원수"
 PROP_POP_TOTAL = "총인구"
+# TODO(v7 5단계): Notion DB 속성명을 "50~69세인구"/"50~69세비율"로 변경 후 갱신.
+#   현재 값은 50~69세 기준으로 들어감 (속성명만 구버전).
 PROP_POP_40 = "40+인구"
 PROP_RATIO_40 = "40+비율"
 PROP_COMMUTE = "자차분"
@@ -91,8 +93,8 @@ def _page_props(row: pd.Series, today: str) -> dict:
         PROP_T: {"number": round(float(row["t_norm"]), 4)},
         PROP_N_CLINIC: {"number": int(row["n_clinic"])},
         PROP_POP_TOTAL: {"number": int(row["pop_total"])},
-        PROP_POP_40: {"number": int(row["pop_40plus"])},
-        PROP_RATIO_40: {"number": round(float(row["ratio_40plus"]), 4)},
+        PROP_POP_40: {"number": int(row["pop_5069"])},
+        PROP_RATIO_40: {"number": round(float(row["ratio_5069"]), 4)},
         PROP_COMMUTE: {"number": int(row["t_raw"])},
         PROP_N500: {"number": int(row["n_within_radius"])},
         PROP_DATE: {"date": {"start": today}},

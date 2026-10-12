@@ -103,3 +103,61 @@ def merge_commute(dong_table: pd.DataFrame, commute: pd.DataFrame) -> pd.DataFra
 
     merged = merged.rename(columns={"minutes": "t_raw"})
     return merged
+
+
+# ─── v7: 출퇴근 60분 필터 ─────────────────────────────────────────────
+# scrapers/commute_isochrone.py 캐시(commute_v7.parquet) 기반.
+# 통근은 점수에 반영하지 않고 후보 판정에만 사용 (W_COMMUTE=0).
+
+V7_CACHE = DATA_CACHE / "commute_v7.parquet"
+V7_LEGS = ("car_am", "car_pm", "transit_am", "transit_pm")
+
+
+def load_commute_v7(path: Path | None = None) -> pd.DataFrame:
+    """캐시 → 동별 wide 테이블 [adm_cd, t_car_am, t_car_pm, t_transit_am, t_transit_pm].
+
+    status != ok 인 구간은 NaN.
+    """
+    path = path or V7_CACHE
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} 없음. `python -m scrapers.commute_isochrone` 먼저."
+        )
+    df = pd.read_parquet(path)
+    df["adm_cd"] = df["adm_cd"].astype(str)
+    df.loc[df["status"] != "ok", "minutes"] = pd.NA
+    wide = df.pivot_table(index="adm_cd", columns="leg", values="minutes", aggfunc="last")
+    wide = wide.reindex(columns=list(V7_LEGS))
+    wide.columns = [f"t_{leg}" for leg in wide.columns]
+    return wide.reset_index()
+
+
+def classify_commute(df: pd.DataFrame, limit_min: int) -> pd.DataFrame:
+    """t_* 4구간 → 판정 컬럼 추가.
+
+    - t_car / t_transit       : max(출근, 퇴근). 한 구간이라도 없으면 NaN.
+    - commute_ok_car/transit  : 해당 수단 출퇴근 모두 limit 이내
+    - commute_ok              : 둘 중 하나라도 OK
+    - commute_status          : ok / exceed / unknown(어느 수단도 OK 아니고, 판정 못 한 수단 있음)
+    - t_raw                   : min(t_car, t_transit) — 표시·호환용 (점수 미반영)
+    """
+    out = df.copy()
+    for leg in V7_LEGS:
+        col = f"t_{leg}"
+        if col not in out.columns:
+            out[col] = pd.NA
+        out[col] = pd.to_numeric(out[col], errors="coerce")
+
+    out["t_car"] = out[["t_car_am", "t_car_pm"]].max(axis=1, skipna=False)
+    out["t_transit"] = out[["t_transit_am", "t_transit_pm"]].max(axis=1, skipna=False)
+    out["commute_ok_car"] = out["t_car"] <= limit_min
+    out["commute_ok_transit"] = out["t_transit"] <= limit_min
+    out["commute_ok"] = out["commute_ok_car"] | out["commute_ok_transit"]
+
+    any_unknown = out["t_car"].isna() | out["t_transit"].isna()
+    out["commute_status"] = "exceed"
+    out.loc[~out["commute_ok"] & any_unknown, "commute_status"] = "unknown"
+    out.loc[out["commute_ok"], "commute_status"] = "ok"
+
+    out["t_raw"] = out[["t_car", "t_transit"]].min(axis=1)
+    return out

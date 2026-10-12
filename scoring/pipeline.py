@@ -4,7 +4,7 @@
 - data/cleaned/admin_centroid.parquet       (653 행정동)
 - data/cleaned/clinics_by_dong.parquet      (HIRA 공간조인)
 - data/raw/population/kosis_pop_*.parquet   (최신)
-- data/cache/odsay_commute.parquet          (ODSay 캐시)
+- data/cache/commute_v7.parquet             (출퇴근 4구간 — 60분 후보 필터)
 
 출력:
 - data/scored/scores_YYYY-MM-DD.parquet     (전체 동, 정규화·점수·순위 포함)
@@ -25,8 +25,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from config.constants import DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
-from scoring.commute import load_commute, merge_commute
+from config.constants import COMMUTE_LIMIT_MIN, DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
+from scoring.commute import classify_commute, load_commute_v7
 from scoring.competition import (
     compute_competition_raw,
     compute_subcluster_max_doctors,
@@ -127,7 +127,7 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     base[int_cols] = base[int_cols].fillna(0).astype(int)
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
-    # merge_population이 P_raw 설정까지 수행 (catchment × ratio_40plus 우선)
+    # merge_population이 P_raw 설정까지 수행 (catchment × ratio_5069 우선)
     logger.info("=== 2. population ===")
     pop_raw = load_kosis_population()
     base = merge_population(base, pop_raw)
@@ -159,14 +159,14 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         subcluster_meta["n_doctors_subcluster_max_med"].max(),
     )
 
-    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 40+ 인구 + 역세권 페널티)
+    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 50~69세 인구 + 역세권 페널티)
     # density 분모 우선순위:
-    #   1) catchment_pop_40plus (40+ 환자풀 — 내과 진료 베이스)
+    #   1) catchment_pop_5069 (50~69세 환자풀)
     #   2) catchment_pop_*km (전체 인구 폴백)
     #   3) p_raw
-    if "catchment_pop_40plus" in base.columns and base["catchment_pop_40plus"].notna().any():
-        density_col = "catchment_pop_40plus"
-        logger.info("density 분모 = catchment_pop_40plus (40+ 환자풀)")
+    if "catchment_pop_5069" in base.columns and base["catchment_pop_5069"].notna().any():
+        density_col = "catchment_pop_5069"
+        logger.info("density 분모 = catchment_pop_5069 (50~69세 환자풀)")
     elif catchment_cols and base[catchment_cols[0]].notna().any():
         density_col = catchment_cols[0]
         logger.info("density 분모 = %s (전체 인구 폴백)", density_col)
@@ -219,18 +219,30 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     base["n_within_radius"] = base["n_within_radius_med"]
     base["density_per_10k"] = base["density_per_10k_med"]
 
-    # 4. 통근 지표 (점수는 자차 primary, 대중교통은 보조 display)
-    logger.info("=== 3. commute ===")
-    commute = load_commute()
-    base = merge_commute(base, commute)  # adds t_raw (자차)
-    # ODSay 대중교통 시간 보조 컬럼
-    from scoring.commute import load_transit_supplement
-    transit = load_transit_supplement()
-    if transit is not None:
-        base["adm_cd"] = base["adm_cd"].astype(str)
-        before = base["adm_cd"].isin(transit["adm_cd"]).sum()
-        base = base.merge(transit, on="adm_cd", how="left")
-        logger.info("  + t_transit merged (%d matched)", before)
+    # 4. 통근 60분 필터 (v7) — 점수 미반영, 후보 판정 전용.
+    #    percentile rank가 후보 집합 기준이어야 하므로 가중합 전에 필터.
+    logger.info("=== 3. commute filter (출퇴근 %d분) ===", COMMUTE_LIMIT_MIN)
+    base["adm_cd"] = base["adm_cd"].astype(str)
+    base = base.merge(load_commute_v7(), on="adm_cd", how="left")
+    base = classify_commute(base, COMMUTE_LIMIT_MIN)
+    status_counts = base["commute_status"].value_counts().to_dict()
+    logger.info(
+        "commute: %s (자차 OK %d / 대중교통 OK %d)",
+        status_counts, int(base["commute_ok_car"].sum()), int(base["commute_ok_transit"].sum()),
+    )
+    excluded = base[~base["commute_ok"]]
+    excluded_path = DATA_SCORED / f"excluded_commute_{date_str}.parquet"
+    excluded[["adm_cd", "sido", "sgg", "adm_nm", "commute_status",
+              "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm"]].to_parquet(
+        excluded_path, index=False,
+    )
+    if (excluded["commute_status"] == "unknown").any():
+        logger.warning(
+            "통근 판정불가 %d동 → 후보 제외 (%s). 재수집 필요.",
+            int((excluded["commute_status"] == "unknown").sum()), excluded_path.name,
+        )
+    base = base[base["commute_ok"]].copy()
+    logger.info("후보 확정: %d동", len(base))
 
     # 5. 역세권 메타 컬럼 머지 (위에서 계산한 station_meta — display용)
     if station_meta is not None:
@@ -261,9 +273,11 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     cols_ordered = [
         "rank", "adm_cd", "sido", "sgg", "adm_nm",
         "score", "c_norm", "p_norm", "t_norm",
-        "c_raw", "p_raw", "t_raw", "t_transit",
-        "pop_total", "pop_40plus", "ratio_40plus",
-        "catchment_pop_1_5km", "catchment_pop_40plus",
+        "c_raw", "p_raw", "t_raw", "t_car", "t_transit",
+        "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm",
+        "commute_ok_car", "commute_ok_transit",
+        "pop_total", "pop_5069", "ratio_5069",
+        "catchment_pop_1_5km", "catchment_pop_5069",
         "n_clinic", "n_clinic_gi", "n_clinic_med",
         "n_doctors_med", "n_doctors_med_weighted",
         "n_within_radius", "n_within_radius_med", "n_within_radius_all",

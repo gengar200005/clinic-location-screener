@@ -107,20 +107,20 @@
 
         <div class="weights" id="weights-panel">
           <div class="weights-title">
-            가중치 재조정 <span style="color:#888;font-weight:400;font-size:11px;">(기본 C·P 0.45 / T 0.1)</span>
+            가중치 재조정 <span style="color:#888;font-weight:400;font-size:11px;">(v7 기본 C·P 0.5 / T 0 — 통근은 60분 필터로만 사용)</span>
             <button id="reset-w" type="button">기본값</button>
           </div>
           <label>경쟁 C
-            <input type="range" id="w-c" min="0" max="1" step="0.05" value="0.45" />
-            <span id="w-c-v">0.45</span>
+            <input type="range" id="w-c" min="0" max="1" step="0.05" value="0.50" />
+            <span id="w-c-v">0.50</span>
           </label>
           <label>인구 P
-            <input type="range" id="w-p" min="0" max="1" step="0.05" value="0.45" />
-            <span id="w-p-v">0.45</span>
+            <input type="range" id="w-p" min="0" max="1" step="0.05" value="0.50" />
+            <span id="w-p-v">0.50</span>
           </label>
           <label>통근 T
-            <input type="range" id="w-t" min="0" max="1" step="0.05" value="0.10" />
-            <span id="w-t-v">0.10</span>
+            <input type="range" id="w-t" min="0" max="1" step="0.05" value="0.00" />
+            <span id="w-t-v">0.00</span>
           </label>
         </div>
       </div>
@@ -140,7 +140,7 @@
     let heatmap = null, boundaries = null, geoLayer = null, map = null;
     let narrowLists = null;
     let activeMarker = null, activeRow = null;
-    const DEFAULT_W = { c: 0.45, p: 0.45, t: 0.10 };
+    const DEFAULT_W = { c: 0.50, p: 0.50, t: 0.00 };
     const TOWN_LABELS = { gen_1: '1기', gen_2: '2기', gen_3: '3기', seoul_renew: '재개발' };
     const state = { sido: 'all', minScore: 0, topN: 30, criterion: 'score', weights: { ...DEFAULT_W } };
 
@@ -237,14 +237,14 @@
           <b>#${dong.rank} ${dong.short}</b> <span style="color:#666;">(${dong.sgg})</span><br>
           <div class="row-mini"><span>총점</span><b>${dong.score.toFixed(3)}</b></div>
           <div class="row-mini"><span>경쟁 (낮을수록↑)</span><span>${dong.c.toFixed(2)}</span></div>
-          <div class="row-mini"><span>인구 40+</span><span>${dong.p.toFixed(2)}</span></div>
+          <div class="row-mini"><span>인구 50~69세</span><span>${dong.p.toFixed(2)}</span></div>
           <div class="row-mini"><span>통근 (이촌역)</span><span>${dong.t.toFixed(2)}</span></div>
           <hr style="border:0;border-top:1px solid #eee;margin:6px 0;">
           <div class="row-mini"><span>내과 의원 (동내)</span><b style="color:#c62828;">${dong.n_clinic_med ?? '-'}개</b></div>
           <div class="row-mini"><span>내과 의사 수</span><b style="color:#c62828;">${dong.n_doctors_med ?? '-'}명</b></div>
           <div class="row-mini"><span>전체 의원 (동/500m)</span><span>${dong.n_clinic} / ${dong.n_clinic_500m}</span></div>
-          <div class="row-mini"><span>총인구 / 40+</span><span>${(dong.pop_total||0).toLocaleString()} / ${(dong.pop_40plus||0).toLocaleString()}</span></div>
-          <div class="row-mini"><span>🚗 자차</span><span>${dong.t_raw}분</span></div>
+          <div class="row-mini"><span>총인구 / 50~69세</span><span>${(dong.pop_total||0).toLocaleString()} / ${(dong.pop_5069||0).toLocaleString()}</span></div>
+          <div class="row-mini"><span>🕐 통근 (출퇴근 중 긴 쪽, 자차·대중교통 중 짧은 수단)</span><span>${dong.t_raw}분</span></div>
           ${dong.rank <= 50 ? `<a class="detail" href="detail/#${dong.adm_cd}">상세보기 →</a>` : ''}
         </div>`;
       layer.bindPopup(html, { maxWidth: 240 }).openPopup();
@@ -285,7 +285,7 @@
           <div class="rank">${d.rank}${sidoRank}</div>
           <div class="name">${flags}${d.short}<span class="sub">${sidoTag}·${d.sgg}</span></div>
           <div class="score">${d.score.toFixed(3)}</div>
-          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}개(의사${d.n_doctors_med ?? '-'})</b>/전체 ${d.n_clinic} · 🚗 ${d.t_raw}분</div>
+          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}개(의사${d.n_doctors_med ?? '-'})</b>/전체 ${d.n_clinic} · 🕐 ${d.t_raw}분</div>
         </div>`;
       }).join('');
 

@@ -12,13 +12,26 @@ DATA_CACHE = ROOT / "data" / "cache"
 DATA_SCORED = ROOT / "data" / "scored"
 WEB_DATA = ROOT / "web" / "data"
 
+# ─── v7 통근 필터 (2026-10-12 사용자 결정) ───
+# 후보 = 출퇴근 모두 60분 이내인 교통수단이 하나라도 있는 동.
+#   자차 OK      = max(출근, 퇴근) ≤ LIMIT   (Kakao future directions, 시간대 예측)
+#   대중교통 OK  = max(출근, 퇴근) ≤ LIMIT   (ODSay, 시간대 구분 없음)
+#   후보         = 자차 OK or 대중교통 OK
+# 통근은 필터 전용 — 점수(가중합)에는 반영 안 함 (W_COMMUTE = 0).
+COMMUTE_LIMIT_MIN = 60
+COMMUTE_WEEKDAY = 1            # 0=월 … 화요일
+COMMUTE_AM_DEPART = (7, 30)    # 출근: 이촌 → 후보
+COMMUTE_PM_DEPART = (18, 30)   # 퇴근: 후보 → 이촌
+
 # ─── 스코어 가중치 (합 = 1.0) ───
 # 2026-04-19 조정: T=0.2 → 0.1 (T 민감도 분석 결과 16/30 동 교체로 결정적 변수임을 확인).
 # T는 임장 우선순위 보조용 tie-breaker로 약화. C·P 동등 0.45.
 # PWA 메인에서 사용자가 슬라이더로 동적 재가중 가능 (heatmap.json에 c_norm·p_norm·t_norm 모두 포함).
-W_COMPETITION = 0.45
-W_POPULATION = 0.45
-W_COMMUTE = 0.1
+# 2026-10-12 v7: 통근은 후보 필터로만 사용 (사용자 결정) → T=0, C·P 0.5/0.5.
+#   3단계 신규 지표(생존율 등) 추가 시 재조정.
+W_COMPETITION = 0.5
+W_POPULATION = 0.5
+W_COMMUTE = 0.0
 
 # 경쟁 서브가중치: 밀도 vs 반경 vs 역세권 페널티
 # 2026-04-21 추가: W_COMP_STATION (역 500m 내과 의사 수 보수 가중)

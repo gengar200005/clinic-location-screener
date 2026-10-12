@@ -131,7 +131,7 @@
       const sidoRankStr = d.rank_sido && d.rank_sido > 0 ? `<span class="sido-rank">${sidoTagShort} ${d.rank_sido}위</span>` : '';
       const townTagMap = { gen_1: '1기 신도시', gen_2: '2기 신도시', gen_3: '3기 신도시', seoul_renew: '서울 재개발' };
       const townBadge = d.town_tag ? `<span class="tag">🏗 ${townTagMap[d.town_tag] || d.town_tag}</span>` : '';
-      const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (40+ ${(m.catchment_pop_40plus/1000).toFixed(0)}k)` : '';
+      const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (50~69세 ${(m.catchment_pop_5069/1000).toFixed(0)}k)` : '';
       const medStr = `<b style="color:#c62828;">내과 의원 ${m.n_clinic_med}개 (의사 ${m.n_doctors_med}명)</b> / 전체 의원 ${m.n_clinic}`;
       const radiusMedStr = `1.5km 내과 의원 ${m.n_within_radius_med}개 (의사 ${m.n_doctors_within_radius_med}명) / 전체 ${m.n_within_radius_all}`;
       const stationDanger = d.station && d.station.n_clinic_500m >= 10
@@ -141,7 +141,7 @@
         <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span>${sidoRankStr}</h1>
         <div class="meta">
           ${townBadge}
-          40+ ${m.pop_40plus.toLocaleString()}명 (${(m.ratio_40plus*100).toFixed(0)}%)${catchStr}<br>
+          50~69세 ${m.pop_5069.toLocaleString()}명 (${(m.ratio_5069*100).toFixed(0)}%)${catchStr}<br>
           의원: 동내 ${medStr} · ${radiusMedStr}
           <span style="color:#888;font-size:11px;">(반경 의원: 500m ${m.n_clinic_500m} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km})</span><br>
           🚗 자차 ${m.t_raw}분${transitStr}

@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       force_scrape:
-        description: '캐시 무시하고 전체 재호출 (Kakao/ODSay)'
+        description: '(v6 전용, v7 미사용) 캐시 무시 재호출'
         required: false
         default: false
         type: boolean
@@ -78,21 +78,11 @@ jobs:
       - name: Scrape — KOSIS 인구 + 연령대
         run: python -m scrapers.population_kosis --date "$RUN_DATE" --age
 
-      - name: Scrape — Kakao 자차 (캐시 우선)
-        run: |
-          if [ "$FORCE_SCRAPE" = "true" ]; then
-            python -m scrapers.kakao_car --force
-          else
-            python -m scrapers.kakao_car
-          fi
-
-      - name: Scrape — ODSay 대중교통 (캐시 우선)
-        run: |
-          if [ "$FORCE_SCRAPE" = "true" ]; then
-            python -m scrapers.odsay_transit --force
-          else
-            python -m scrapers.odsay_transit
-          fi
+      # v7: 출퇴근 4구간 (Kakao future 자차 출근·퇴근 + ODSay 대중교통 출근·퇴근).
+      # 60분 후보 필터 전용 (점수 미반영). 캐시 data/cache/commute_v7.parquet 영구 커밋.
+      # 쿼터 소진 시 exit 2 → 캐시는 저장되고 다음 주 이어서 수집.
+      - name: Scrape — 출퇴근 4구간 (캐시 우선)
+        run: python -m scrapers.commute_isochrone
 
       # ── 2. Spatial join ──
       - name: Spatial join — clinics → 행정동
@@ -101,7 +91,7 @@ jobs:
             --clinics "data/raw/hira/hira_${RUN_DATE}.parquet"
 
       # ── 3. Score ──
-      - name: Score — pipeline (C·P·T 가중합)
+      - name: Score — pipeline (통근 60분 필터 → C·P 가중합)
         run: python -m scoring.pipeline --date "$RUN_DATE"
 
       # ── 4. Publish ──
