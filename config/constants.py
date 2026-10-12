@@ -37,6 +37,11 @@ W_COMPETITION = 0.5
 W_POPULATION = 0.5
 W_COMMUTE = 0.0
 
+# 2026-10-12 v7: P 내부 = 배후 50~69세 규모 85% + 50~69세 3년 추세 15% (사용자 결정).
+#   둘 다 후보 집합 내 percentile rank 후 혼합. 추세 결측(근거 불충분)은 중앙값(중립) 대입.
+#   재건축 급변 동(수백 배)도 rank라 이상치 영향 없음.
+W_P_TREND = 0.15
+
 # 경쟁 서브가중치: 밀도 vs 반경 vs 역세권 페널티
 # 2026-04-21 추가: W_COMP_STATION (역 500m 내과 의사 수 보수 가중)
 #   배경: 동 centroid가 여러 subcluster mean이라 역세권 밀집이 묻힘.

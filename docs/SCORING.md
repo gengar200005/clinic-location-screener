@@ -5,6 +5,10 @@
 > - 후보 = 서울·경기·인천 − 경기 경부축/동남권 − 이촌 55km 밖 → **출퇴근 모두 60분 이내인 수단(자차 or 대중교통)이 있는 동**
 > - 통근(T)은 **필터 전용**, 점수 미반영 (`W_COMMUTE=0`)
 > - P 타깃 연령 **40+ → 50~69세** (`pop_5069`, `ratio_5069`, `catchment_pop_5069`)
+> - **P = 0.85 · rank(배후 50~69세 규모) + 0.15 · rank(50~69세 3년 추세)** (`W_P_TREND`, 2026-10-12 사용자 결정).
+>   추세 = KOSIS 2023-09→2026-09. 부천 등 동 재편은 2023-07 경계 권역 합산(`aggregated`), 재건축 급변은 `rapid_change`, 결측 4동은 중앙값 대입(`trend_imputed`)
+> - 생존율·5년 순증(`survival_5y`, `net_open_5y`)은 **표시 전용** — 최근 개설 내과 5년 내 폐업 3~8%로 동 단위 변별력 없음
+> - 민감도: `python -m scripts.sensitivity_mc --date …` (가중치 6종 ±30%, 2,000회 → `sensitivity_*.parquet`, `assumption_dependent`)
 > - 상세: [ADR-006](decisions/006-v7-commute-universe.md). 아래 본문은 v6 기준 설명 (C 산식은 그대로, "40+"는 50~69세로 읽을 것).
 >
 > v6: 결과 = 0.45 · C + 0.45 · P + 0.1 · T

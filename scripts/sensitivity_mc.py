@@ -3,6 +3,7 @@
 무작위화 대상 (각각 독립 Uniform(1−SPREAD, 1+SPREAD) 배수):
 - 상위: W_COMPETITION, W_POPULATION (합 1로 재정규화)
 - 경쟁 서브: W_COMP_DENSITY, W_COMP_RADIUS, W_COMP_STATION
+- 인구 서브: W_P_TREND (규모 비중 = 1 − W_P_TREND)
   (W_COMP_SUBCLUSTER=0은 0 유지, W_GI_MULTIPLIER는 원천 카운트 재계산이 필요해 제외)
 
 c_raw는 scores parquet의 구성 컬럼으로 재구성 (재구성 오차 0 검증 후 실행).
@@ -33,6 +34,7 @@ from config.constants import (
     W_COMP_STATION,
     W_COMP_SUBCLUSTER,
     W_COMPETITION,
+    W_P_TREND,
     W_POPULATION,
 )
 
@@ -64,14 +66,19 @@ def run(date_str: str, n: int, seed: int = 42) -> pd.DataFrame:
     if err > 1e-6:
         raise RuntimeError(f"c_raw 재구성 불일치 (max err {err}) — 산식 변경 확인")
 
-    p_norm = _pct_rank(s["p_raw"].to_numpy())
+    p_size = _pct_rank(s["p_raw"].to_numpy())
+    trend = s["trend_5069_3y"].astype(float) if "trend_5069_3y" in s else pd.Series(0.0, index=s.index)
+    p_trend = _pct_rank(trend.fillna(trend.median()).to_numpy())
+    p_norm = (1 - W_P_TREND) * p_size + W_P_TREND * p_trend
     base_score = W_COMPETITION * (1 - _pct_rank(recon)) + W_POPULATION * p_norm
     if not np.allclose(base_score, s["score"].to_numpy()):
         raise RuntimeError("기본 가중치 점수가 파이프라인 score와 불일치")
     rng = np.random.default_rng(seed)
     ranks = np.empty((n, len(s)), dtype=np.int32)
     for k in range(n):
-        m = rng.uniform(1 - SPREAD, 1 + SPREAD, size=5)
+        m = rng.uniform(1 - SPREAD, 1 + SPREAD, size=6)
+        wt = min(W_P_TREND * m[5], 1.0)
+        p_norm = (1 - wt) * p_size + wt * p_trend
         wc, wp = W_COMPETITION * m[0], W_POPULATION * m[1]
         wc, wp = wc / (wc + wp), wp / (wc + wp)
         c_norm = 1 - _pct_rank(c_raw_from(s, W_COMP_DENSITY * m[2], W_COMP_RADIUS * m[3], W_COMP_STATION * m[4]))

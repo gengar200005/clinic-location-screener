@@ -71,3 +71,17 @@ def test_top_n_returns_correct_count():
     scored = compute_final_scores(df)
     assert len(top_n(scored, 30)) == 30
     assert len(top_n(scored, 5)) == 5
+
+
+def test_p_norm_blends_trend_and_imputes_missing():
+    from config.constants import W_P_TREND
+    from scoring.weighted_sum import compute_final_scores
+    df = pd.DataFrame({
+        "adm_cd": list("abcd"), "adm_nm": list("abcd"),
+        "c_raw": [1.0, 1.0, 1.0, 1.0], "p_raw": [10.0, 20.0, 30.0, 40.0], "t_raw": [30] * 4,
+        "trend_5069_3y": [0.10, None, -0.05, 0.0],
+    })
+    out = compute_final_scores(df).set_index("adm_cd")
+    assert out.loc["b", "trend_imputed"]
+    expected = (1 - W_P_TREND) * out["p_size_norm"] + W_P_TREND * out["trend_norm"]
+    assert (out["p_norm"] - expected).abs().max() < 1e-12

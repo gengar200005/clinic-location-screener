@@ -6,7 +6,7 @@ Score_i = W_COMPETITION · C_norm
 
 정규화 방향 (docs/PLAN.md §3.4):
 - C_norm: 경쟁 낮을수록 좋음 → percentile_rank_inverted(c_raw)
-- P_norm: 인구 많을수록 좋음 → percentile_rank(p_raw)
+- P_norm: 인구 많을수록 좋음 → (1−W_P_TREND)·rank(p_raw) + W_P_TREND·rank(trend_5069_3y)
 - T_norm: 소요시간 짧을수록 좋음 → percentile_rank_inverted(t_raw)
 
 MIN_POPULATION 미만 동은 미리 제외되어 들어와야 함 (scoring.population에서).
@@ -19,6 +19,7 @@ import pandas as pd
 
 from config.constants import (
     W_COMMUTE,
+    W_P_TREND,
     W_COMPETITION,
     W_POPULATION,
 )
@@ -40,7 +41,16 @@ def compute_final_scores(df: pd.DataFrame) -> pd.DataFrame:
 
     out = df.copy()
     out["c_norm"] = percentile_rank_inverted(out["c_raw"])
-    out["p_norm"] = percentile_rank(out["p_raw"])
+    out["p_size_norm"] = percentile_rank(out["p_raw"])
+    if W_P_TREND > 0 and "trend_5069_3y" in out.columns:
+        trend = out["trend_5069_3y"].astype(float)
+        out["trend_imputed"] = trend.isna()
+        out["trend_norm"] = percentile_rank(trend.fillna(trend.median()))
+        out["p_norm"] = (1 - W_P_TREND) * out["p_size_norm"] + W_P_TREND * out["trend_norm"]
+        logger.info("P = %.2f·규모 + %.2f·추세 (추세 결측 %d동 중앙값 대입)",
+                    1 - W_P_TREND, W_P_TREND, int(out["trend_imputed"].sum()))
+    else:
+        out["p_norm"] = out["p_size_norm"]
     out["t_norm"] = percentile_rank_inverted(out["t_raw"])
 
     out["score"] = (
