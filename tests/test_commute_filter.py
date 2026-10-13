@@ -51,3 +51,30 @@ def test_gyeongbu_exclusion_prefix_match():
     # 경기 광주시만 제외 — 다른 시도 이름과 혼동 금지
     assert not is_excluded("인천광역시", "광주시")
     assert not is_excluded("서울특별시", "중구")
+
+
+def test_quota_error_keeps_completed_rows(monkeypatch, tmp_path):
+    """쿼터 오류가 나도 같은 배치에서 이미 받은 결과는 캐시에 남는다."""
+    import pytest
+    import scrapers.commute_isochrone as ci
+
+    monkeypatch.setattr(ci, "CACHE_PATH", tmp_path / "c.parquet")
+    monkeypatch.setattr(ci, "CALL_DELAY_SEC", {"car": 0, "transit": 0})
+    monkeypatch.setattr(ci, "WORKERS", {"car": 1, "transit": 1})
+    monkeypatch.setenv("ODSAY_KEY", "x")
+    monkeypatch.setenv("KAKAO_KEY", "x")
+    calls = {"n": 0}
+
+    def fake_odsay(key, src, dst):
+        calls["n"] += 1
+        if calls["n"] > 2:
+            raise ci.QuotaError("Daily quota exceeded")
+        return 40, "ok"
+
+    monkeypatch.setattr(ci, "_call_odsay", fake_odsay)
+    pts = pd.DataFrame({"adm_cd": list("abcde"), "adm_nm": list("abcde"),
+                        "lat": [37.5] * 5, "lon": [127.0] * 5})
+    with pytest.raises(ci.QuotaError):
+        ci.fetch(pts, legs=("transit_am",))
+    saved = ci.load_cache()
+    assert len(saved) == 2 and (saved["status"] == "ok").all()

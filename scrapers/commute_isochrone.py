@@ -32,6 +32,7 @@ import logging
 import math
 import os
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -60,8 +61,8 @@ CACHE_COLS = ["adm_cd", "leg", "minutes", "status", "lat", "lon", "depart", "fet
 
 LEGS = ("car_am", "car_pm", "transit_am", "transit_pm")
 COORD_TOL_M = 50
-CALL_DELAY_SEC = {"car": 0.1, "transit": 0.1}
-WORKERS = {"car": 6, "transit": 4}
+CALL_DELAY_SEC = {"car": 0.1, "transit": 1.0}   # ODSay: 동시·연속 호출 시 429 Too Many Requests (2026-10-13)
+WORKERS = {"car": 6, "transit": 1}
 MAX_CONSECUTIVE_ERRORS = 10   # 배치 전체 오류면 쿼터·장애로 보고 중단 (캐시는 저장)
 CHECKPOINT_EVERY = 50
 WEEKDAY_TAG = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -190,15 +191,20 @@ def _needs_fetch(points: pd.DataFrame, cache: pd.DataFrame, leg: str) -> pd.Data
     return points[keep]
 
 
-def _fetch_one(mode: str, key: str, leg: str, r, departure: str | None) -> dict:
+def _fetch_one(mode: str, key: str, leg: str, r, departure: str | None, stop: threading.Event) -> dict | None:
+    """한 구간 호출. 쿼터 오류면 stop을 세우고 None — 같은 배치의 완료분은 저장되도록."""
+    if stop.is_set():
+        return None
     src, dst = _endpoints(leg, float(r.lon), float(r.lat))
     try:
         if mode == "car":
             minutes, status = _call_kakao(key, src, dst, departure)
         else:
             minutes, status = _call_odsay(key, src, dst)
-    except QuotaError:
-        raise
+    except QuotaError as e:
+        logger.error("[%s] 쿼터·인증 오류: %s", leg, e)
+        stop.set()
+        return None
     except Exception as e:  # noqa: BLE001 — 네트워크·일시 오류는 다음 실행 재시도
         logger.warning("[%s] %s 실패: %s", leg, r.adm_nm, e)
         minutes, status = None, "error"
@@ -238,13 +244,18 @@ def fetch(points: pd.DataFrame, legs=LEGS, max_calls: int | None = None) -> pd.D
         rows = list(todo.itertuples(index=False))
         for b in range(0, len(rows), CHECKPOINT_EVERY):
             batch = rows[b:b + CHECKPOINT_EVERY]
+            stop = threading.Event()
             with ThreadPoolExecutor(max_workers=WORKERS[mode]) as ex:
                 results = list(ex.map(
-                    lambda r: _fetch_one(mode, keys[mode], leg, r, departure), batch,
+                    lambda r: _fetch_one(mode, keys[mode], leg, r, departure, stop), batch,
                 ))
-            cache = pd.concat([cache, pd.DataFrame(results)], ignore_index=True)
-            _save_cache(cache)
-            cache = load_cache()
+            results = [r for r in results if r is not None]
+            if results:
+                cache = pd.concat([cache, pd.DataFrame(results)], ignore_index=True)
+                _save_cache(cache)
+                cache = load_cache()
+            if stop.is_set():
+                raise QuotaError(f"{leg}: 쿼터 소진 — 완료분 {len(results)}건 저장 후 중단")
             n_err = sum(r["status"] == "error" for r in results)
             logger.info("  [%s] %d/%d (error %d)", leg, b + len(batch), len(rows), n_err)
             if len(batch) >= MAX_CONSECUTIVE_ERRORS and n_err == len(batch):

@@ -269,6 +269,16 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     except FileNotFoundError as e:
         logger.warning("생존율 생략: %s", e)
 
+    # 5c. 내시경 위암검진 가능 기관 (v7, 표시 전용 — C 반영 비중 사용자 결정 대기)
+    try:
+        from scoring.checkup_competition import compute_checkup_competition, load_endoscopy_checkup
+        base = base.merge(
+            compute_checkup_competition(admin_centroid, load_endoscopy_checkup()), on="adm_cd", how="left",
+        )
+        base["endo_ck_per_10k"] = base["n_endo_ck"] / (base["catchment_pop_5069"] / 10_000)
+    except FileNotFoundError as e:
+        logger.warning("검진기관 경쟁 생략: %s", e)
+
     # 6. 확장 반경 지표 + 해석 플래그
     logger.info("=== 3c. radius coverage ===")
     from scoring.radius_metrics import compute_radius_counts, add_coverage_flags
@@ -308,6 +318,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         "n_open_5y", "n_open_5y_alive", "n_close_5y", "net_open_5y",
         "survival_5y", "survival_sample_flag",
         "pop_5069_then", "trend_5069_3y", "trend_flag",
+        "n_endo_ck", "n_endo_ck_clinic", "n_endo_ck_hosp", "n_stomach_ck_unknown",
+        "n_colon_ck", "endo_ck_per_10k",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]
