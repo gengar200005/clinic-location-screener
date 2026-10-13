@@ -57,7 +57,8 @@ KST = timezone(timedelta(hours=9))
 KAKAO_FUTURE_URL = "https://apis-navi.kakaomobility.com/v1/future/directions"
 ODSAY_URL = "https://api.odsay.com/v1/api/searchPubTransPathT"
 CACHE_PATH = DATA_CACHE / "commute_v7.parquet"
-CACHE_COLS = ["adm_cd", "leg", "minutes", "status", "lat", "lon", "depart", "fetched_at"]
+CACHE_COLS = ["adm_cd", "leg", "minutes", "status", "lat", "lon", "depart", "fetched_at", "via"]
+# via: anchor(기준점) / alt(기준점 no_route → 인구 가중 중심점 재조회, 2026-10-13 회현동 사례)
 
 LEGS = ("car_am", "car_pm", "transit_am", "transit_pm")
 COORD_TOL_M = 50
@@ -162,6 +163,8 @@ def load_cache() -> pd.DataFrame:
     if CACHE_PATH.exists():
         df = pd.read_parquet(CACHE_PATH)
         df["adm_cd"] = df["adm_cd"].astype(str)
+        if "via" not in df.columns:
+            df["via"] = "anchor"
         return df
     return pd.DataFrame(columns=CACHE_COLS)
 
@@ -182,8 +185,13 @@ def _needs_fetch(points: pd.DataFrame, cache: pd.DataFrame, leg: str) -> pd.Data
             keep.append(True)
             continue
         hit = c.loc[r.adm_cd]
+        retry_alt = (
+            leg.startswith("car") and hit["status"] == "no_route" and hit.get("via") != "alt"
+            and pd.notna(getattr(r, "lat_alt", None))
+        )
         stale = (
-            hit["status"] == "error"
+            retry_alt
+            or hit["status"] == "error"
             or hit["depart"] != slot
             or _dist_m(float(hit["lat"]), float(hit["lon"]), r.lat, r.lon) > COORD_TOL_M
         )
@@ -196,9 +204,16 @@ def _fetch_one(mode: str, key: str, leg: str, r, departure: str | None, stop: th
     if stop.is_set():
         return None
     src, dst = _endpoints(leg, float(r.lon), float(r.lat))
+    via = "anchor"
     try:
         if mode == "car":
             minutes, status = _call_kakao(key, src, dst, departure)
+            # 상가 기준점이 차량 진입 불가 지점(시장·보행가)이면 no_route → 인구 가중 중심점으로 1회 재조회
+            lat_alt, lon_alt = getattr(r, "lat_alt", None), getattr(r, "lon_alt", None)
+            if status == "no_route" and pd.notna(lat_alt) and pd.notna(lon_alt):
+                src, dst = _endpoints(leg, float(lon_alt), float(lat_alt))
+                minutes, status = _call_kakao(key, src, dst, departure)
+                via = "alt"
         else:
             minutes, status = _call_odsay(key, src, dst)
     except QuotaError as e:
@@ -214,6 +229,7 @@ def _fetch_one(mode: str, key: str, leg: str, r, departure: str | None, stop: th
         "lat": round(float(r.lat), 6), "lon": round(float(r.lon), 6),
         "depart": _depart_slot(leg),
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "via": via,
     }
 
 
@@ -226,7 +242,8 @@ def fetch(points: pd.DataFrame, legs=LEGS, max_calls: int | None = None) -> pd.D
     load_dotenv()
     keys = {"car": os.environ.get("KAKAO_KEY"), "transit": os.environ.get("ODSAY_KEY")}
     cache = load_cache()
-    points = points[["adm_cd", "adm_nm", "lat", "lon"]].copy()
+    cols = ["adm_cd", "adm_nm", "lat", "lon"] + [c for c in ("lat_alt", "lon_alt") if c in points.columns]
+    points = points[cols].copy()
     points["adm_cd"] = points["adm_cd"].astype(str)
 
     budget = max_calls
@@ -279,12 +296,20 @@ def _car_ok_flags() -> pd.DataFrame:
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     parser = argparse.ArgumentParser(description="v7 출퇴근 4구간 소요시간 (캐시 우선)")
-    parser.add_argument("--legs", nargs="+", choices=LEGS, default=list(LEGS))
+    # 기본 = 자차만. ODSay 약관: 대중교통 API는 서비스용 단일 호출 한정, 분석·대량 호출은 사전 협의 필수
+    # (Basic 무료 30건/일, 2026-10-13 확인). transit 구간은 명시적으로 --legs 지정 시에만.
+    parser.add_argument("--legs", nargs="+", choices=LEGS, default=["car_am", "car_pm"])
     parser.add_argument("--max-calls", type=int, default=None)
     args = parser.parse_args()
 
     from scoring.spatial_join import apply_centroid_overlay
     centroid = apply_centroid_overlay(pd.read_parquet(DATA_CLEANED / "admin_centroid.parquet"))
+    pop_path = DATA_CACHE / "admin_centroid_pop.parquet"
+    if pop_path.exists():
+        alt = pd.read_parquet(pop_path)[["adm_cd", "lat_pop", "lon_pop"]].rename(
+            columns={"lat_pop": "lat_alt", "lon_pop": "lon_alt"})
+        alt["adm_cd"] = alt["adm_cd"].astype(str)
+        centroid = centroid.assign(adm_cd=centroid["adm_cd"].astype(str)).merge(alt, on="adm_cd", how="left")
     centroid["adm_cd"] = centroid["adm_cd"].astype(str)
     # ODSay 일일 한도가 작음(2026-10-12 ~100건에서 429) → 자차로 판정 안 된 동을 먼저 조회.
     # 자차 OK 동의 대중교통 시간은 표시용이라 후순위.
