@@ -132,6 +132,38 @@ def load_commute_v7(path: Path | None = None) -> pd.DataFrame:
     return wide.reset_index()
 
 
+MANUAL_TRANSIT = DATA_CACHE.parent / "manual" / "transit_manual.csv"
+
+
+def apply_manual_transit(wide: pd.DataFrame, path: Path | None = None) -> pd.DataFrame:
+    """사용자가 지도 앱으로 직접 확인한 대중교통 시간(분)으로 t_transit_am/pm 덮어쓰기.
+
+    data/manual/transit_manual.csv — 컬럼 adm_cd, transit_am_min(출근 이촌→동), transit_pm_min(퇴근 동→이촌).
+    빈 칸은 무시. ODSay는 약관상 분석용 대량 호출 불가라 경계 동은 수동 확인 (2026-10-13).
+    """
+    path = path or MANUAL_TRANSIT
+    if not path.exists():
+        return wide
+    try:
+        m = pd.read_csv(path, dtype={"adm_cd": str}, encoding="utf-8-sig")
+    except UnicodeDecodeError:  # 엑셀에서 다시 저장하면 cp949
+        m = pd.read_csv(path, dtype={"adm_cd": str}, encoding="cp949")
+    out = wide.copy()
+    n = 0
+    for leg, col in (("transit_am", "transit_am_min"), ("transit_pm", "transit_pm_min")):
+        if col not in m.columns:
+            continue
+        vals = pd.to_numeric(m[col], errors="coerce")
+        lookup = dict(zip(m["adm_cd"], vals))
+        manual = out["adm_cd"].map(lookup)
+        has = manual.notna()
+        out.loc[has, f"t_{leg}"] = manual[has]
+        n += int(has.sum())
+    if n:
+        logger.info("대중교통 수동 확인값 반영: %d 구간 (%s)", n, path.name)
+    return out
+
+
 def classify_commute(df: pd.DataFrame, limit_min: int) -> pd.DataFrame:
     """t_* 4구간 → 판정 컬럼 추가.
 
@@ -154,9 +186,15 @@ def classify_commute(df: pd.DataFrame, limit_min: int) -> pd.DataFrame:
     out["commute_ok_transit"] = out["t_transit"] <= limit_min
     out["commute_ok"] = out["commute_ok_car"] | out["commute_ok_transit"]
 
-    any_unknown = out["t_car"].isna() | out["t_transit"].isna()
+    # 판정 상태
+    #   ok          : 후보
+    #   exceed      : 자차·대중교통 모두 확인, 둘 다 초과
+    #   exceed_car  : 자차 초과, 대중교통 미확인 → 제외 (2026-10-13 사용자 결정, 수동 확인 대상)
+    #   unknown     : 자차 경로 없음 + 대중교통 미확인 → 제외
     out["commute_status"] = "exceed"
-    out.loc[~out["commute_ok"] & any_unknown, "commute_status"] = "unknown"
+    not_ok = ~out["commute_ok"]
+    out.loc[not_ok & out["t_car"].notna() & out["t_transit"].isna(), "commute_status"] = "exceed_car"
+    out.loc[not_ok & out["t_car"].isna() & out["t_transit"].isna(), "commute_status"] = "unknown"
     out.loc[out["commute_ok"], "commute_status"] = "ok"
 
     out["t_raw"] = out[["t_car", "t_transit"]].min(axis=1)

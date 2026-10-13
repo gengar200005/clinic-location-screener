@@ -26,7 +26,7 @@ from pathlib import Path
 import pandas as pd
 
 from config.constants import COMMUTE_LIMIT_MIN, DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
-from scoring.commute import classify_commute, load_commute_v7
+from scoring.commute import apply_manual_transit, classify_commute, load_commute_v7
 from scoring.competition import (
     compute_competition_raw,
     compute_subcluster_max_doctors,
@@ -231,7 +231,7 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     #    percentile rank가 후보 집합 기준이어야 하므로 가중합 전에 필터.
     logger.info("=== 3. commute filter (출퇴근 %d분) ===", COMMUTE_LIMIT_MIN)
     base["adm_cd"] = base["adm_cd"].astype(str)
-    base = base.merge(load_commute_v7(), on="adm_cd", how="left")
+    base = base.merge(apply_manual_transit(load_commute_v7()), on="adm_cd", how="left")
     base = classify_commute(base, COMMUTE_LIMIT_MIN)
     status_counts = base["commute_status"].value_counts().to_dict()
     logger.info(
@@ -244,9 +244,12 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
               "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm"]].to_parquet(
         excluded_path, index=False,
     )
+    n_car = int((excluded["commute_status"] == "exceed_car").sum())
+    if n_car:
+        logger.info("자차 60분 초과·대중교통 미확인 %d동 → 제외 (수동 확인: data/manual/transit_manual.csv)", n_car)
     if (excluded["commute_status"] == "unknown").any():
         logger.warning(
-            "통근 판정불가 %d동 → 후보 제외 (%s). 재수집 필요.",
+            "통근 판정불가(자차 경로 없음) %d동 → 후보 제외 (%s).",
             int((excluded["commute_status"] == "unknown").sum()), excluded_path.name,
         )
     base = base[base["commute_ok"]].copy()

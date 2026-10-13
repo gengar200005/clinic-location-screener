@@ -30,11 +30,25 @@ def test_either_mode_is_enough():
     assert out["t_car"] == 60 and out["t_raw"] == 60
 
 
-def test_missing_leg_is_unknown_not_pass():
-    # 대중교통 퇴근 구간 결측 → 대중교통 판정 불가. 자차 초과 → unknown
+def test_car_exceed_with_transit_unchecked_is_exceed_car():
+    # 대중교통 퇴근 구간 결측 → 대중교통 판정 불가. 자차 초과 → exceed_car (수동 확인 대상)
     out = _classify(_row(70, 70, 50, None)).iloc[0]
     assert not out["commute_ok"]
+    assert out["commute_status"] == "exceed_car"
+
+
+def test_no_car_route_and_no_transit_is_unknown():
+    out = _classify(_row(None, None, None, None)).iloc[0]
     assert out["commute_status"] == "unknown"
+
+
+def test_manual_transit_override(tmp_path):
+    from scoring.commute import apply_manual_transit
+    wide = pd.DataFrame([_row(70, 70, None, None)])
+    f = tmp_path / "m.csv"
+    f.write_text("adm_cd,transit_am_min,transit_pm_min\nx,55,58\n", encoding="utf-8-sig")
+    out = _classify(*apply_manual_transit(wide, f).to_dict("records")).iloc[0]
+    assert out["commute_ok_transit"] and out["commute_status"] == "ok"
 
 
 def test_missing_leg_but_other_mode_ok():
