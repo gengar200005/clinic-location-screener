@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -44,13 +45,44 @@ def _sgg_from_addr(addr: str) -> str:
     return t[1]
 
 
+EGD_KEYS_CACHE = DATA_RAW.parent / "cache" / "egd_keys.parquet"
+
+
+def build_egd_keys_cache(csv_path: Path | None = None) -> Path:
+    """장비 CSV(로그인 다운로드, 143MB) → A304 보유 기관 (시도, 시군구, 기관명) 캐시.
+
+    GH Actions runner에는 원본 CSV가 없으므로 이 캐시를 커밋해 사용.
+    """
+    from config.regions import context_sido
+
+    if csv_path is None:
+        files = sorted((DATA_RAW / "hira").glob(EQUIPMENT_CSV_GLOB))
+        if not files:
+            raise FileNotFoundError("HIRA 의료장비 CSV 없음 (data.go.kr 15051055)")
+        csv_path = files[-1]
+    e = pd.read_csv(csv_path, encoding="cp949",
+                    usecols=["요양기관명", "시도명", "시군구명", "장비대분류코드"])
+    e = e[e["시도명"].isin(context_sido()) & (e["장비대분류코드"] == GI_EQUIPMENT_CODE_EGD)]
+    out = e[["시도명", "시군구명", "요양기관명"]].drop_duplicates()
+    out.to_parquet(EGD_KEYS_CACHE, index=False)
+    logger.info("saved %s (%d rows, %s)", EGD_KEYS_CACHE, len(out), csv_path.name)
+    return EGD_KEYS_CACHE
+
+
 def _egd_keys(sidos: set[str]) -> tuple[set, dict]:
     files = sorted((DATA_RAW / "hira").glob(EQUIPMENT_CSV_GLOB))
-    if not files:
-        raise FileNotFoundError("HIRA 의료장비 CSV 없음 (data.go.kr 15051055)")
-    e = pd.read_csv(files[-1], encoding="cp949",
-                    usecols=["요양기관명", "시도명", "시군구명", "장비대분류코드"])
-    e = e[e["시도명"].isin(sidos) & (e["장비대분류코드"] == GI_EQUIPMENT_CODE_EGD)]
+    if files:
+        e = pd.read_csv(files[-1], encoding="cp949",
+                        usecols=["요양기관명", "시도명", "시군구명", "장비대분류코드"])
+        e = e[e["시도명"].isin(sidos) & (e["장비대분류코드"] == GI_EQUIPMENT_CODE_EGD)]
+    elif EGD_KEYS_CACHE.exists():
+        e = pd.read_parquet(EGD_KEYS_CACHE)
+        e = e[e["시도명"].isin(sidos)]
+    else:
+        raise FileNotFoundError("HIRA 의료장비 CSV·egd_keys 캐시 모두 없음 (data.go.kr 15051055)")
+    # 장비 1대 = 1행이라 같은 기관이 여러 행 → 기관 단위로 중복 제거 후 이름 유일성 판단
+    # (2026-10-13 수정: 미제거 시 장비 2대 기관이 '동명 복수'로 오판되어 매칭 누락)
+    e = e[["시도명", "시군구명", "요양기관명"]].drop_duplicates()
     full = {(r.시도명, _norm(r.시군구명), _norm(r.요양기관명)) for r in e.itertuples()}
     by_name = e.assign(k=e["요양기관명"].map(_norm)).groupby(["시도명", "k"]).size()
     unique_name = {k for k, v in by_name.items() if v == 1}

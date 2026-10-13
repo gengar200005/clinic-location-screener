@@ -44,7 +44,9 @@ def _require(path: Path, how: str) -> None:
         raise FileNotFoundError(f"{path} 없음. 먼저: {how}")
 
 
-def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Path]:
+def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER, strict: bool = False) -> tuple[Path, Path]:
+    """strict=True (GH Actions): v7 입력(추세·생존·검진·GI 장비)이 없으면 경고 후 건너뛰지 않고 실패.
+    입력이 빠진 점수로 대시보드·Notion을 덮어쓰는 것을 막기 위함."""
     DATA_SCORED.mkdir(parents=True, exist_ok=True)
 
     centroid_path = DATA_CLEANED / "admin_centroid.parquet"
@@ -59,6 +61,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     from scoring.spatial_join import apply_centroid_overlay
     admin_centroid = apply_centroid_overlay(admin_centroid)
     clinics_by_dong = pd.read_parquet(clinics_path)
+    if strict and not clinics_by_dong.get("is_gi", pd.Series(dtype=bool)).astype(bool).any():
+        raise RuntimeError("is_gi 전부 False — 장비 캐시(data/cache/clinic_equipment.parquet) 확인")
     logger.info("load: %d dongs, %d clinics", len(admin_centroid), len(clinics_by_dong))
 
     # 1. 경쟁 지표
@@ -139,6 +143,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         trend = aggregate_unmatched_trend(compute_trend(base, then), base, then)
         base = base.merge(trend, on="adm_cd", how="left")
     else:
+        if strict:
+            raise FileNotFoundError("과거 인구(kosis_pop_age_at_*) 없음 — `python -m scrapers.population_kosis --at 202309`")
         logger.warning("과거 인구 없음 → 추세 생략 (`fetch_population_age_at`)")
 
     # 2b. 역세권 메타 — c_raw에 페널티로 들어가므로 미리 계산
@@ -270,6 +276,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         history, ref = load_internal_clinic_history()
         base = base.merge(compute_survival(admin_centroid, history, ref), on="adm_cd", how="left")
     except FileNotFoundError as e:
+        if strict:
+            raise
         logger.warning("생존율 생략: %s", e)
 
     # 5c. 내시경 위암검진 가능 기관 (v7, 표시 전용 — C 반영 비중 사용자 결정 대기)
@@ -280,6 +288,8 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         )
         base["endo_ck_per_10k"] = base["n_endo_ck"] / (base["catchment_pop_5069"] / 10_000)
     except FileNotFoundError as e:
+        if strict:
+            raise
         logger.warning("검진기관 경쟁 생략: %s", e)
 
     # 6. 확장 반경 지표 + 해석 플래그
@@ -353,8 +363,10 @@ def main() -> int:
     parser.add_argument("--date", default=date.today().isoformat())
     parser.add_argument("--gi-multiplier", type=float, default=W_GI_MULTIPLIER,
                         help=f"GI 의원 의사수 가중치 (기본: {W_GI_MULTIPLIER}, 1.0=가중 없음)")
+    parser.add_argument("--strict", action="store_true",
+                        help="v7 입력 누락 시 실패 (GH Actions 주간 배치용)")
     args = parser.parse_args()
-    run(args.date, gi_multiplier=args.gi_multiplier)
+    run(args.date, gi_multiplier=args.gi_multiplier, strict=args.strict)
     return 0
 
 

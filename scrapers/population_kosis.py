@@ -196,7 +196,13 @@ def main() -> int:
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--age", action="store_true",
                         help="50~69세 포함 연령대별 수집 (권장). 기본은 총인구만.")
+    parser.add_argument("--at", default=None,
+                        help="추세 비교용 과거 시점 YYYYMM (예: 202309) — kosis_pop_age_at_*.parquet")
     args = parser.parse_args()
+
+    if args.at:
+        fetch_population_age_at(args.at, force=args.force)
+        return 0
 
     if args.age:
         fetch_population(args.date, force=args.force)
