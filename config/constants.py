@@ -12,13 +12,41 @@ DATA_CACHE = ROOT / "data" / "cache"
 DATA_SCORED = ROOT / "data" / "scored"
 WEB_DATA = ROOT / "web" / "data"
 
+# ─── v7 통근 필터 (2026-10-12 사용자 결정) ───
+# 후보 = 출퇴근 모두 60분 이내인 교통수단이 하나라도 있는 동.
+#   자차 OK      = max(출근, 퇴근) ≤ LIMIT   (Kakao future directions, 시간대 예측)
+#   대중교통 OK  = max(출근, 퇴근) ≤ LIMIT   (ODSay, 시간대 구분 없음)
+#   후보         = 자차 OK or 대중교통 OK
+# 통근은 필터 전용 — 점수(가중합)에는 반영 안 함 (W_COMMUTE = 0).
+COMMUTE_LIMIT_MIN = 60
+COMMUTE_WEEKDAY = 1            # 0=월 … 화요일
+COMMUTE_AM_DEPART = (7, 30)    # 출근: 이촌 → 후보
+COMMUTE_PM_DEPART = (18, 30)   # 퇴근: 후보 → 이촌
+
+# ─── v7 생존율 (scoring/survival.py) ───
+SURVIVAL_YEARS = 5           # 최근 N년 개설·폐업
+SURVIVAL_MIN_OPENED = 3      # 반경 내 개설 수가 이보다 적으면 생존율 NaN (표본 부족)
+
 # ─── 스코어 가중치 (합 = 1.0) ───
 # 2026-04-19 조정: T=0.2 → 0.1 (T 민감도 분석 결과 16/30 동 교체로 결정적 변수임을 확인).
 # T는 임장 우선순위 보조용 tie-breaker로 약화. C·P 동등 0.45.
 # PWA 메인에서 사용자가 슬라이더로 동적 재가중 가능 (heatmap.json에 c_norm·p_norm·t_norm 모두 포함).
-W_COMPETITION = 0.45
-W_POPULATION = 0.45
-W_COMMUTE = 0.1
+# 2026-10-12 v7: 통근은 후보 필터로만 사용 (사용자 결정) → T=0, C·P 0.5/0.5.
+#   3단계 신규 지표(생존율 등) 추가 시 재조정.
+W_COMPETITION = 0.5
+W_POPULATION = 0.5
+W_COMMUTE = 0.0
+
+# 2026-10-12 v7: P 내부 = 배후 50~69세 규모 85% + 50~69세 3년 추세 15% (사용자 결정).
+#   둘 다 후보 집합 내 percentile rank 후 혼합. 추세 결측(근거 불충분)은 중앙값(중립) 대입.
+#   재건축 급변 동(수백 배)도 rank라 이상치 영향 없음.
+W_P_TREND = 0.15
+
+# 2026-10-13 v7: C = 0.5·내과 경쟁(c_raw) + 0.5·내시경 위암검진 가능 기관 경쟁 (사용자 결정, 권장안).
+#   검진 경쟁 raw = 0.5·rank(1만 명당) + 0.5·rank(반경 개수), 병원급 검진센터는 W_CHECKUP_HOSP배
+#   (검진 처리량 차이 반영, ADR-005 GI 2배와 같은 취지). 둘 다 후보 내 rank, 낮을수록 좋음.
+W_C_CHECKUP = 0.5
+W_CHECKUP_HOSP = 2.0
 
 # 경쟁 서브가중치: 밀도 vs 반경 vs 역세권 페널티
 # 2026-04-21 추가: W_COMP_STATION (역 500m 내과 의사 수 보수 가중)

@@ -1,4 +1,10 @@
-"""카카오 모빌리티 Directions — 이촌역(원점) → 각 행정동 중심점 자차 소요시간.
+"""[v6 레거시 — v7은 scrapers/commute_isochrone.py 사용]
+
+카카오 모빌리티 Directions — 이촌역(원점) → 각 행정동 중심점 자차 소요시간.
+
+⚠️ 2026-10-12 확인: `v1/directions`(실시간)는 departure_time을 반영하지 않는 것으로 보임.
+   같은 구간에서 실시간 69분 vs `v1/future/directions` 07:30 예측 38분(운정중앙).
+   아래 "누적 평균 예측" 설명은 future 엔드포인트에만 해당. v6 T값은 호출 시점 교통.
 
 `departure_time` 파라미터에 미래 timestamp(YYYYMMDDHHMMSS) 지정 시
 과거 교통 통계 기반 **누적 평균 예측** 반환. 실시간 아닌 "평일 특정 시각

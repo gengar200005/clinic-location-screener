@@ -100,9 +100,9 @@ def build_auto_blocks(row: pd.Series) -> list[dict]:
         _rt(f"{float(row['score']):.4f}  (C={float(row['c_norm']):.2f}, P={float(row['p_norm']):.2f}, T={float(row['t_norm']):.2f})"),
     ]))
     blocks.append(_bullet([
-        _rt("40+ 인구: ", bold=True),
-        _rt(f"{int(row['pop_40plus']):,}명"),
-        _rt(f"  ·  총 {int(row['pop_total']):,}명  ·  비율 {float(row['ratio_40plus'])*100:.1f}%"),
+        _rt("50~69세 인구: ", bold=True),
+        _rt(f"{int(row['pop_5069']):,}명"),
+        _rt(f"  ·  총 {int(row['pop_total']):,}명  ·  비율 {float(row['ratio_5069'])*100:.1f}%"),
     ]))
     blocks.append(_bullet([
         _rt("경쟁: ", bold=True),

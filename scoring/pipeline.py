@@ -4,7 +4,7 @@
 - data/cleaned/admin_centroid.parquet       (653 행정동)
 - data/cleaned/clinics_by_dong.parquet      (HIRA 공간조인)
 - data/raw/population/kosis_pop_*.parquet   (최신)
-- data/cache/odsay_commute.parquet          (ODSay 캐시)
+- data/cache/commute_v7.parquet             (출퇴근 4구간 — 60분 후보 필터)
 
 출력:
 - data/scored/scores_YYYY-MM-DD.parquet     (전체 동, 정규화·점수·순위 포함)
@@ -25,8 +25,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from config.constants import DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
-from scoring.commute import load_commute, merge_commute
+from config.constants import COMMUTE_LIMIT_MIN, DATA_CLEANED, DATA_SCORED, W_GI_MULTIPLIER
+from scoring.commute import apply_manual_transit, classify_commute, load_commute_v7
 from scoring.competition import (
     compute_competition_raw,
     compute_subcluster_max_doctors,
@@ -127,11 +127,19 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     base[int_cols] = base[int_cols].fillna(0).astype(int)
 
     # 2. 인구 로드 → 제외 필터 (MIN_POPULATION)
-    # merge_population이 P_raw 설정까지 수행 (catchment × ratio_40plus 우선)
+    # merge_population이 P_raw 설정까지 수행 (catchment × ratio_5069 우선)
     logger.info("=== 2. population ===")
     pop_raw = load_kosis_population()
     base = merge_population(base, pop_raw)
     logger.info("after population filter: %d dongs", len(base))
+    # 2a. 50~69세 3년 추세 (v7, 표시 전용 — 가중치 미정)
+    from scoring.population import aggregate_unmatched_trend, compute_trend, load_population_then
+    then = load_population_then()
+    if then is not None:
+        trend = aggregate_unmatched_trend(compute_trend(base, then), base, then)
+        base = base.merge(trend, on="adm_cd", how="left")
+    else:
+        logger.warning("과거 인구 없음 → 추세 생략 (`fetch_population_age_at`)")
 
     # 2b. 역세권 메타 — c_raw에 페널티로 들어가므로 미리 계산
     # (캐시 없으면 station_penalty=None → 페널티 항 0)
@@ -159,14 +167,14 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         subcluster_meta["n_doctors_subcluster_max_med"].max(),
     )
 
-    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 40+ 인구 + 역세권 페널티)
+    # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 50~69세 인구 + 역세권 페널티)
     # density 분모 우선순위:
-    #   1) catchment_pop_40plus (40+ 환자풀 — 내과 진료 베이스)
+    #   1) catchment_pop_5069 (50~69세 환자풀)
     #   2) catchment_pop_*km (전체 인구 폴백)
     #   3) p_raw
-    if "catchment_pop_40plus" in base.columns and base["catchment_pop_40plus"].notna().any():
-        density_col = "catchment_pop_40plus"
-        logger.info("density 분모 = catchment_pop_40plus (40+ 환자풀)")
+    if "catchment_pop_5069" in base.columns and base["catchment_pop_5069"].notna().any():
+        density_col = "catchment_pop_5069"
+        logger.info("density 분모 = catchment_pop_5069 (50~69세 환자풀)")
     elif catchment_cols and base[catchment_cols[0]].notna().any():
         density_col = catchment_cols[0]
         logger.info("density 분모 = %s (전체 인구 폴백)", density_col)
@@ -219,18 +227,33 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     base["n_within_radius"] = base["n_within_radius_med"]
     base["density_per_10k"] = base["density_per_10k_med"]
 
-    # 4. 통근 지표 (점수는 자차 primary, 대중교통은 보조 display)
-    logger.info("=== 3. commute ===")
-    commute = load_commute()
-    base = merge_commute(base, commute)  # adds t_raw (자차)
-    # ODSay 대중교통 시간 보조 컬럼
-    from scoring.commute import load_transit_supplement
-    transit = load_transit_supplement()
-    if transit is not None:
-        base["adm_cd"] = base["adm_cd"].astype(str)
-        before = base["adm_cd"].isin(transit["adm_cd"]).sum()
-        base = base.merge(transit, on="adm_cd", how="left")
-        logger.info("  + t_transit merged (%d matched)", before)
+    # 4. 통근 60분 필터 (v7) — 점수 미반영, 후보 판정 전용.
+    #    percentile rank가 후보 집합 기준이어야 하므로 가중합 전에 필터.
+    logger.info("=== 3. commute filter (출퇴근 %d분) ===", COMMUTE_LIMIT_MIN)
+    base["adm_cd"] = base["adm_cd"].astype(str)
+    base = base.merge(apply_manual_transit(load_commute_v7()), on="adm_cd", how="left")
+    base = classify_commute(base, COMMUTE_LIMIT_MIN)
+    status_counts = base["commute_status"].value_counts().to_dict()
+    logger.info(
+        "commute: %s (자차 OK %d / 대중교통 OK %d)",
+        status_counts, int(base["commute_ok_car"].sum()), int(base["commute_ok_transit"].sum()),
+    )
+    excluded = base[~base["commute_ok"]]
+    excluded_path = DATA_SCORED / f"excluded_commute_{date_str}.parquet"
+    excluded[["adm_cd", "sido", "sgg", "adm_nm", "commute_status",
+              "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm"]].to_parquet(
+        excluded_path, index=False,
+    )
+    n_car = int((excluded["commute_status"] == "exceed_car").sum())
+    if n_car:
+        logger.info("자차 60분 초과·대중교통 미확인 %d동 → 제외 (수동 확인: data/manual/transit_manual.csv)", n_car)
+    if (excluded["commute_status"] == "unknown").any():
+        logger.warning(
+            "통근 판정불가(자차 경로 없음) %d동 → 후보 제외 (%s).",
+            int((excluded["commute_status"] == "unknown").sum()), excluded_path.name,
+        )
+    base = base[base["commute_ok"]].copy()
+    logger.info("후보 확정: %d동", len(base))
 
     # 5. 역세권 메타 컬럼 머지 (위에서 계산한 station_meta — display용)
     if station_meta is not None:
@@ -238,6 +261,26 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         st_display_cols = [c for c in station_meta.columns
                            if c != "n_doctors_station_500m_med"]
         base = base.merge(station_meta[st_display_cols], on="adm_cd", how="left")
+
+    # 5b. 생존율·순증 (v7, 표시 전용 — 점수 미반영).
+    #     2026-10-12 검증: 최근 개설 내과의 5년 내 폐업률 3~8% → 동 반경 단위 생존율은
+    #     표본(평균 개설 3곳)이 너무 작아 변별력 없음. net_open(개설−폐업)은 진입 압력 참고치.
+    try:
+        from scoring.survival import compute_survival, load_internal_clinic_history
+        history, ref = load_internal_clinic_history()
+        base = base.merge(compute_survival(admin_centroid, history, ref), on="adm_cd", how="left")
+    except FileNotFoundError as e:
+        logger.warning("생존율 생략: %s", e)
+
+    # 5c. 내시경 위암검진 가능 기관 (v7, 표시 전용 — C 반영 비중 사용자 결정 대기)
+    try:
+        from scoring.checkup_competition import compute_checkup_competition, load_endoscopy_checkup
+        base = base.merge(
+            compute_checkup_competition(admin_centroid, load_endoscopy_checkup()), on="adm_cd", how="left",
+        )
+        base["endo_ck_per_10k"] = base["n_endo_ck"] / (base["catchment_pop_5069"] / 10_000)
+    except FileNotFoundError as e:
+        logger.warning("검진기관 경쟁 생략: %s", e)
 
     # 6. 확장 반경 지표 + 해석 플래그
     logger.info("=== 3c. radius coverage ===")
@@ -261,9 +304,11 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
     cols_ordered = [
         "rank", "adm_cd", "sido", "sgg", "adm_nm",
         "score", "c_norm", "p_norm", "t_norm",
-        "c_raw", "p_raw", "t_raw", "t_transit",
-        "pop_total", "pop_40plus", "ratio_40plus",
-        "catchment_pop_1_5km", "catchment_pop_40plus",
+        "c_raw", "p_raw", "t_raw", "t_car", "t_transit",
+        "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm",
+        "commute_ok_car", "commute_ok_transit",
+        "pop_total", "pop_5069", "ratio_5069",
+        "catchment_pop_1_5km", "catchment_pop_5069",
         "n_clinic", "n_clinic_gi", "n_clinic_med",
         "n_doctors_med", "n_doctors_med_weighted",
         "n_within_radius", "n_within_radius_med", "n_within_radius_all",
@@ -273,6 +318,11 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER) -> tuple[Path, Pa
         "nearest_station", "station_dist_m", "n_clinic_station_500m",
         "n_doctors_station_500m_med",
         "n_doctors_subcluster_max_med", "n_clinics_subcluster_max_med",
+        "n_open_5y", "n_open_5y_alive", "n_close_5y", "net_open_5y",
+        "survival_5y", "survival_sample_flag",
+        "pop_5069_then", "trend_5069_3y", "trend_flag",
+        "n_endo_ck", "n_endo_ck_clinic", "n_endo_ck_hosp", "n_stomach_ck_unknown",
+        "n_colon_ck", "endo_ck_per_10k",
     ]
     cols_ordered = [c for c in cols_ordered if c in scored.columns]
     scored = scored[cols_ordered + [c for c in scored.columns if c not in cols_ordered]]

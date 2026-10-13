@@ -2,7 +2,7 @@
 
 Endpoint: apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList
 진료과목코드 01(내과) + 종별코드 31(의원) 필터.
-시도: 서울 110000, 경기 410000 (경기는 이후 공간조인으로 대상 9시만 필터).
+시도: 서울 110000, 경기 310000, 인천 220000 (후보 필터는 이후 공간조인·통근 단계에서).
 
 페이징: numOfRows=1000, pageNo=1..N. 마지막 페이지는 totalCount 기반 판단.
 재시도: 네트워크 오류 시 지수 백오프.
@@ -34,6 +34,7 @@ BASE_URL = "https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList"
 SIDO_CODES = {
     "서울": "110000",
     "경기": "310000",
+    "인천": "220000",  # v7 추가, 2026-10-12 API 응답 주소로 확인
 }
 
 # 내과 전체. 소화기내과는 HIRA에서 별도 코드 없음 → 병원명 태깅으로 별도 처리.

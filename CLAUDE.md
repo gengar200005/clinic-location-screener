@@ -8,20 +8,21 @@
 
 **최종 목표 (2027-05 개원)**: PWA 히트맵 + Notion DB (Top 30) + GitHub Actions 주간 배치.
 
-## 현재 상태 (2026-04-27 업데이트)
+## 현재 상태 (2026-10-12 업데이트)
 
-**답사 진입 준비 완료**. ADR-005(W_GI_MULTIPLIER=2.0) caveat 3 해소를 위해 detail 페이지에 GI 컬럼 노출 — 의원 라인에 `위·대장✓` 빨간 굵은 표기 + 동 점수에 `n_doctors_med_weighted`/`c_raw` 절대값. Notion 29/30 페이지 갱신 (rank 25 독산4동만 DB 페이지 미존재로 skip). 50개 detail JSON + heatmap·all_clinics 모두 새 필드 포함. **새 변수 도입(barrier·약국·신규개원 페널티)은 모두 검토 후 기각** — 신호는 있으나 c_raw에 이미 반영되거나 모델 P/C 정의와 결 다름. 다음 단계: **답사 실시 → retrospective gap 분석**.
+**v7 진행 중 — 브랜치 `feature/v7`** (main = v6 그대로, GH Pages·Notion도 v6). 후보 범위를 시군구 화이트리스트에서 **이촌 출퇴근 60분 필터**(경기 경부축·동남권 제외, 서울·경기·인천)로 전환 (ADR-006). P 타깃 50~69세 + 3년 추세 15%, 통근은 점수 제외, 생존율은 표시 전용, 가중치 MC 민감도 스크립트 추가. **잠정**: 후보 743동 확정 + 84동 대중교통 판정 대기(ODSay 일일 한도). Top30 = 서울 16·부천 8·인천 6. 다음: ODSay 84동 → NHIS 검진기관 경쟁 지표 → 대시보드(5단계).
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
+- 2026-10-12: v7 착수 — 출퇴근 60분 후보 범위 + 50~69세·추세 + 생존율(표시) + MC 민감도, v6 Kakao 출발시각 미반영 결함 발견
 - 2026-04-27: detail GI 컬럼 노출 + barrier·약국·신규개원 페널티 모두 기각 + 데이터 신선도 caveat 4곳
 - 2026-04-27: ADR-005 (GI 의원 페널티 W=2.0) + estbDd 보류 + HIRA 의료장비 데이터셋 활용
 - 2026-04-26: W_STATION sensitivity 검증 + ADR-004 (shops 중심점) + 배포 + PWA root redirect + 네이버 월세 통일
 - 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
-- 2026-04-20: A안 catchment 확정 + 답사 UX 완성 + 역세권 페널티 항 추가
 
 ## 최근 주요 결정 (자세한 건 [docs/decisions/](docs/decisions/))
 
+- [ADR-006] v7 후보 범위: 출퇴근 60분 필터 + 경부축 제외 + 50~69세, 통근 점수 제외 (2026-10-12, feature/v7)
 - [ADR-001] catchment 1.5km 기반 P_raw + C density 분모 통일 (2026-04-20)
 - [ADR-002] T 가중치 0.2 → 0.1 (2026-04-19)
 - [ADR-003] 역세권 500m 경쟁 페널티 W_COMP_STATION=0.2 (2026-04-20 추가, 2026-04-22 반영)
@@ -30,6 +31,11 @@
 
 ## 진행 중 이슈
 
+- **[v7] ODSay 84동 대중교통 판정 대기** — `python -m scrapers.commute_isochrone` (미판정 동 우선). 일일 한도 ~100건으로 축소된 듯(확인 필요). 완료 후 `scoring.pipeline` + `scripts.sensitivity_mc` 재실행.
+- **[v7] NHIS 검진기관 API** (15154419 `openapigw.nhis.or.kr/openapi/service/rest/HmcSearchService/getHmcList`) — 2026-10-12 "key parameter error", 재시도. 성공 시 위암 검진기관 ∩ A304 = 내시경 검진 가능 기관 수로 경쟁 지표 교체.
+- **[v7] 5단계 대시보드**: 통근 4구간·추세·생존율·민감도 분포·출처/기준일·데이터 부족 배지. Notion 속성명 "40+인구" → "50~69세" (현재 값만 50~69세).
+- **[v7] main 병합 전 확인**: 주간 cron이 4월 이후 commit-back 없음(비활성화 의심). v7 워크플로는 feature 브랜치에만.
+- 답사(v6 Top30 기준 계획)는 v7 확정 후 대상 재선정 권장.
 - **답사 실시 대기 (최우선).** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴), 금천 독산4동(W=2.0에서 신규 진입). 답사 후 retrospective gap 분석 → 모델 약점 자연스럽게 식별.
 - **rank 25 금천 독산4동 Notion 페이지 추가 필요** — DB에 page 미존재로 detail 갱신 skip됨. `python -m publishers.notion_sync` 1회 실행 후 `notion_detail --only 25` 재실행.
 - 월계2동(rank 1) 자기잠식 의문: NW 광운대역세권으로 진료 수요 흡수 가능성. 답사로만 검증.
@@ -39,7 +45,9 @@
 - **HIRA 의료장비 데이터셋 갱신 주기 = 연 1회**: 신규 의원 GI 분류에 1~14개월 지연. 단 신규 의원도 c_raw 의사 수에 카운트되어 페널티 자동 작동하므로 critical 결함 아님 (사후 검증 완료, 2026-04-27).
 - **새 변수 도입 회의 패턴**: barrier 마스킹·약국·신규개원 페널티 모두 기각. 신호는 있으나 c_raw double-count 또는 모델 P/C 정의와 결 다름. 답사 retrospective 데이터 쌓기로 전환.
 
-## 가중치 (2026-04-19 조정, docs/SCORING.md와 동기화)
+## 가중치 (v7 feature/v7 2026-10-12 / 아래 블록은 v6 main 기준)
+
+v7: `Score = 0.5·C + 0.5·P`, `P = 0.85·rank(배후 50~69세) + 0.15·rank(3년 추세)`, 통근은 60분 필터 전용. 상세 docs/SCORING.md 상단.
 
 ```
 Score = 0.45 · C_norm + 0.45 · P_norm + 0.1 · T_norm

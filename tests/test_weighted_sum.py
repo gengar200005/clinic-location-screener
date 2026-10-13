@@ -71,3 +71,33 @@ def test_top_n_returns_correct_count():
     scored = compute_final_scores(df)
     assert len(top_n(scored, 30)) == 30
     assert len(top_n(scored, 5)) == 5
+
+
+def test_p_norm_blends_trend_and_imputes_missing():
+    from config.constants import W_P_TREND
+    from scoring.weighted_sum import compute_final_scores
+    df = pd.DataFrame({
+        "adm_cd": list("abcd"), "adm_nm": list("abcd"),
+        "c_raw": [1.0, 1.0, 1.0, 1.0], "p_raw": [10.0, 20.0, 30.0, 40.0], "t_raw": [30] * 4,
+        "trend_5069_3y": [0.10, None, -0.05, 0.0],
+    })
+    out = compute_final_scores(df).set_index("adm_cd")
+    assert out.loc["b", "trend_imputed"]
+    expected = (1 - W_P_TREND) * out["p_size_norm"] + W_P_TREND * out["trend_norm"]
+    assert (out["p_norm"] - expected).abs().max() < 1e-12
+
+
+def test_c_norm_blends_checkup_with_hospital_weight():
+    from config.constants import W_C_CHECKUP
+    from scoring.weighted_sum import compute_final_scores
+    df = pd.DataFrame({
+        "adm_cd": list("abc"), "adm_nm": list("abc"),
+        "c_raw": [1.0, 2.0, 3.0], "p_raw": [1.0, 1.0, 1.0], "t_raw": [30] * 3,
+        "n_endo_ck_clinic": [2, 2, 0], "n_endo_ck_hosp": [0, 1, 0],
+        "catchment_pop_5069": [10_000, 10_000, 10_000],
+    })
+    out = compute_final_scores(df).set_index("adm_cd")
+    assert out.loc["b", "n_endo_ck_w"] == 4          # 의원 2 + 병원 1×2
+    expected = (1 - W_C_CHECKUP) * out["c_internal_norm"] + W_C_CHECKUP * out["c_checkup_norm"]
+    assert (out["c_norm"] - expected).abs().max() < 1e-12
+    assert out.loc["c", "c_checkup_norm"] > out.loc["b", "c_checkup_norm"]   # 검진기관 0 → 경쟁 최저

@@ -1,12 +1,12 @@
 """소상공인시장진흥공단 상가(상권)정보 → 동별 1·2층 상가 cluster.
 
 입력: data/raw/commercial/소상공인시장진흥공단_*_서울_*.csv 등
-필터: 우리 대상 시군구만 + 1·2층 + 좌표 유효
+필터: context_sido(서울·경기·인천) + 1·2층 + 좌표 유효
 출력: data/cleaned/shops_by_dong.parquet
   · 동별: n_shops_total, n_shops_floor12, lat_mean, lon_mean, hull_wkt
   · 답사 anchor (1종 근생 매물 가능 영역) 정밀도 ↑
 
-가공 후 우리 후보 9개 시군구 안의 1·2층 상가 좌표 집계.
+v7: 후보 동 판정(통근 필터)이 집계 이후 단계라 시도 전체를 집계한다.
 
 사용:
     python -m scrapers.commercial_shops
@@ -18,31 +18,23 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-import yaml
 from shapely.geometry import MultiPoint
 
-from config.constants import DATA_CLEANED, DATA_RAW, ROOT
+from config.constants import DATA_CLEANED, DATA_RAW
+from config.regions import context_sido
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("commercial")
 
 SRC_DIR = DATA_RAW / "commercial"
 OUT_PATH = DATA_CLEANED / "shops_by_dong.parquet"
-TARGET_REGIONS_YAML = ROOT / "config" / "target_regions.yaml"
 
 USE_COLS = ["시도명", "시군구명", "행정동코드", "행정동명",
             "경도", "위도", "층정보", "상권업종대분류명"]
 
 
-def load_target_sgg() -> set[str]:
-    with open(TARGET_REGIONS_YAML, encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    targets = set()
-    for sgg in cfg.get("seoul", []):
-        targets.add(sgg)
-    for sgg in cfg.get("gyeonggi", []):
-        targets.add(sgg)
-    return targets
+# 상가 CSV 파일명 태그 (소상공인시장진흥공단_상가(상권)정보_{태그}_YYYYMM.csv)
+SIDO_FILE_TAG = {"서울특별시": "서울", "경기도": "경기", "인천광역시": "인천"}
 
 
 def parse_floor(v) -> int | None:
@@ -62,10 +54,13 @@ def parse_floor(v) -> int | None:
 
 
 def main():
-    targets = load_target_sgg()
-    log.info("target sgg keywords: %d", len(targets))
-
-    files = sorted(SRC_DIR.glob("*_서울_*.csv")) + sorted(SRC_DIR.glob("*_경기_*.csv"))
+    sidos = context_sido()
+    files = []
+    for sido in sidos:
+        found = sorted(SRC_DIR.glob(f"*_{SIDO_FILE_TAG[sido]}_*.csv"))
+        if not found:
+            raise FileNotFoundError(f"{sido} 상가 CSV 없음 ({SRC_DIR})")
+        files.append(found[-1])
     log.info("source files: %s", [f.name for f in files])
 
     pieces = []
@@ -77,12 +72,8 @@ def main():
         df["위도"] = pd.to_numeric(df["위도"], errors="coerce")
         log.info("  raw rows: %d", len(df))
 
-        # 시군구 필터 (target_regions.yaml의 시군구명과 startswith 매칭)
-        mask = df["시군구명"].apply(
-            lambda s: any(str(s).startswith(t) for t in targets)
-        )
-        df = df[mask].copy()
-        log.info("  after sgg filter: %d", len(df))
+        df = df[df["시도명"].isin(sidos)].copy()
+        log.info("  after sido filter: %d", len(df))
 
         # 좌표 유효성
         df = df[df["경도"].notna() & df["위도"].notna()]
@@ -104,9 +95,10 @@ def main():
     log.info("floor 1-2 only: %d / %d", len(floor12), len(all_df))
 
     # 동별 집계
+    n_total_by_dong = all_df.groupby("adm_cd10").size()
     rows = []
     for adm_cd10, sub in floor12.groupby("adm_cd10"):
-        n_total = (all_df["adm_cd10"] == adm_cd10).sum()
+        n_total = n_total_by_dong.get(adm_cd10, 0)
         lat_mean = float(sub["위도"].mean())
         lon_mean = float(sub["경도"].mean())
         # convex hull (3개 이상)

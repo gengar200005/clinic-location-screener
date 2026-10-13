@@ -9,6 +9,16 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin="anonymous" />
   <style>
+    .v7panel { margin-top:8px; padding:8px 10px; background:#f7f9fc; border:1px solid #e3e8f0; border-radius:6px; font-size:12px; line-height:1.55; }
+    .v7panel h3 { margin:0 0 4px; font-size:12px; color:#1565c0; }
+    .v7panel table { border-collapse:collapse; width:100%; }
+    .v7panel td { padding:1px 4px; vertical-align:top; }
+    .v7panel td.k { color:#666; white-space:nowrap; width:1%; }
+    .v7panel .gaps { margin-top:4px; color:#78909c; font-size:11px; }
+    .sensbar { position:relative; height:10px; background:#eceff1; border-radius:5px; margin:3px 0; }
+    .sensbar .rng { position:absolute; top:0; height:10px; background:#90caf9; border-radius:5px; }
+    .sensbar .med { position:absolute; top:-2px; width:3px; height:14px; background:#0d47a1; }
+    .sensbar .cut { position:absolute; top:-3px; width:1px; height:16px; background:#e53935; }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; }
     body { background: #f5f5f5; color: #222; }
@@ -127,28 +137,54 @@
       if (m.suburban) flags.push('<span class="flag">🏘 신도시밀집</span>');
       const short = d.name.split(' ').slice(1).join(' ');
       const transitStr = (m.t_transit != null && m.t_transit < 999) ? ` · 🚇 대중교통 ${m.t_transit}분` : '';
-      const sidoTagShort = d.sido === '서울특별시' ? '서울' : (d.sido === '경기도' ? '경기' : d.sido);
+      const sidoTagShort = { '서울특별시': '서울', '경기도': '경기', '인천광역시': '인천' }[d.sido] || d.sido;
       const sidoRankStr = d.rank_sido && d.rank_sido > 0 ? `<span class="sido-rank">${sidoTagShort} ${d.rank_sido}위</span>` : '';
       const townTagMap = { gen_1: '1기 신도시', gen_2: '2기 신도시', gen_3: '3기 신도시', seoul_renew: '서울 재개발' };
       const townBadge = d.town_tag ? `<span class="tag">🏗 ${townTagMap[d.town_tag] || d.town_tag}</span>` : '';
-      const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (40+ ${(m.catchment_pop_40plus/1000).toFixed(0)}k)` : '';
+      const catchStr = m.catchment_pop_1_5km ? ` · 1.5km 배후 ${(m.catchment_pop_1_5km/1000).toFixed(0)}k (50~69세 ${(m.catchment_pop_5069/1000).toFixed(0)}k)` : '';
       const medStr = `<b style="color:#c62828;">내과 의원 ${m.n_clinic_med}개 (의사 ${m.n_doctors_med}명)</b> / 전체 의원 ${m.n_clinic}`;
       const radiusMedStr = `1.5km 내과 의원 ${m.n_within_radius_med}개 (의사 ${m.n_doctors_within_radius_med}명) / 전체 ${m.n_within_radius_all}`;
       const stationDanger = d.station && d.station.n_clinic_500m >= 10
         ? `<br><span class="flag red">⚠ 역 500m 내 의원 ${d.station.n_clinic_500m}개 — 역세권 경쟁 강함 (동 점수에는 반영 약함)</span>`
         : '';
+      const v7 = m.v7 || {};
+      const pctS = x => (x == null ? '-' : (x >= 0 ? '+' : '') + (x * 100).toFixed(1) + '%');
+      const TREND_NOTE = { aggregated: ' (2023년 동 재편 — 권역 합산)', rapid_change: ' (재건축·입주 급변)' };
+      let sensHtml = '<span style="color:#999;">민감도 결과 없음</span>';
+      if (v7.sens) {
+        const maxR = Math.max(60, Math.ceil(v7.sens.p95 / 10) * 10);
+        const x = r => (100 * (r - 1) / (maxR - 1)).toFixed(1) + '%';
+        sensHtml = `중앙 <b>${v7.sens.median}위</b> · 90% 구간 ${v7.sens.p5}~${v7.sens.p95}위 · Top30 진입 <b>${Math.round(v7.sens.top30 * 100)}%</b>` +
+          (v7.sens.dep ? ' <span class="flag">가정 의존</span>' : (v7.sens.top30 >= 0.95 ? ' <span class="tag">안정</span>' : '')) +
+          `<div class="sensbar" title="1위 ~ ${maxR}위, 빨간선 = 30위">` +
+          `<div class="rng" style="left:${x(v7.sens.p5)};width:calc(${x(v7.sens.p95)} - ${x(v7.sens.p5)})"></div>` +
+          `<div class="cut" style="left:${x(30)}"></div><div class="med" style="left:${x(v7.sens.median)}"></div></div>` +
+          `<span style="color:#999;font-size:10px;">가중치 8종 각각 ±30% 무작위 ${v7.sens.n}회</span>`;
+      }
+      const v7Html = `
+        <div class="v7panel">
+          <h3>v7 지표</h3>
+          <table>
+            <tr><td class="k">경쟁 C ${m.c_norm}</td><td>내과 ${v7.c_internal ?? '-'} · 내시경 위암검진 ${v7.c_checkup ?? '-'} — 1.5km 내 <b>${v7.n_endo_ck ?? '-'}곳</b> (의원 ${v7.n_endo_ck_clinic ?? '-'} · 병원급 ${v7.n_endo_ck_hosp ?? '-'}, 50~69세 1만 명당 ${v7.endo_ck_w_per_10k ?? '-'} — 병원급 ×2) · 대장암 검진기관 ${v7.n_colon_ck ?? '-'}</td></tr>
+            <tr><td class="k">인구 P ${m.p_norm}</td><td>배후 50~69세 규모 ${v7.p_size ?? '-'} · 3년 증감 <b>${pctS(v7.trend_5069_3y)}</b>${TREND_NOTE[v7.trend_flag] || ''}</td></tr>
+            <tr><td class="k">출퇴근</td><td>자차 ${v7.t_car_am ?? '?'} / ${v7.t_car_pm ?? '?'}분 ${v7.ok_car ? '✅' : '❌'} · 대중교통 ${v7.t_transit_am ?? '?'} / ${v7.t_transit_pm ?? '?'}분 ${v7.ok_transit ? '✅' : (v7.t_transit_am == null ? '(미확인)' : '❌')} — 출근 화 07:30 이촌→ / 퇴근 18:30 →이촌</td></tr>
+            <tr><td class="k">5년 내과 개설·폐업</td><td>1.5km 내 개설 ${v7.n_open_5y ?? '-'} · 폐업 ${v7.n_close_5y ?? '-'} · 순증 ${v7.net_open_5y ?? '-'}${v7.survival_5y != null ? ` · 생존율 ${(v7.survival_5y * 100).toFixed(0)}%` : ''} <span style="color:#999;">(표시 전용)</span></td></tr>
+            <tr><td class="k">가중치 민감도</td><td>${sensHtml}</td></tr>
+          </table>
+          ${v7.gaps && v7.gaps.length ? `<div class="gaps">⚠ 데이터 부족: ${v7.gaps.join(' · ')}</div>` : ''}
+        </div>`;
       document.getElementById('hdr-body').innerHTML = `
         <h1><span class="badge">#${d.rank}</span>${short} <span style="color:#888;font-weight:400;">· 총점 ${d.score}</span>${sidoRankStr}</h1>
         <div class="meta">
           ${townBadge}
-          40+ ${m.pop_40plus.toLocaleString()}명 (${(m.ratio_40plus*100).toFixed(0)}%)${catchStr}<br>
+          50~69세 ${m.pop_5069.toLocaleString()}명 (${(m.ratio_5069*100).toFixed(0)}%)${catchStr}<br>
           의원: 동내 ${medStr} · ${radiusMedStr}
           <span style="color:#888;font-size:11px;">(반경 의원: 500m ${m.n_clinic_500m} / 1km ${m.n_clinic_1km} / 2km ${m.n_clinic_2km})</span><br>
-          🚗 자차 ${m.t_raw}분${transitStr}
+          🚗 자차 출근 ${v7.t_car_am ?? '?'}분 / 퇴근 ${v7.t_car_pm ?? '?'}분 · 🚇 대중교통 ${v7.t_transit_am != null ? v7.t_transit_am + '/' + (v7.t_transit_pm ?? '?') + '분' : '미확인'}
           ${d.station ? ` · 🚉 ${d.station.name} ${d.station.dist_m}m (역세권 의원 ${d.station.n_clinic_500m})` : ''}
           ${stationDanger}
           ${flags.length ? '<br>' + flags.join('') : ''}
-        </div>`;
+        </div>${v7Html}`;
 
       // ── 답사 준비 링크 ──────────
       if (d.survey_links) {
