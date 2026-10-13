@@ -115,13 +115,6 @@ jobs:
       - name: Publish — web export (Top 30 detail JSON)
         run: python -m publishers.web_export
 
-      - name: Publish — Notion DB sync
-        run: python -m publishers.notion_sync
-
-      - name: Publish — Notion 페이지 본문 (자동 영역만 갱신)
-        # 마커 로직으로 답사 기록 수동 영역 보존 — 순위 이탈·재진입에도 안전.
-        run: python -m publishers.notion_embed
-
       # ── 5. Commit back ──
       # 영구 커밋 대상:
       #   data/cache/*.parquet  (ODSay·Kakao·역세권 캐시 — 삭제 시 한도 위험)
@@ -138,6 +131,14 @@ jobs:
           fi
           git commit -m "chore(weekly): pipeline run ${RUN_DATE} [skip ci]"
           git push
+
+      # Notion은 결과 커밋 뒤에 — Notion 실패해도 대시보드·캐시는 저장 (2026-10-13)
+      - name: Publish — Notion DB sync
+        run: python -m publishers.notion_sync
+
+      - name: Publish — Notion 페이지 본문 (자동 영역만 갱신)
+        # 마커 로직으로 답사 기록 수동 영역 보존 — 순위 이탈·재진입에도 안전.
+        run: python -m publishers.notion_embed
 
       # ── 6. 디버깅용 요약 ──
       - name: Summary
