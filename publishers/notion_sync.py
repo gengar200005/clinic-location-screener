@@ -54,10 +54,15 @@ PROP_P = "인구점수"
 PROP_T = "통근점수"
 PROP_N_CLINIC = "의원수"
 PROP_POP_TOTAL = "총인구"
-# TODO(v7 5단계): Notion DB 속성명을 "50~69세인구"/"50~69세비율"로 변경 후 갱신.
-#   현재 값은 50~69세 기준으로 들어감 (속성명만 구버전).
-PROP_POP_40 = "40+인구"
-PROP_RATIO_40 = "40+비율"
+# v7 (2026-10-13): 40+ → 50~69세. ensure_schema()가 구 속성명("40+인구"/"40+비율")을 rename.
+PROP_POP_40 = "50~69세인구"
+PROP_RATIO_40 = "50~69세비율"
+LEGACY_RENAMES = {"40+인구": PROP_POP_40, "40+비율": PROP_RATIO_40}
+# v7 신규 지표 (number)
+PROP_ENDO_CK = "내시경검진기관"      # 1.5km 내시경 위암검진 가능 기관 수
+PROP_TREND = "50~69세_3년증감"       # 비율 (0.05 = +5%)
+PROP_TOP30_FREQ = "Top30확률"        # 가중치 ±30% 민감도 Top30 진입 비율
+V7_NUMBER_PROPS = {PROP_ENDO_CK: "number", PROP_TREND: "percent", PROP_TOP30_FREQ: "percent"}
 PROP_COMMUTE = "자차분"
 PROP_N500 = "500m내 의원"
 PROP_STATUS = "임장상태"
@@ -74,6 +79,26 @@ def _find_latest_top30() -> Path:
             "`python -m scoring.pipeline` 먼저."
         )
     return files[-1]
+
+
+def _num_or_none(v, nd: int = 4):
+    return None if v is None or pd.isna(v) else round(float(v), nd)
+
+
+def ensure_schema(client: Client, data_source_id: str) -> None:
+    """v7 속성: 구 속성명 rename + 신규 number 속성 추가 (이미 있으면 skip)."""
+    ds = client.data_sources.retrieve(data_source_id=data_source_id)
+    have = set(ds["properties"].keys())
+    update = {}
+    for old, new in LEGACY_RENAMES.items():
+        if old in have and new not in have:
+            update[old] = {"name": new}
+    for name, fmt in V7_NUMBER_PROPS.items():
+        if name not in have:
+            update[name] = {"number": {"format": fmt}}
+    if update:
+        client.data_sources.update(data_source_id=data_source_id, properties=update)
+        logger.info("Notion 스키마 갱신: %s", list(update))
 
 
 def _page_props(row: pd.Series, today: str) -> dict:
@@ -98,6 +123,9 @@ def _page_props(row: pd.Series, today: str) -> dict:
         PROP_COMMUTE: {"number": int(row["t_raw"])},
         PROP_N500: {"number": int(row["n_within_radius"])},
         PROP_DATE: {"date": {"start": today}},
+        PROP_ENDO_CK: {"number": _num_or_none(row.get("n_endo_ck"), 0)},
+        PROP_TREND: {"number": _num_or_none(row.get("trend_5069_3y"))},
+        PROP_TOP30_FREQ: {"number": _num_or_none(row.get("top30_freq"), 3)},
     }
 
 
@@ -114,6 +142,12 @@ def _resolve_data_source_id(client: Client, database_id: str) -> str:
             "DB가 integration에 공유됐는지 확인."
         )
     return sources[0]["id"]
+
+
+def _memo_text(client: Client, page_id: str) -> str:
+    page = client.pages.retrieve(page_id=page_id)
+    prop = page["properties"].get(PROP_MEMO) or {}
+    return "".join(x.get("plain_text", "") for x in prop.get("rich_text", []))
 
 
 def _query_existing(client: Client, data_source_id: str) -> dict[str, str]:
@@ -165,6 +199,11 @@ def sync(
     top30_path = top30_path or _find_latest_top30()
     df = pd.read_parquet(top30_path)
     logger.info("loaded %d rows from %s", len(df), top30_path.name)
+    sens_path = top30_path.with_name(top30_path.name.replace("top30_", "sensitivity_"))
+    if sens_path.exists():
+        sens = pd.read_parquet(sens_path)[["adm_cd", "top30_freq"]]
+        df = df.assign(adm_cd=df["adm_cd"].astype(str)).merge(
+            sens.assign(adm_cd=sens["adm_cd"].astype(str)), on="adm_cd", how="left")
 
     today = date.today().isoformat()
     client = Client(auth=token)
@@ -173,6 +212,8 @@ def sync(
     if not ds_id:
         ds_id = _resolve_data_source_id(client, db_id)
         logger.info("resolved data_source_id: %s", ds_id)
+
+    ensure_schema(client, ds_id)
 
     logger.info("querying existing pages...")
     existing = _query_existing(client, ds_id)
@@ -203,15 +244,13 @@ def sync(
     if mark_dropped:
         for name, page_id in existing.items():
             if name not in current_names:
+                # 사용자 메모 보존: 기존 "탈락" 줄만 교체하고 나머지는 유지
+                old = _memo_text(client, page_id)
+                kept = "\n".join(ln for ln in old.splitlines() if "Top 30 밖으로 탈락" not in ln)
+                memo = f"⬇️ {today} Top 30 밖으로 탈락" + (f"\n{kept}" if kept.strip() else "")
                 client.pages.update(
                     page_id=page_id,
-                    properties={
-                        PROP_MEMO: {
-                            "rich_text": [{
-                                "text": {"content": f"⬇️ {today} Top 30 밖으로 탈락"}
-                            }]
-                        }
-                    },
+                    properties={PROP_MEMO: {"rich_text": [{"text": {"content": memo[:2000]}}]}},
                 )
                 dropped += 1
 
