@@ -99,6 +99,14 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     table.to_parquet(args.out, index=False)
     logger.info("saved %s (%d rows)", args.out, len(table))
+
+    # GH Actions runner용 캐시 (원본 CSV는 로그인 다운로드라 runner에 없음) — 커밋 대상
+    from config.constants import DATA_CACHE
+    from scoring.checkup_competition import build_egd_keys_cache
+    cache = DATA_CACHE / "clinic_equipment.parquet"
+    table[["ykiho", "has_egd", "has_colo", "is_gi"]].to_parquet(cache, index=False)
+    logger.info("saved %s (runner 캐시)", cache)
+    build_egd_keys_cache(csv_path)
     return 0
 
 

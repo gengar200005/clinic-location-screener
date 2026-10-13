@@ -233,6 +233,8 @@ def _merge_equipment_flags(clinics: pd.DataFrame) -> pd.DataFrame:
     캐시 없으면 has_egd/has_colo/is_gi 모두 False로 채움 (호환).
     """
     eqp_path = DATA_CLEANED / "clinic_equipment.parquet"
+    if not eqp_path.exists():  # GH Actions runner: 커밋된 캐시 (scrapers.hira_equipment가 함께 저장)
+        eqp_path = DATA_CLEANED.parent / "cache" / "clinic_equipment.parquet"
     if not eqp_path.exists():
         logger.warning(
             "clinic_equipment.parquet 없음 → is_gi 모두 False. "
