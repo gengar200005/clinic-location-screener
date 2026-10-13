@@ -43,6 +43,14 @@
     .row { padding: 8px 12px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: 32px 1fr auto; gap: 6px; align-items: center; cursor: pointer; transition: background .08s; }
     .row:hover { background: #f0f7ff; }
     .row.active { background: #fff59d; }
+    .v7b { display:inline-block; font-size:10px; padding:0 5px; border-radius:8px; margin-left:3px; font-weight:600; vertical-align:middle; }
+    .v7b.stable { background:#e8f5e9; color:#2e7d32; }
+    .v7b.dep { background:#fff3e0; color:#e65100; }
+    .v7b.gap { background:#eceff1; color:#546e7a; cursor:help; }
+    details.sources { margin-top:6px; font-size:11px; color:#555; }
+    details.sources summary { cursor:pointer; color:#1565c0; }
+    details.sources table { border-collapse:collapse; margin-top:4px; width:100%; }
+    details.sources td { border-top:1px solid #eee; padding:2px 4px; vertical-align:top; }
     .row .rank { font-weight: 700; color: #1565c0; text-align: center; font-size: 13px; }
     .row .name { font-weight: 600; font-size: 14px; }
     .row .name .sub { color: #888; font-weight: 400; font-size: 11px; margin-left: 4px; }
@@ -75,12 +83,14 @@
       <div class="top">
         <h1>🏥 개원 입지 스크리너 <span style="color:#888;font-weight:400;font-size:12px;" id="gen"></span></h1>
         <div class="meta" id="meta">로딩 중…</div>
+        <details class="sources" id="sources"><summary>데이터 출처·기준일 · 모델 v7 설명</summary><div id="sources-body"></div></details>
         <div class="controls">
           <span style="color:#666;">시도</span>
           <span class="seg" id="sido-seg">
             <button data-v="all" class="on">전체</button>
             <button data-v="서울특별시">서울</button>
             <button data-v="경기도">경기</button>
+            <button data-v="인천광역시">인천</button>
           </span>
           <span style="color:#666;">상위</span>
           <span class="seg" id="topn-seg">
@@ -118,7 +128,7 @@
             <input type="range" id="w-p" min="0" max="1" step="0.05" value="0.50" />
             <span id="w-p-v">0.50</span>
           </label>
-          <label>통근 T
+          <label title="v7: 통근은 출퇴근 60분 필터로만 사용 (기본 0)">통근 T
             <input type="range" id="w-t" min="0" max="1" step="0.05" value="0.00" />
             <span id="w-t-v">0.00</span>
           </label>
@@ -209,6 +219,21 @@
     }
 
     const byCode = new Map();
+    const SIDO_SHORT = { '서울특별시': '서울', '경기도': '경기', '인천광역시': '인천' };
+    const pct = v => (v == null ? '-' : (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%');
+    const mins = v => (v == null ? '?' : v + '분');
+    function sensBadge(v) {
+      if (!v || !v.sens) return '';
+      const f = Math.round(v.sens.top30 * 100);
+      const tip = `가중치 ±30% ${v.sens.n}회: 중앙 ${v.sens.median}위 (90% 구간 ${v.sens.p5}~${v.sens.p95}위), Top30 진입 ${f}%`;
+      if (v.sens.dep) return `<span class="v7b dep" title="${tip}">가정의존 ${f}%</span>`;
+      if (v.sens.top30 >= 0.95) return `<span class="v7b stable" title="${tip}">안정</span>`;
+      return '';
+    }
+    function gapBadge(v) {
+      if (!v || !v.gaps || !v.gaps.length) return '';
+      return `<span class="v7b gap" title="${v.gaps.join('\n')}">데이터 부족 ${v.gaps.length}</span>`;
+    }
 
     function buildLayer() {
       if (geoLayer) map.removeLayer(geoLayer);
@@ -236,18 +261,24 @@
         <div class="popup-body">
           <b>#${dong.rank} ${dong.short}</b> <span style="color:#666;">(${dong.sgg})</span><br>
           <div class="row-mini"><span>총점</span><b>${dong.score.toFixed(3)}</b></div>
-          <div class="row-mini"><span>경쟁 (낮을수록↑)</span><span>${dong.c.toFixed(2)}</span></div>
-          <div class="row-mini"><span>인구 50~69세</span><span>${dong.p.toFixed(2)}</span></div>
-          <div class="row-mini"><span>통근 (이촌역)</span><span>${dong.t.toFixed(2)}</span></div>
+          <div class="row-mini"><span>경쟁 C (높을수록 경쟁 적음)</span><span>${dong.c.toFixed(2)}</span></div>
+          <div class="row-mini" style="color:#888;"><span>&nbsp;└ 내과 / 내시경검진</span><span>${(dong.v7?.c_internal ?? 0).toFixed(2)} / ${(dong.v7?.c_checkup ?? 0).toFixed(2)}</span></div>
+          <div class="row-mini"><span>인구 P (50~69세)</span><span>${dong.p.toFixed(2)}</span></div>
+          <div class="row-mini" style="color:#888;"><span>&nbsp;└ 규모 / 3년 추세</span><span>${(dong.v7?.p_size ?? 0).toFixed(2)} / ${pct(dong.v7?.trend_5069_3y)}</span></div>
           <hr style="border:0;border-top:1px solid #eee;margin:6px 0;">
           <div class="row-mini"><span>내과 의원 (동내)</span><b style="color:#c62828;">${dong.n_clinic_med ?? '-'}개</b></div>
           <div class="row-mini"><span>내과 의사 수</span><b style="color:#c62828;">${dong.n_doctors_med ?? '-'}명</b></div>
           <div class="row-mini"><span>전체 의원 (동/500m)</span><span>${dong.n_clinic} / ${dong.n_clinic_500m}</span></div>
           <div class="row-mini"><span>총인구 / 50~69세</span><span>${(dong.pop_total||0).toLocaleString()} / ${(dong.pop_5069||0).toLocaleString()}</span></div>
-          <div class="row-mini"><span>🕐 통근 (출퇴근 중 긴 쪽, 자차·대중교통 중 짧은 수단)</span><span>${dong.t_raw}분</span></div>
+          <div class="row-mini"><span>🚗 자차 출근/퇴근</span><span>${mins(dong.v7?.t_car_am)} / ${mins(dong.v7?.t_car_pm)}</span></div>
+          <div class="row-mini"><span>🚇 대중교통 출근/퇴근</span><span>${mins(dong.v7?.t_transit_am)} / ${mins(dong.v7?.t_transit_pm)}</span></div>
+          <div class="row-mini"><span>🔬 내시경 위암검진 1.5km</span><b>${dong.v7?.n_endo_ck ?? '-'}곳 <span style="font-weight:400;color:#666;">(병원급 ${dong.v7?.n_endo_ck_hosp ?? '-'})</span></b></div>
+          <div class="row-mini"><span>5년 내과 개설/폐업 (1.5km)</span><span>${dong.v7?.n_open_5y ?? '-'} / ${dong.v7?.n_close_5y ?? '-'}</span></div>
+          ${dong.v7?.sens ? `<div class="row-mini"><span>민감도 (Top30 진입)</span><span>${Math.round(dong.v7.sens.top30*100)}% · ${dong.v7.sens.p5}~${dong.v7.sens.p95}위</span></div>` : ''}
+          ${dong.v7?.gaps?.length ? `<div style="margin-top:4px;font-size:10px;color:#78909c;">⚠ ${dong.v7.gaps.join('<br>⚠ ')}</div>` : ''}
           ${dong.rank <= 50 ? `<a class="detail" href="detail/#${dong.adm_cd}">상세보기 →</a>` : ''}
         </div>`;
-      layer.bindPopup(html, { maxWidth: 240 }).openPopup();
+      layer.bindPopup(html, { maxWidth: 300 }).openPopup();
     }
 
     // ── List ──
@@ -276,16 +307,16 @@
         return;
       }
       list.innerHTML = filtered.map(d => {
-        const sidoTag = d.sido === '서울특별시' ? '서울' : '경기';
+        const sidoTag = SIDO_SHORT[d.sido] || d.sido;
         const flags = (d.med_desert ? '<span class="flag">🏜</span>' : '') +
                       (d.suburban ? '<span class="flag" style="background:#fff3e0;color:#ef6c00;">🏘</span>' : '') +
                       (d.town_tag ? `<span class="flag" style="background:#e8f5e9;color:#2e7d32;">🏗${TOWN_LABELS[d.town_tag]||d.town_tag}</span>` : '');
         const sidoRank = d.rank_sido ? ` <span style="color:#999;font-weight:400;font-size:10px;">(${sidoTag}${d.rank_sido})</span>` : '';
         return `<div class="row" data-cd="${d.adm_cd}">
           <div class="rank">${d.rank}${sidoRank}</div>
-          <div class="name">${flags}${d.short}<span class="sub">${sidoTag}·${d.sgg}</span></div>
+          <div class="name">${flags}${d.short}<span class="sub">${sidoTag}·${d.sgg}</span>${sensBadge(d.v7)}${gapBadge(d.v7)}</div>
           <div class="score">${d.score.toFixed(3)}</div>
-          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · T ${d.t.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}개(의사${d.n_doctors_med ?? '-'})</b>/전체 ${d.n_clinic} · 🕐 ${d.t_raw}분</div>
+          <div class="breakdown">C ${d.c.toFixed(2)} · P ${d.p.toFixed(2)} · 내과 <b style="color:#c62828;">${d.n_clinic_med ?? '-'}개(의사${d.n_doctors_med ?? '-'})</b> · 🔬검진 ${d.v7?.n_endo_ck ?? '-'}(병원${d.v7?.n_endo_ck_hosp ?? '-'}) · 50~69 ${pct(d.v7?.trend_5069_3y)} · 🚗 ${mins(d.v7?.t_car_am)}/${mins(d.v7?.t_car_pm)}</div>
         </div>`;
       }).join('');
 
@@ -425,8 +456,24 @@
       const sidoCnt = h.stats.n_top30_by_sido;
       document.getElementById('meta').innerHTML =
         `전체 <b>${h.stats.n_dongs}</b>동 스코어링 · ` +
-        `Top 30 = 서울 ${sidoCnt['서울특별시']||0} · 경기 ${sidoCnt['경기도']||0} · ` +
-        `가중치 C ${h.weights.c} / P ${h.weights.p} / T ${h.weights.t}`;
+        `Top 30 = 서울 ${sidoCnt['서울특별시']||0} · 경기 ${sidoCnt['경기도']||0} · 인천 ${sidoCnt['인천광역시']||0} · ` +
+        `가중치 C ${h.weights.c} / P ${h.weights.p}` +
+        (h.model === 'v7' ? ` · 이촌 출퇴근 ${h.commute_limit_min}분 이내만` : '');
+      if (h.sources) {
+        const sw = h.sub_weights || {};
+        const ex = (h.stats && h.stats.excluded) || {};
+        document.getElementById('sources-body').innerHTML =
+          `<div style="margin:4px 0;line-height:1.5;">` +
+          `<b>점수</b> = ${h.weights.c}·C + ${h.weights.p}·P (모두 후보 내 백분위)<br>` +
+          `C 경쟁 = ${1 - (sw.c_checkup ?? 0)}·내과 의사 밀도·반경 + ${sw.c_checkup}·내시경 위암검진기관 (병원급 ×${sw.checkup_hosp})<br>` +
+          `P 인구 = ${1 - (sw.p_trend ?? 0)}·배후 1.5km 50~69세 + ${sw.p_trend}·50~69세 3년 증감<br>` +
+          `후보 = 서울·경기·인천 (경기 경부축 제외) 중 자차 또는 대중교통으로 출근·퇴근 모두 ${h.commute_limit_min}분 이내<br>` +
+          `제외: 자차 초과·대중교통 미확인 ${ex.exceed_car || 0}동, 자차 경로 없음 ${ex.unknown || 0}동 · ` +
+          `민감도: 가중치 8종 ±30% ${h.stats.sensitivity_n || '-'}회 (배지: 안정 = Top30 진입 ≥95%, 가정의존 = 결과가 가중치에 좌우)` +
+          `</div><table>` +
+          h.sources.map(s => `<tr><td>${s.item}</td><td>${s.source}</td><td style="white-space:nowrap;">${s.as_of}</td></tr>`).join('') +
+          `</table>`;
+      }
 
       buildLayer();
       renderList();

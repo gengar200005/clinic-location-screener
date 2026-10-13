@@ -82,6 +82,122 @@ def tag_new_town(adm_nm: str, sgg: str, towns: dict) -> str:
                 return tag
     return ""
 
+# ─── v7 표시 필드 ─────────────────────────────────────────────────────
+def _num(v, nd: int | None = None):
+    """NaN/None → None, 그 외 float(반올림) 또는 int."""
+    if v is None or pd.isna(v):
+        return None
+    return round(float(v), nd) if nd is not None else int(round(float(v)))
+
+
+TREND_FLAG_LABEL = {
+    "aggregated": "추세: 2023년 동 재편 → 상위 권역 합산값",
+    "rapid_change": "추세: 재건축·입주로 인구 급변 (해석 주의)",
+    "boundary_suspect": "추세: 근거 불충분 (경계 변경 의심)",
+    "no_match": "추세: 근거 불충분 (3년 전 동 없음)",
+}
+
+
+def data_gaps(r) -> list[str]:
+    """후보별 '데이터 부족' 항목 (사람이 읽는 문장)."""
+    gaps = []
+    if pd.isna(r.get("t_transit")):
+        gaps.append("대중교통 시간 미확인 (ODSay 약관상 대량 조회 불가 — 자차로만 판정)")
+    flag = r.get("trend_flag")
+    if isinstance(flag, str) and flag in TREND_FLAG_LABEL:
+        gaps.append(TREND_FLAG_LABEL[flag])
+    if bool(r.get("trend_imputed", False)):
+        gaps.append("추세 결측 → 중앙값 대입")
+    if bool(r.get("survival_sample_flag", False)):
+        gaps.append("생존율: 반경 내 5년 개설 3곳 미만 (표본 부족)")
+    n_unknown = r.get("n_stomach_ck_unknown")
+    if n_unknown is not None and not pd.isna(n_unknown) and n_unknown > 0:
+        gaps.append(f"위암검진 의원 {int(n_unknown)}곳 내시경 보유 미확인 (경쟁 집계 제외)")
+    return gaps
+
+
+def v7_block(r, sens: dict | None) -> dict:
+    """detail.metrics.v7 / heatmap 공통 v7 필드."""
+    s = sens or {}
+    return {
+        "t_car_am": _num(r.get("t_car_am")), "t_car_pm": _num(r.get("t_car_pm")),
+        "t_transit_am": _num(r.get("t_transit_am")), "t_transit_pm": _num(r.get("t_transit_pm")),
+        "ok_car": bool(r.get("commute_ok_car", False)), "ok_transit": bool(r.get("commute_ok_transit", False)),
+        "c_internal": _num(r.get("c_internal_norm"), 4), "c_checkup": _num(r.get("c_checkup_norm"), 4),
+        "p_size": _num(r.get("p_size_norm"), 4), "p_trend": _num(r.get("trend_norm"), 4),
+        "n_endo_ck": _num(r.get("n_endo_ck")), "n_endo_ck_clinic": _num(r.get("n_endo_ck_clinic")),
+        "n_endo_ck_hosp": _num(r.get("n_endo_ck_hosp")), "n_colon_ck": _num(r.get("n_colon_ck")),
+        "endo_ck_w_per_10k": _num(r.get("endo_ck_w_per_10k"), 2),
+        "trend_5069_3y": _num(r.get("trend_5069_3y"), 4), "trend_flag": r.get("trend_flag"),
+        "survival_5y": _num(r.get("survival_5y"), 3), "n_open_5y": _num(r.get("n_open_5y")),
+        "n_close_5y": _num(r.get("n_close_5y")), "net_open_5y": _num(r.get("net_open_5y")),
+        "sens": {
+            "median": _num(s.get("rank_median"), 1), "p5": _num(s.get("rank_p5"), 1),
+            "p95": _num(s.get("rank_p95"), 1), "top30": _num(s.get("top30_freq"), 3),
+            "dep": bool(s.get("assumption_dependent", False)), "n": _num(s.get("n_sim")),
+        } if s else None,
+        "gaps": data_gaps(r),
+    }
+
+
+def load_sensitivity(scores_path: Path) -> dict[str, dict]:
+    path = DATA_SCORED / scores_path.name.replace("scores_", "sensitivity_")
+    if not path.exists():
+        logger.warning("%s 없음 → 민감도 표시 생략 (`python -m scripts.sensitivity_mc`)", path.name)
+        return {}
+    df = pd.read_parquet(path)
+    return {str(r["adm_cd"]): r.to_dict() for _, r in df.iterrows()}
+
+
+def collect_sources(scores_path: Path) -> list[dict]:
+    """데이터 출처·기준일 (대시보드 표시용). 파일명·메타에서 추출, 못 찾으면 '-'."""
+    def latest(glob):
+        f = sorted(DATA_RAW.glob(glob))
+        return f[-1] if f else None
+
+    def ym(v: str) -> str:
+        return f"{v[:4]}-{v[4:6]}" if v and v != "-" else "-"
+
+    prd = "-"
+    kosis_tot = latest("population/kosis_pop_2*.parquet")
+    if kosis_tot is not None:
+        prd = ym(str(pd.read_parquet(kosis_tot, columns=["PRD_DE"])["PRD_DE"].max()))
+    then = latest("population/kosis_pop_age_at_*.parquet")
+    then_prd = ym(then.stem.split("_")[-1]) if then else "-"
+    hira = latest("hira/hira_*.parquet")
+    eqp = latest("hira/건강보험심사평가원_의료장비 상세 현황_*.csv")
+    nhis = latest("nhis/nhis_checkup_*.parquet")
+    mois = latest("mois/mois_clinics_*.parquet")
+    shops = latest("commercial/*_서울_*.csv")
+    bnd = latest("admin_boundary/HangJeongDong_*.geojson")
+    commute_as_of = "-"
+    cache = DATA_RAW.parent / "cache" / "commute_v7.parquet"
+    if cache.exists():
+        c = pd.read_parquet(cache, columns=["leg", "fetched_at"])
+        car = c[c["leg"].str.startswith("car")]["fetched_at"]
+        commute_as_of = str(car.max())[:10] if len(car) else "-"
+    return [
+        {"item": "인구 50~69세 (P 규모 85%)", "source": "KOSIS 주민등록인구 DT_1B04005N", "as_of": prd},
+        {"item": "인구 3년 추세 (P 15%)", "source": "KOSIS 주민등록인구", "as_of": f"{then_prd} → {prd}"},
+        {"item": "배후 인구 격자 (반경 1.5km)", "source": "WorldPop 100m", "as_of": "2020"},
+        {"item": "내과 의원·의사 수 (C 내과 50%)", "source": "심평원 병원정보서비스 OpenAPI",
+         "as_of": hira.stem.replace("hira_", "") if hira else "-"},
+        {"item": "내시경 장비 (위 A304·대장 A320)", "source": "심평원 의료장비 상세 현황 (data.go.kr 15051055)",
+         "as_of": eqp.stem.split("_")[-1] if eqp else "-"},
+        {"item": "위암검진기관 (C 검진 50%, 병원급 ×2)", "source": "건보공단 검진기관 찾기 (data.go.kr 15154419)",
+         "as_of": nhis.stem.replace("nhis_checkup_", "") if nhis else "-"},
+        {"item": "의원 개설·폐업 (생존율·순증, 표시 전용)", "source": "행안부 지방행정 인허가 의원 (data.go.kr 15154874)",
+         "as_of": mois.stem.replace("mois_clinics_", "") if mois else "-"},
+        {"item": "통근 60분 필터 (자차)", "source": "Kakao Mobility 미래 길찾기, 화 07:30 출근 / 18:30 퇴근",
+         "as_of": commute_as_of},
+        {"item": "통근 (대중교통)", "source": "ODSay 일부 + 수동 확인 (data/manual/transit_manual.csv)", "as_of": "부분"},
+        {"item": "상가 기준점 (1·2층 상가 평균)", "source": "소상공인시장진흥공단 상가정보",
+         "as_of": shops.stem.split("_")[-1] if shops else "-"},
+        {"item": "행정동 경계", "source": "vuski/admdongkor", "as_of": bnd.stem.split("_")[-1] if bnd else "-"},
+        {"item": "점수 산출", "source": "scoring.pipeline v7", "as_of": scores_path.stem.replace("scores_", "")},
+    ]
+
+
 # 경계 단순화 tolerance (도 단위 ≈ 11m at lat 37). PLAN: ~1-2MB 목표.
 # 0.0005 ≈ 50m: 동 모양 식별 가능 + 파일 1MB 내외.
 BOUNDARY_SIMPLIFY_TOL = 0.0005
@@ -190,6 +306,7 @@ def build_detail_json(
     stations: pd.DataFrame | None,
     boundary_gdf: gpd.GeoDataFrame,
     shops: pd.DataFrame | None = None,
+    sens: dict | None = None,
 ) -> dict:
     adm_cd = str(row["adm_cd"])
     cent = centroid[centroid["adm_cd"].astype(str) == adm_cd].iloc[0]
@@ -369,6 +486,7 @@ def build_detail_json(
             "med_desert": bool(row.get("med_desert_flag", False)),
             "centroid_mismatch": bool(row.get("centroid_mismatch_flag", False)),
             "suburban": bool(row.get("suburban_cluster_flag", False)),
+            "v7": v7_block(row, sens),
         },
         "survey_links": survey_links,
         "commercial_anchor": commercial_anchor,
@@ -380,6 +498,7 @@ def build_detail_json(
 
 def export_heatmap(
     scores: pd.DataFrame, centroid: pd.DataFrame, scores_path: Path,
+    sens: dict | None = None,
 ) -> Path:
     """전체 동 점수 + 좌표 → heatmap.json (PWA 메인 페이지용)."""
     # 좌표 머지 (centroid는 lat/lon 보유)
@@ -434,6 +553,7 @@ def export_heatmap(
             "med_desert": bool(r.get("med_desert_flag", False)),
             "suburban": bool(r.get("suburban_cluster_flag", False)),
             "town_tag": str(r.get("town_tag", "") or ""),
+            "v7": v7_block(r, (sens or {}).get(str(r["adm_cd"]))),
         })
 
     # 메타: 날짜는 파일명에서 추출 (scores_YYYY-MM-DD.parquet)
@@ -442,13 +562,26 @@ def export_heatmap(
         df[df["rank"] <= 30]["sido"].value_counts().to_dict()
     )
 
+    from config.constants import (
+        COMMUTE_LIMIT_MIN, W_C_CHECKUP, W_CHECKUP_HOSP, W_COMMUTE, W_COMPETITION, W_P_TREND, W_POPULATION,
+    )
+    excl_path = DATA_SCORED / scores_path.name.replace("scores_", "excluded_commute_")
+    excluded = {}
+    if excl_path.exists():
+        excluded = pd.read_parquet(excl_path)["commute_status"].value_counts().to_dict()
     payload = {
         "generated_at": gen_date,
-        "weights": {"c": 0.4, "p": 0.4, "t": 0.2},
+        "model": "v7",
+        "weights": {"c": W_COMPETITION, "p": W_POPULATION, "t": W_COMMUTE},
+        "sub_weights": {"c_checkup": W_C_CHECKUP, "checkup_hosp": W_CHECKUP_HOSP, "p_trend": W_P_TREND},
+        "commute_limit_min": COMMUTE_LIMIT_MIN,
         "stats": {
             "n_dongs": int(len(df)),
             "n_top30_by_sido": {str(k): int(v) for k, v in sido_top30.items()},
+            "excluded": {str(k): int(v) for k, v in excluded.items()},
+            "sensitivity_n": next((_num(v.get("n_sim")) for v in (sens or {}).values()), None),
         },
+        "sources": collect_sources(scores_path),
         "dongs": dongs,
     }
     with open(WEB_HEATMAP_PATH, "w", encoding="utf-8") as f:
@@ -524,11 +657,14 @@ def run(top_n: int = 50) -> int:
         scores.groupby("sido")["score"].rank(method="min", ascending=False).astype(int)
     )
 
+    sens = load_sensitivity(scores_path)
+
     # 1. Top N detail JSON
     top_df = _top_n_from_scores(scores, n=top_n)
     count = 0
     for _, row in top_df.iterrows():
-        data = build_detail_json(row, centroid, clinics, stations, boundary_gdf, shops)
+        data = build_detail_json(row, centroid, clinics, stations, boundary_gdf, shops,
+                                 sens=sens.get(str(row["adm_cd"])))
         out = WEB_DETAIL_DIR / f"{row['adm_cd']}.json"
         with open(out, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
@@ -541,7 +677,7 @@ def run(top_n: int = 50) -> int:
     logger.info("wrote %d detail JSON files", count)
 
     # 2. heatmap.json (전체 동 점수 + 좌표 + 메타)
-    export_heatmap(scores, centroid, scores_path)
+    export_heatmap(scores, centroid, scores_path, sens)
 
     # 3. boundaries.geojson (choropleth)
     export_boundaries(boundary_gdf, scores, centroid)
@@ -655,8 +791,8 @@ def export_narrow_lists(scores: pd.DataFrame) -> Path:
 
     payload = {
         "criteria": {
-            "score": {"label": "종합 점수", "desc": "C+P+T 가중합"},
-            "commute": {"label": "통근 우선", "desc": "score × t_norm 가중"},
+            "score": {"label": "종합 점수", "desc": "C+P 가중합 (v7 — 통근은 60분 필터)"},
+            "commute": {"label": "통근 우선", "desc": "score × 통근 짧을수록 가중 (60분 후보 내)"},
             "new_town": {"label": "신도시", "desc": "1·2·3기 신도시·재개발"},
             "desert": {"label": "의료사막", "desc": "med_desert 플래그"},
             "low_density": {"label": "인구당 의원 적음", "desc": "잠재 미충족 수요"},
