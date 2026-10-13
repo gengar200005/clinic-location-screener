@@ -7,6 +7,8 @@
 > - P 타깃 연령 **40+ → 50~69세** (`pop_5069`, `ratio_5069`, `catchment_pop_5069`)
 > - **P = 0.85 · rank(배후 50~69세 규모) + 0.15 · rank(50~69세 3년 추세)** (`W_P_TREND`, 2026-10-12 사용자 결정).
 >   추세 = KOSIS 2023-09→2026-09. 부천 등 동 재편은 2023-07 경계 권역 합산(`aggregated`), 재건축 급변은 `rapid_change`, 결측 4동은 중앙값 대입(`trend_imputed`)
+> - **C = 0.5 · 내과 경쟁(c_raw) + 0.5 · 내시경 위암검진 경쟁** (`W_C_CHECKUP`, 2026-10-13 사용자 결정). 검진 경쟁 = 1 − (0.5·rank(1만 명당) + 0.5·rank(반경 개수)),
+>   기관 = 건보공단 위암검진기관 ∩ (의원: HIRA A304 매칭 / 병원·종합병원: 내시경 간주), **병원급 ×2** (`W_CHECKUP_HOSP`)
 > - 생존율·5년 순증(`survival_5y`, `net_open_5y`)은 **표시 전용** — 최근 개설 내과 5년 내 폐업 3~8%로 동 단위 변별력 없음
 > - 민감도: `python -m scripts.sensitivity_mc --date …` (가중치 6종 ±30%, 2,000회 → `sensitivity_*.parquet`, `assumption_dependent`)
 > - 상세: [ADR-006](decisions/006-v7-commute-universe.md). 아래 본문은 v6 기준 설명 (C 산식은 그대로, "40+"는 50~69세로 읽을 것).

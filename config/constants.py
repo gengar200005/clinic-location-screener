@@ -42,6 +42,12 @@ W_COMMUTE = 0.0
 #   재건축 급변 동(수백 배)도 rank라 이상치 영향 없음.
 W_P_TREND = 0.15
 
+# 2026-10-13 v7: C = 0.5·내과 경쟁(c_raw) + 0.5·내시경 위암검진 가능 기관 경쟁 (사용자 결정, 권장안).
+#   검진 경쟁 raw = 0.5·rank(1만 명당) + 0.5·rank(반경 개수), 병원급 검진센터는 W_CHECKUP_HOSP배
+#   (검진 처리량 차이 반영, ADR-005 GI 2배와 같은 취지). 둘 다 후보 내 rank, 낮을수록 좋음.
+W_C_CHECKUP = 0.5
+W_CHECKUP_HOSP = 2.0
+
 # 경쟁 서브가중치: 밀도 vs 반경 vs 역세권 페널티
 # 2026-04-21 추가: W_COMP_STATION (역 500m 내과 의사 수 보수 가중)
 #   배경: 동 centroid가 여러 subcluster mean이라 역세권 밀집이 묻힘.
