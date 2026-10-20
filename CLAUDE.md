@@ -8,21 +8,22 @@
 
 **최종 목표 (2027-05 개원)**: PWA 히트맵 + Notion DB (Top 30) + GitHub Actions 주간 배치.
 
-## 현재 상태 (2026-10-12 업데이트)
+## 현재 상태 (2026-10-20 업데이트)
 
-**v7 진행 중 — 브랜치 `feature/v7`** (main = v6 그대로, GH Pages·Notion도 v6). 후보 범위를 시군구 화이트리스트에서 **이촌 출퇴근 60분 필터**(경기 경부축·동남권 제외, 서울·경기·인천)로 전환 (ADR-006). P 타깃 50~69세 + 3년 추세 15%, 통근은 점수 제외, 생존율은 표시 전용, 가중치 MC 민감도 스크립트 추가. **잠정**: 후보 743동 확정 + 84동 대중교통 판정 대기(ODSay 일일 한도). Top30 = 서울 16·부천 8·인천 6. 다음: ODSay 84동 → NHIS 검진기관 경쟁 지표 → 대시보드(5단계).
+**v7 운영 중 — main 병합 완료** (PR #1~#4). GH Pages·Notion·주간 cron 모두 v7. 후보 = 서울·경기·인천(경기 경부축 제외) 중 이촌 출퇴근 60분(자차 Kakao 미래 길찾기, 대중교통은 수동 확인) **745동**. `Score = 0.5·C + 0.5·P`, C = 내과 경쟁 50% + 내시경 위암검진기관 경쟁 50%(병원급 ×2), P = 배후 50~69세 85% + 3년 추세 15%. Top30 = 서울 10·부천 10·인천 10, 민감도 안정 19동·가정 의존 36동. 10/17 cron이 HIRA 부분 응답으로 오염 → PR #4 가드 추가 후 10/20 재실행으로 복구. 다음: 대중교통 수동 확인 반영 → v7 Top30 기준 답사 재선정.
 
 ## 최근 세션 (자세한 건 [SESSION_LOG.md](SESSION_LOG.md))
 
+- 2026-10-20: 검진기관 경쟁(C 50%·병원급×2) + 대시보드 v7 + main 병합(PR #1~4) + Notion v7 + 주간 배치 정합, 10/17 HIRA 부분수집 사고 복구
+- 2026-10-13 (웹): v7 현황 점검 + 부천 쏠림 검증 + 메디게이트 대비 갭
 - 2026-10-12: v7 착수 — 출퇴근 60분 후보 범위 + 50~69세·추세 + 생존율(표시) + MC 민감도, v6 Kakao 출발시각 미반영 결함 발견
 - 2026-04-27: detail GI 컬럼 노출 + barrier·약국·신규개원 페널티 모두 기각 + 데이터 신선도 caveat 4곳
 - 2026-04-27: ADR-005 (GI 의원 페널티 W=2.0) + estbDd 보류 + HIRA 의료장비 데이터셋 활용
-- 2026-04-26: W_STATION sensitivity 검증 + ADR-004 (shops 중심점) + 배포 + PWA root redirect + 네이버 월세 통일
-- 2026-04-22: 역세권 페널티 반영 재실행 + 재배포
 
 ## 최근 주요 결정 (자세한 건 [docs/decisions/](docs/decisions/))
 
 - [ADR-006] v7 후보 범위: 출퇴근 60분 필터 + 경부축 제외 + 50~69세, 통근 점수 제외 (2026-10-12, feature/v7)
+- [ADR-007] 데이터 무결성 가드(입력 이상 시 갱신 skip) + 대중교통 자동 수집 금지·수동 확인 (2026-10-20)
 - [ADR-001] catchment 1.5km 기반 P_raw + C density 분모 통일 (2026-04-20)
 - [ADR-002] T 가중치 0.2 → 0.1 (2026-04-19)
 - [ADR-003] 역세권 500m 경쟁 페널티 W_COMP_STATION=0.2 (2026-04-20 추가, 2026-04-22 반영)
@@ -31,11 +32,10 @@
 
 ## 진행 중 이슈
 
-- **[v7] ODSay 84동 대중교통 판정 대기** — `python -m scrapers.commute_isochrone` (미판정 동 우선). 일일 한도 ~100건으로 축소된 듯(확인 필요). 완료 후 `scoring.pipeline` + `scripts.sensitivity_mc` 재실행.
-- **[v7] NHIS 검진기관 API** (15154419 `openapigw.nhis.or.kr/openapi/service/rest/HmcSearchService/getHmcList`) — 2026-10-12 "key parameter error", 재시도. 성공 시 위암 검진기관 ∩ A304 = 내시경 검진 가능 기관 수로 경쟁 지표 교체.
-- **[v7] 5단계 대시보드**: 통근 4구간·추세·생존율·민감도 분포·출처/기준일·데이터 부족 배지. Notion 속성명 "40+인구" → "50~69세" (현재 값만 50~69세).
-- **[v7] main 병합 전 확인**: 주간 cron이 4월 이후 commit-back 없음(비활성화 의심). v7 워크플로는 feature 브랜치에만.
-- 답사(v6 Top30 기준 계획)는 v7 확정 후 대상 재선정 권장.
+- **[v7] 대중교통 수동 확인 (사용자)** — `data/manual/transit_manual.csv` 80동(자차 61분+), 카카오맵 링크 포함. 입력 후 `scoring.pipeline` + `scripts.sensitivity_mc` + `publishers.web_export` 재실행(또는 커밋 후 cron). ODSay는 약관상 대량 호출 금지 — 자동 수집 금지.
+- **[v7] 답사 대상 재선정** — 아래 v6 기준 답사 목록 대신 v7 Top30(안정 19동 우선). 상1동(1위) 반경 1.5km 2015년 이후 신규 내과 0곳 → 진입 장벽 확인.
+- **[v7] 주간 cron 감시** — `--strict` + HIRA 수집량 검증: 입력 이상 시 그 주 skip(Actions 실패 알림). 장비 캐시(`data/cache/clinic_equipment.parquet`·`egd_keys.parquet`)는 장비 CSV 연 1회 갱신 시 로컬에서 `python -m scrapers.hira_equipment` 후 커밋.
+- (v6 시절 메모 — v7 Top30 기준으로 재검토 필요)
 - **답사 실시 대기 (최우선).** 신규 진입 동 우선: 관악 대학동(두 클러스터·인구↔상가 1049m), 노원 중계2·3동, 마포 상암동, 성북 정릉2동, 부천 신흥동(의료사막 패턴), 금천 독산4동(W=2.0에서 신규 진입). 답사 후 retrospective gap 분석 → 모델 약점 자연스럽게 식별.
 - **rank 25 금천 독산4동 Notion 페이지 추가 필요** — DB에 page 미존재로 detail 갱신 skip됨. `python -m publishers.notion_sync` 1회 실행 후 `notion_detail --only 25` 재실행.
 - 월계2동(rank 1) 자기잠식 의문: NW 광운대역세권으로 진료 수요 흡수 가능성. 답사로만 검증.
@@ -45,9 +45,9 @@
 - **HIRA 의료장비 데이터셋 갱신 주기 = 연 1회**: 신규 의원 GI 분류에 1~14개월 지연. 단 신규 의원도 c_raw 의사 수에 카운트되어 페널티 자동 작동하므로 critical 결함 아님 (사후 검증 완료, 2026-04-27).
 - **새 변수 도입 회의 패턴**: barrier 마스킹·약국·신규개원 페널티 모두 기각. 신호는 있으나 c_raw double-count 또는 모델 P/C 정의와 결 다름. 답사 retrospective 데이터 쌓기로 전환.
 
-## 가중치 (v7 feature/v7 2026-10-12 / 아래 블록은 v6 main 기준)
+## 가중치 (v7, 2026-10-20 / 아래 코드 블록은 v6 기록)
 
-v7: `Score = 0.5·C + 0.5·P`, `P = 0.85·rank(배후 50~69세) + 0.15·rank(3년 추세)`, 통근은 60분 필터 전용. 상세 docs/SCORING.md 상단.
+v7: `Score = 0.5·C + 0.5·P`, `C = 0.5·inv_rank(내과 c_raw) + 0.5·검진 경쟁(병원급 ×2)`, `P = 0.85·rank(배후 50~69세) + 0.15·rank(3년 추세)`, 통근은 60분 필터 전용. 상세 docs/SCORING.md 상단.
 
 ```
 Score = 0.45 · C_norm + 0.45 · P_norm + 0.1 · T_norm
