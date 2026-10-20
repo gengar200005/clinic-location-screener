@@ -39,6 +39,10 @@ from scoring.weighted_sum import compute_final_scores, top_n
 logger = logging.getLogger(__name__)
 
 
+# strict 모드 시도별 의원 수 하한. 2026-10 정상치: 서울 4,765 · 경기 4,827 · 인천 1,060.
+MIN_CLINICS_PER_SIDO = 500
+
+
 def _require(path: Path, how: str) -> None:
     if not path.exists():
         raise FileNotFoundError(f"{path} 없음. 먼저: {how}")
@@ -61,6 +65,13 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER, strict: bool = Fa
     from scoring.spatial_join import apply_centroid_overlay
     admin_centroid = apply_centroid_overlay(admin_centroid)
     clinics_by_dong = pd.read_parquet(clinics_path)
+    if strict:
+        # 2026-10-17 사고: HIRA 부분 수집(서울 4000/4765, 경기·인천 0)이 그대로 점수화됨
+        from config.regions import context_sido
+        by_sido = clinics_by_dong["sido"].value_counts()
+        low = {s: int(by_sido.get(s, 0)) for s in context_sido() if by_sido.get(s, 0) < MIN_CLINICS_PER_SIDO}
+        if low:
+            raise RuntimeError(f"시도별 의원 수 비정상 {low} (하한 {MIN_CLINICS_PER_SIDO}) — HIRA 수집 확인")
     if strict and not clinics_by_dong.get("is_gi", pd.Series(dtype=bool)).astype(bool).any():
         raise RuntimeError("is_gi 전부 False — 장비 캐시(data/cache/clinic_equipment.parquet) 확인")
     logger.info("load: %d dongs, %d clinics", len(admin_centroid), len(clinics_by_dong))
