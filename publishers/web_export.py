@@ -659,8 +659,14 @@ def run(top_n: int = 50) -> int:
 
     sens = load_sensitivity(scores_path)
 
-    # 1. Top N detail JSON
+    # 1. Top N detail JSON (이번 Top N 밖의 기존 파일은 삭제 — 순위 밖 동의 오래된 상세가 남지 않게)
     top_df = _top_n_from_scores(scores, n=top_n)
+    keep = {f"{cd}.json" for cd in top_df["adm_cd"].astype(str)}
+    stale = [f for f in WEB_DETAIL_DIR.glob("*.json") if f.name not in keep]
+    for f in stale:
+        f.unlink()
+    if stale:
+        logger.info("stale detail JSON 삭제: %d", len(stale))
     count = 0
     for _, row in top_df.iterrows():
         data = build_detail_json(row, centroid, clinics, stations, boundary_gdf, shops,

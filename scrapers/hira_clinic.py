@@ -45,12 +45,17 @@ NUM_OF_ROWS = 1000
 REQUEST_TIMEOUT = 30
 
 
+class IncompleteResponse(RuntimeError):
+    """정상 형식이지만 비어 있는 응답 (2026-10-17: 서울 5p 빈 페이지, 경기·인천 totalCount=0)."""
+
+
 @retry(
     stop=stop_after_attempt(4),
     wait=wait_exponential(multiplier=2, min=2, max=30),
     reraise=True,
 )
-def _fetch_page(service_key: str, sido_cd: str, page_no: int) -> tuple[list[dict], int]:
+def _fetch_page(service_key: str, sido_cd: str, page_no: int,
+                expect_rows: bool = True) -> tuple[list[dict], int]:
     """HIRA API 1페이지 호출. (items, totalCount) 반환. XML 응답 파싱."""
     params = {
         "serviceKey": service_key,  # data.go.kr 표준: 소문자 s
@@ -78,6 +83,9 @@ def _fetch_page(service_key: str, sido_cd: str, page_no: int) -> tuple[list[dict
         row = {child.tag: child.text for child in item}
         items.append(row)
 
+    # 대상 시도 내과 의원은 수천 곳 — 0건/빈 페이지는 API 일시 장애로 보고 재시도(tenacity)
+    if expect_rows and (total == 0 or not items):
+        raise IncompleteResponse(f"sidoCd={sido_cd} page={page_no}: totalCount={total}, items={len(items)}")
     return items, total
 
 
@@ -96,6 +104,8 @@ def fetch_region(service_key: str, sido_name: str, sido_cd: str) -> pd.DataFrame
     df = pd.DataFrame(rows)
     df["sido_query"] = sido_name
     logger.info("  collected %d rows for %s", len(df), sido_name)
+    if len(df) < total:
+        raise IncompleteResponse(f"{sido_name}: {len(df)} / {total} 수집 — 누락 상태로 저장하지 않음")
     return df
 
 
