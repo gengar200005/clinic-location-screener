@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v15-2026-10-23-explorer';
+const VERSION = 'v16-2026-10-23-explorer';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -14,7 +14,7 @@ const SHELL_ASSETS = [
   './index.html',
   './manifest.json',
   './icon.svg',
-  './research.css',
+  './research.css?v=15',
   './research.js?v=14',
   './explorer.js?v=2',
   './data/research.json',
