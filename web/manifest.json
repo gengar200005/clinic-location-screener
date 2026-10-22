@@ -1,13 +1,13 @@
 {
   "name": "🏥 개원 입지 스크리너",
   "short_name": "개원입지",
-  "description": "서울+경기 내과 개원 후보지 Top 30 — 매주 토요일 자동 갱신",
+  "description": "내과 개원 입지 조사 — 수요·경쟁 재검증, 확인 대기, 임장 준비",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f5f5f5",
-  "theme_color": "#1565c0",
+  "theme_color": "#175c4b",
   "lang": "ko",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
