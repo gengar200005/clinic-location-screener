@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v13-2026-10-22-research';
+const VERSION = 'v15-2026-10-23-explorer';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -15,7 +15,8 @@ const SHELL_ASSETS = [
   './manifest.json',
   './icon.svg',
   './research.css',
-  './research.js',
+  './research.js?v=14',
+  './explorer.js?v=2',
   './data/research.json',
   './detail/index.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -50,6 +51,7 @@ self.addEventListener('fetch', e => {
   // 데이터 파일 — network-first
   const isData =
     url.pathname.endsWith('/research.json') ||
+    url.pathname.endsWith('/research_providers.json') ||
     url.pathname.endsWith('/heatmap.json') ||
     url.pathname.endsWith('/boundaries.geojson') ||
     url.pathname.endsWith('/narrow_lists.json') ||
