@@ -5,28 +5,28 @@
   "raw_analysis_data_included": false,
   "files": {
     "commute_priority.html": {
-      "bytes": 54048,
-      "sha256": "d568787ea405e13db5b77372aedc47ebc731f9aca41c14a3d8a3f0a29092b9cb"
+      "bytes": 51734,
+      "sha256": "cf47910e9d1b5b6e38c114869b68f44ec60c179ac41fc22eb77e10aad0ca20c4"
     },
     "field_visit_plan.html": {
-      "bytes": 28710,
-      "sha256": "ec6efac43809410ba538708cfd963923efda50c990955abe60888599098f8ad4"
+      "bytes": 28585,
+      "sha256": "b66fd92a4ef4535d0bc4bc0c907b1a6577f508d69c720990fc66526ec297c7d1"
     },
     "index.html": {
       "bytes": 234,
       "sha256": "28beeb8f4c1da91b0fefd81a26ceed3a69e2e09eb482e47f35c28599f86da4bf"
     },
     "priority_review.html": {
-      "bytes": 2195135,
-      "sha256": "ae1725cc79050f1c55ecd888c9a7cd87c830ee98e15e38247ed98a4d2a405280"
+      "bytes": 2195088,
+      "sha256": "8c49600f98db17517b03f7a819d360cb0ecdd29880b8dd4a88067ba0548547a8"
     },
     "visit_review.html": {
-      "bytes": 7480403,
-      "sha256": "c95f2efea19103e6a907439af6657fe9273717e711150a2ec05257a7cb25cf39"
+      "bytes": 7480359,
+      "sha256": "4122b88df3aeb6b375f3023783cbd04802a119f4e20f1da5a05442c18d753b97"
     },
     "priority_assets/explorer.js": {
-      "bytes": 10963,
-      "sha256": "a9fcc6e17bea18974c6e06d54585a6a8d313c8296e8c2df1c35103d0a3325610"
+      "bytes": 10902,
+      "sha256": "f96f554dc4a2f572b21232009fe77d21dae0ef7919ba2154b15111e4202d703c"
     },
     "priority_assets/priority_map.js": {
       "bytes": 2571,
@@ -40,5 +40,6 @@
       "bytes": 5011,
       "sha256": "1a0727845f846d6dcd59c53a0196c603acdffca6aa9b70aa1485a613de07eb6c"
     }
-  }
+  },
+  "hash_basis": "Git repository blob bytes (LF normalized by Git)"
 }
