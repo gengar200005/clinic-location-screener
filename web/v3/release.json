@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-25",
+  "entry": "field_visit_plan.html",
+  "private_browser_observations_included": false,
+  "raw_analysis_data_included": false,
+  "files": {
+    "commute_priority.html": {
+      "bytes": 54048,
+      "sha256": "d568787ea405e13db5b77372aedc47ebc731f9aca41c14a3d8a3f0a29092b9cb"
+    },
+    "field_visit_plan.html": {
+      "bytes": 28710,
+      "sha256": "ec6efac43809410ba538708cfd963923efda50c990955abe60888599098f8ad4"
+    },
+    "index.html": {
+      "bytes": 234,
+      "sha256": "28beeb8f4c1da91b0fefd81a26ceed3a69e2e09eb482e47f35c28599f86da4bf"
+    },
+    "priority_review.html": {
+      "bytes": 2195135,
+      "sha256": "ae1725cc79050f1c55ecd888c9a7cd87c830ee98e15e38247ed98a4d2a405280"
+    },
+    "visit_review.html": {
+      "bytes": 7480403,
+      "sha256": "c95f2efea19103e6a907439af6657fe9273717e711150a2ec05257a7cb25cf39"
+    },
+    "priority_assets/explorer.js": {
+      "bytes": 10963,
+      "sha256": "a9fcc6e17bea18974c6e06d54585a6a8d313c8296e8c2df1c35103d0a3325610"
+    },
+    "priority_assets/priority_map.js": {
+      "bytes": 2571,
+      "sha256": "7734dc4d104a35aab9ca83bd8355505ed75becba1818c01f94646317dc92a417"
+    },
+    "priority_assets/providers.json": {
+      "bytes": 6214142,
+      "sha256": "bf9686fa616b789931d78d0395e2d586d80aa7b8bf07bf2c521992ff71673496"
+    },
+    "priority_assets/provider_scale.js": {
+      "bytes": 5011,
+      "sha256": "1a0727845f846d6dcd59c53a0196c603acdffca6aa9b70aa1485a613de07eb6c"
+    }
+  }
+}

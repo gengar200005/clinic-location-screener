@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v16-2026-10-23-explorer';
+const VERSION = 'v17-2026-10-25-field-visits';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -50,6 +50,7 @@ self.addEventListener('fetch', e => {
 
   // 데이터 파일 — network-first
   const isData =
+    url.pathname.includes('/web/v3/') ||
     url.pathname.endsWith('/research.json') ||
     url.pathname.endsWith('/research_providers.json') ||
     url.pathname.endsWith('/heatmap.json') ||
