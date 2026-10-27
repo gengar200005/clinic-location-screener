@@ -1,1466 +1,2550 @@
 {
   "scope": "research.json 내 비교 순위가 있는 경기도 후보",
   "ranking_as_of": "2026-10-22",
-  "checked_at": "2026-10-27",
-  "status": "source_unverified",
+  "checked_at": "2026-10-27T12:44:22.554607+00:00",
+  "status": "validation_pending",
   "source_url": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=H92OOSWZXICJM0UO4IHH38259217&infSeq=1",
-  "reason": "공식 행정동 카드매출 데이터셋을 찾았으나 상세 자료 요청이 HTTP 503으로 실패. 의원 업종·시계열·이용조건 미검증.",
+  "catalog_url": "https://www.data.go.kr/data/15151650/fileData.do",
+  "reason": "이용조건 확인 · 원자료 다운로드 서버 오류 · 의원 업종·기간·코드 연결 검증 대기. 경기 매출 추세 연동은 아직 미완료입니다.",
+  "checks": [
+    {
+      "id": "catalog",
+      "label": "공식 데이터셋",
+      "status": "verified",
+      "detail": "공공데이터포털 15151650에서 행정동·중분류 업종별 카드매출 집계 확인. 36,243행은 카탈로그 기재값이며 원본 실측 아님."
+    },
+    {
+      "id": "license",
+      "label": "이용조건",
+      "status": "verified",
+      "detail": "공식 카탈로그: 무료 · 공공저작물 출처표시 제1유형. 출처: 경기도. 원본 부속 설명의 추가 조건은 파일 확보 후 대조."
+    },
+    {
+      "id": "raw",
+      "label": "원자료",
+      "status": "blocked",
+      "detail": "상세 페이지는 HTTP 200이지만 HTML이 중간에 끊김. 공개 CSV 다운로드는 정상 세션 GET·POST 모두 HTTP 500."
+    },
+    {
+      "id": "industry",
+      "label": "의원 업종",
+      "status": "pending",
+      "detail": "중분류업종코드라는 설명만 확인. 의원 단독 분류인지, 병원·치과·한의원·약국 포함 여부와 코드표 미확인. 서울 CS200006을 대입하지 않음."
+    },
+    {
+      "id": "period",
+      "label": "관측 기간·집계 기준",
+      "status": "pending",
+      "detail": "파일명 20250918은 관측 기간이 아님. 실제 기준년월, 금액 단위, 표본·추정 방식, 전월·전년 비교 가능성 미확인."
+    },
+    {
+      "id": "codes",
+      "label": "행정동 코드 연결",
+      "status": "pending",
+      "detail": "208개 후보는 기존 후보 식별자를 보존. 원자료의 코드 체계·유효기간·공식 대응표가 없어 검증 연결 0개. 동명이나 코드 접두사로 임의 연결하지 않음."
+    }
+  ],
+  "coverage": {
+    "candidates": 208,
+    "verified_trends": 0,
+    "verified_code_matches": 0
+  },
   "candidates": [
     {
       "anchor_id": "31051681",
       "name": "경기도 부천시원미구 상1동",
       "rank": 1.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051621",
       "name": "경기도 부천시원미구 상동",
       "rank": 3.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052531",
       "name": "경기도 부천시소사구 송내1동",
       "rank": 4.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051601",
       "name": "경기도 부천시원미구 도당동",
       "rank": 8.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051591",
       "name": "경기도 부천시원미구 춘의동",
       "rank": 9.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053571",
       "name": "경기도 부천시오정구 신흥동",
       "rank": 10.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052561",
       "name": "경기도 부천시소사구 소사본1동",
       "rank": 12.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051561",
       "name": "경기도 부천시원미구 원미1동",
       "rank": 15.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052601",
       "name": "경기도 부천시소사구 역곡3동",
       "rank": 28.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052541",
       "name": "경기도 부천시소사구 송내2동",
       "rank": 30.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052591",
       "name": "경기도 부천시소사구 괴안동",
       "rank": 37.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052511",
       "name": "경기도 부천시소사구 심곡본1동",
       "rank": 38.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051541",
       "name": "경기도 부천시원미구 원미2동",
       "rank": 46.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051611",
       "name": "경기도 부천시원미구 중동",
       "rank": 51.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051581",
       "name": "경기도 부천시원미구 역곡2동",
       "rank": 52.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051571",
       "name": "경기도 부천시원미구 역곡1동",
       "rank": 55.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051551",
       "name": "경기도 부천시원미구 소사동",
       "rank": 56.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091580",
       "name": "경기도 안산시상록구 월피동",
       "rank": 57.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052571",
       "name": "경기도 부천시소사구 범박동",
       "rank": 60.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052551",
       "name": "경기도 부천시소사구 소사본동",
       "rank": 61.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051631",
       "name": "경기도 부천시원미구 약대동",
       "rank": 63.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091570",
       "name": "경기도 안산시상록구 부곡동",
       "rank": 65.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052521",
       "name": "경기도 부천시소사구 심곡본동",
       "rank": 66.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051521",
       "name": "경기도 부천시원미구 심곡2동",
       "rank": 71.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104520",
       "name": "경기도 고양시일산서구 일산2동",
       "rank": 74.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051691",
       "name": "경기도 부천시원미구 상2동",
       "rank": 75.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104510",
       "name": "경기도 고양시일산서구 일산1동",
       "rank": 80.0,
       "research_order": 10.0,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051531",
       "name": "경기도 부천시원미구 심곡3동",
       "rank": 81.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053521",
       "name": "경기도 부천시오정구 고강본동",
       "rank": 83.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053561",
       "name": "경기도 부천시오정구 오정동",
       "rank": 93.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030580",
       "name": "경기도 의정부시 신곡2동",
       "rank": 96.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051651",
       "name": "경기도 부천시원미구 중2동",
       "rank": 97.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103512",
       "name": "경기도 고양시일산동구 중산2동",
       "rank": 99.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051701",
       "name": "경기도 부천시원미구 상3동",
       "rank": 100.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31092770",
       "name": "경기도 안산시단원구 신길동",
       "rank": 104.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091710",
       "name": "경기도 안산시상록구 반월동",
       "rank": 106.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091620",
       "name": "경기도 안산시상록구 성포동",
       "rank": 108.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104513",
       "name": "경기도 고양시일산서구 덕이동",
       "rank": 111.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053531",
       "name": "경기도 부천시오정구 고강1동",
       "rank": 113.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104514",
       "name": "경기도 고양시일산서구 가좌동",
       "rank": 118.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091740",
       "name": "경기도 안산시상록구 이동",
       "rank": 120.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103511",
       "name": "경기도 고양시일산동구 중산1동",
       "rank": 121.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051661",
       "name": "경기도 부천시원미구 중3동",
       "rank": 124.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051511",
       "name": "경기도 부천시원미구 심곡1동",
       "rank": 126.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31052581",
       "name": "경기도 부천시소사구 옥길동",
       "rank": 127.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091560",
       "name": "경기도 안산시상록구 본오3동",
       "rank": 128.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060700",
       "name": "경기도 광명시 일직동",
       "rank": 130.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101680",
       "name": "경기도 고양시덕양구 대덕동",
       "rank": 135.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104511",
       "name": "경기도 고양시일산서구 탄현1동",
       "rank": 150.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091540",
       "name": "경기도 안산시상록구 본오1동",
       "rank": 154.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150680",
       "name": "경기도 시흥시 군자동",
       "rank": 158.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060650",
       "name": "경기도 광명시 하안4동",
       "rank": 163.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103530",
       "name": "경기도 고양시일산동구 정발산동",
       "rank": 165.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060620",
       "name": "경기도 광명시 하안1동",
       "rank": 166.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150690",
       "name": "경기도 시흥시 월곶동",
       "rank": 169.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053511",
       "name": "경기도 부천시오정구 성곡동",
       "rank": 170.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31092760",
       "name": "경기도 안산시단원구 원곡동",
       "rank": 171.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103540",
       "name": "경기도 고양시일산동구 풍산동",
       "rank": 173.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091510",
       "name": "경기도 안산시상록구 일동",
       "rank": 175.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030600",
       "name": "경기도 의정부시 자금동",
       "rank": 177.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060690",
       "name": "경기도 광명시 소하2동",
       "rank": 179.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030680",
       "name": "경기도 의정부시 가능동",
       "rank": 183.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260340",
       "name": "경기도 양주시 장흥면",
       "rank": 195.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200320",
       "name": "경기도 파주시 탄현면",
       "rank": 198.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060640",
       "name": "경기도 광명시 하안3동",
       "rank": 204.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130590",
       "name": "경기도 남양주시 다산2동",
       "rank": 209.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104512",
       "name": "경기도 고양시일산서구 탄현2동",
       "rank": 210.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230120",
       "name": "경기도 김포시 고촌읍",
       "rank": 216.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051641",
       "name": "경기도 부천시원미구 중1동",
       "rank": 218.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103600",
       "name": "경기도 고양시일산동구 고봉동",
       "rank": 219.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030640",
       "name": "경기도 의정부시 녹양동",
       "rank": 220.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31091730",
       "name": "경기도 안산시상록구 안산동",
       "rank": 224.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101580",
       "name": "경기도 고양시덕양구 창릉동",
       "rank": 228.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230600",
       "name": "경기도 김포시 운양동",
       "rank": 229.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104530",
       "name": "경기도 고양시일산서구 일산3동",
       "rank": 237.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120510",
       "name": "경기도 구리시 갈매동",
       "rank": 241.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030570",
       "name": "경기도 의정부시 신곡1동",
       "rank": 243.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150590",
       "name": "경기도 시흥시 과림동",
       "rank": 245.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130310",
       "name": "경기도 남양주시 별내면",
       "rank": 246.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060630",
       "name": "경기도 광명시 하안2동",
       "rank": 247.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31270330",
       "name": "경기도 포천시 가산면",
       "rank": 249.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150740",
       "name": "경기도 시흥시 배곧1동",
       "rank": 256.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103560",
       "name": "경기도 고양시일산동구 마두1동",
       "rank": 257.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053551",
       "name": "경기도 부천시오정구 원종2동",
       "rank": 258.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31270520",
       "name": "경기도 포천시 선단동",
       "rank": 260.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31051671",
       "name": "경기도 부천시원미구 중4동",
       "rank": 261.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200120",
       "name": "경기도 파주시 파주읍",
       "rank": 262.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200310",
       "name": "경기도 파주시 월롱면",
       "rank": 264.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101512",
       "name": "경기도 고양시덕양구 삼송1동",
       "rank": 270.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260561",
       "name": "경기도 양주시 옥정1동",
       "rank": 271.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060550",
       "name": "경기도 광명시 광명5동",
       "rank": 272.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101590",
       "name": "경기도 고양시덕양구 고양동",
       "rank": 274.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060680",
       "name": "경기도 광명시 학온동",
       "rank": 275.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150550",
       "name": "경기도 시흥시 매화동",
       "rank": 276.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030721",
       "name": "경기도 의정부시 고산동",
       "rank": 278.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31570310",
       "name": "경기도 가평군 설악면",
       "rank": 282.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104580",
       "name": "경기도 고양시일산서구 송포동",
       "rank": 284.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060660",
       "name": "경기도 광명시 소하1동",
       "rank": 285.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130540",
       "name": "경기도 남양주시 양정동",
       "rank": 286.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130150",
       "name": "경기도 남양주시 오남읍",
       "rank": 288.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101600",
       "name": "경기도 고양시덕양구 관산동",
       "rank": 289.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030650",
       "name": "경기도 의정부시 호원2동",
       "rank": 290.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101530",
       "name": "경기도 고양시덕양구 흥도동",
       "rank": 291.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200540",
       "name": "경기도 파주시 금촌3동",
       "rank": 292.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101670",
       "name": "경기도 고양시덕양구 화전동",
       "rank": 294.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101520",
       "name": "경기도 고양시덕양구 원신동",
       "rank": 295.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060520",
       "name": "경기도 광명시 광명2동",
       "rank": 297.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030520",
       "name": "경기도 의정부시 의정부2동",
       "rank": 299.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150530",
       "name": "경기도 시흥시 신현동",
       "rank": 300.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030670",
       "name": "경기도 의정부시 흥선동",
       "rank": 302.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101540",
       "name": "경기도 고양시덕양구 성사1동",
       "rank": 305.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150700",
       "name": "경기도 시흥시 연성동",
       "rank": 306.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120520",
       "name": "경기도 구리시 동구동",
       "rank": 310.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200150",
       "name": "경기도 파주시 조리읍",
       "rank": 315.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200511",
       "name": "경기도 파주시 교하동",
       "rank": 322.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200516",
       "name": "경기도 파주시 운정6동",
       "rank": 327.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101510",
       "name": "경기도 고양시덕양구 주교동",
       "rank": 336.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130340",
       "name": "경기도 남양주시 수동면",
       "rank": 342.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130520",
       "name": "경기도 남양주시 평내동",
       "rank": 346.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060530",
       "name": "경기도 광명시 광명3동",
       "rank": 348.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230640",
       "name": "경기도 김포시 마산동",
       "rank": 349.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101513",
       "name": "경기도 고양시덕양구 삼송2동",
       "rank": 350.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060580",
       "name": "경기도 광명시 철산1동",
       "rank": 358.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130350",
       "name": "경기도 남양주시 조안면",
       "rank": 361.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200350",
       "name": "경기도 파주시 광탄면",
       "rank": 362.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101550",
       "name": "경기도 고양시덕양구 성사2동",
       "rank": 363.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103590",
       "name": "경기도 고양시일산동구 장항2동",
       "rank": 364.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200360",
       "name": "경기도 파주시 파평면",
       "rank": 365.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200514",
       "name": "경기도 파주시 운정4동",
       "rank": 367.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130510",
       "name": "경기도 남양주시 호평동",
       "rank": 369.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31053541",
       "name": "경기도 부천시오정구 원종1동",
       "rank": 370.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130530",
       "name": "경기도 남양주시 금곡동",
       "rank": 372.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030560",
       "name": "경기도 의정부시 장암동",
       "rank": 374.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31092590",
       "name": "경기도 안산시단원구 와동",
       "rank": 377.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120580",
       "name": "경기도 구리시 수택3동",
       "rank": 378.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31092700",
       "name": "경기도 안산시단원구 선부3동",
       "rank": 379.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200515",
       "name": "경기도 파주시 운정5동",
       "rank": 381.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260530",
       "name": "경기도 양주시 회천1동",
       "rank": 383.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260520",
       "name": "경기도 양주시 양주2동",
       "rank": 384.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101610",
       "name": "경기도 고양시덕양구 능곡동",
       "rank": 386.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030591",
       "name": "경기도 의정부시 송산1동",
       "rank": 387.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030700",
       "name": "경기도 의정부시 송산2동",
       "rank": 388.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104570",
       "name": "경기도 고양시일산서구 대화동",
       "rank": 390.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104550",
       "name": "경기도 고양시일산서구 주엽1동",
       "rank": 393.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150560",
       "name": "경기도 시흥시 목감동",
       "rank": 402.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150670",
       "name": "경기도 시흥시 능곡동",
       "rank": 403.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030550",
       "name": "경기도 의정부시 호원1동",
       "rank": 406.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260550",
       "name": "경기도 양주시 회천3동",
       "rank": 408.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120570",
       "name": "경기도 구리시 수택2동",
       "rank": 417.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130140",
       "name": "경기도 남양주시 진건읍",
       "rank": 423.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130570",
       "name": "경기도 남양주시 별내동",
       "rank": 428.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31104560",
       "name": "경기도 고양시일산서구 주엽2동",
       "rank": 432.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060540",
       "name": "경기도 광명시 광명4동",
       "rank": 440.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130160",
       "name": "경기도 남양주시 퇴계원읍",
       "rank": 446.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31092690",
       "name": "경기도 안산시단원구 선부2동",
       "rank": 450.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31092780",
       "name": "경기도 안산시단원구 백운동",
       "rank": 458.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103610",
       "name": "경기도 고양시일산동구 백석2동",
       "rank": 460.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230620",
       "name": "경기도 김포시 장기본동",
       "rank": 464.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060570",
       "name": "경기도 광명시 광명7동",
       "rank": 467.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130110",
       "name": "경기도 남양주시 와부읍",
       "rank": 469.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103510",
       "name": "경기도 고양시일산동구 식사동",
       "rank": 470.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230560",
       "name": "경기도 김포시 장기동",
       "rank": 472.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31270310",
       "name": "경기도 포천시 군내면",
       "rank": 479.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060590",
       "name": "경기도 광명시 철산2동",
       "rank": 480.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101515",
       "name": "경기도 고양시덕양구 행신4동",
       "rank": 481.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103580",
       "name": "경기도 고양시일산동구 장항1동",
       "rank": 482.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150720",
       "name": "경기도 시흥시 정왕4동",
       "rank": 485.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120530",
       "name": "경기도 구리시 인창동",
       "rank": 492.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120550",
       "name": "경기도 구리시 교문2동",
       "rank": 493.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120560",
       "name": "경기도 구리시 수택1동",
       "rank": 495.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200512",
       "name": "경기도 파주시 운정1동",
       "rank": 501.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103550",
       "name": "경기도 고양시일산동구 백석1동",
       "rank": 503.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060560",
       "name": "경기도 광명시 광명6동",
       "rank": 505.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200570",
       "name": "경기도 파주시 운정2동",
       "rank": 515.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150640",
       "name": "경기도 시흥시 정왕본동",
       "rank": 530.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101660",
       "name": "경기도 고양시덕양구 행신2동",
       "rank": 533.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200110",
       "name": "경기도 파주시 문산읍",
       "rank": 540.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200513",
       "name": "경기도 파주시 운정3동",
       "rank": 541.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31103570",
       "name": "경기도 고양시일산동구 마두2동",
       "rank": 554.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31120540",
       "name": "경기도 구리시 교문1동",
       "rank": 556.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101560",
       "name": "경기도 고양시덕양구 효자동",
       "rank": 564.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101640",
       "name": "경기도 고양시덕양구 행주동",
       "rank": 568.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060510",
       "name": "경기도 광명시 광명1동",
       "rank": 569.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230130",
       "name": "경기도 김포시 양촌읍",
       "rank": 571.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200520",
       "name": "경기도 파주시 금촌2동",
       "rank": 575.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101620",
       "name": "경기도 고양시덕양구 화정1동",
       "rank": 577.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130130",
       "name": "경기도 남양주시 화도읍",
       "rank": 586.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060600",
       "name": "경기도 광명시 철산3동",
       "rank": 596.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260540",
       "name": "경기도 양주시 회천2동",
       "rank": 600.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030710",
       "name": "경기도 의정부시 송산3동",
       "rank": 610.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150510",
       "name": "경기도 시흥시 대야동",
       "rank": 620.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31030690",
       "name": "경기도 의정부시 의정부1동",
       "rank": 631.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31200530",
       "name": "경기도 파주시 금촌1동",
       "rank": 633.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230610",
       "name": "경기도 김포시 김포본동",
       "rank": 654.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130580",
       "name": "경기도 남양주시 다산1동",
       "rank": 662.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150750",
       "name": "경기도 시흥시 배곧2동",
       "rank": 666.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31130120",
       "name": "경기도 남양주시 진접읍",
       "rank": 677.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31060610",
       "name": "경기도 광명시 철산4동",
       "rank": 683.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230540",
       "name": "경기도 김포시 풍무동",
       "rank": 686.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31260571",
       "name": "경기도 양주시 옥정2동",
       "rank": 689.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230530",
       "name": "경기도 김포시 사우동",
       "rank": 691.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150540",
       "name": "경기도 시흥시 은행동",
       "rank": 701.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31230630",
       "name": "경기도 김포시 구래동",
       "rank": 702.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31270110",
       "name": "경기도 포천시 소흘읍",
       "rank": 703.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101650",
       "name": "경기도 고양시덕양구 행신1동",
       "rank": 717.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101514",
       "name": "경기도 고양시덕양구 행신3동",
       "rank": 721.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31150710",
       "name": "경기도 시흥시 장곡동",
       "rank": 725.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     },
     {
       "anchor_id": "31101630",
       "name": "경기도 고양시덕양구 화정2동",
       "rank": 734.0,
       "research_order": null,
-      "status": "not_acquired"
+      "status": "not_acquired",
+      "revenue_code": null,
+      "code_match_status": "pending_source_codebook",
+      "periods": [],
+      "yoy": null,
+      "mom": null
     }
   ]
 }

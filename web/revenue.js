@@ -26,12 +26,16 @@ fetch('data/revenue.json').then(r=>{if(!r.ok)throw Error('자료 응답 오류')
 }).catch(e=>{$('meta').textContent=`자료를 불러오지 못했습니다: ${e.message}`;});
 
 fetch('data/gyeonggi-revenue-scope.json').then(r=>{if(!r.ok)throw Error('자료 응답 오류');return r.json();}).then(x=>{
- $('gg-meta').textContent=`비교 순위 기준 ${x.ranking_as_of} · 확인 ${x.checked_at} · ${x.reason}`;
+ $('gg-meta').textContent=`비교 순위 기준 ${x.ranking_as_of} · 확인 ${new Date(x.checked_at).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})} (한국시간) · ${x.reason}`;
+ const statusLabel={verified:'확인',blocked:'확보 실패',pending:'검증 대기'};
+ $('gg-checks').replaceChildren();
+ for(const check of x.checks){const tr=document.createElement('tr');td(tr,check.label);td(tr,statusLabel[check.status]??'미확인');td(tr,check.detail);$('gg-checks').append(tr);}
+ $('gg-coverage').textContent=`검증된 매출 추세 ${x.coverage.verified_trends} / ${x.coverage.candidates}개 · 검증된 행정동 코드 연결 ${x.coverage.verified_code_matches}개`;
  function renderGyeonggi(){
   const rows=x.candidates.filter(r=>r.name.includes($('gg-search').value.trim()));
   $('gg-count').textContent=`${rows.length} / ${x.candidates.length}개 비교 후보 · 매출 미확보`;
   $('gg-rows').replaceChildren();
-  for(const r of rows){const tr=document.createElement('tr');td(tr,r.name);td(tr,r.rank);td(tr,'미확보');$('gg-rows').append(tr);}
+  for(const r of rows){const tr=document.createElement('tr');td(tr,r.name);td(tr,r.rank);td(tr,'미확보');td(tr,'원자료 코드표 대기');$('gg-rows').append(tr);}
  }
  $('gg-search').addEventListener('input',renderGyeonggi);renderGyeonggi();
 }).catch(e=>{$('gg-meta').textContent=`경기 후보 목록을 불러오지 못했습니다: ${e.message}`;});
