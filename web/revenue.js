@@ -24,3 +24,14 @@ fetch('data/revenue.json').then(r=>{if(!r.ok)throw Error('자료 응답 오류')
  for(const q of [...x.quarters].reverse()){const o=document.createElement('option');o.value=q;o.textContent=qLabel(q);$('quarter').append(o);}
  for(const id of ['quarter','search','candidate'])$(id).addEventListener('input',render);render();
 }).catch(e=>{$('meta').textContent=`자료를 불러오지 못했습니다: ${e.message}`;});
+
+fetch('data/gyeonggi-revenue-scope.json').then(r=>{if(!r.ok)throw Error('자료 응답 오류');return r.json();}).then(x=>{
+ $('gg-meta').textContent=`비교 순위 기준 ${x.ranking_as_of} · 확인 ${x.checked_at} · ${x.reason}`;
+ function renderGyeonggi(){
+  const rows=x.candidates.filter(r=>r.name.includes($('gg-search').value.trim()));
+  $('gg-count').textContent=`${rows.length} / ${x.candidates.length}개 비교 후보 · 매출 미확보`;
+  $('gg-rows').replaceChildren();
+  for(const r of rows){const tr=document.createElement('tr');td(tr,r.name);td(tr,r.rank);td(tr,'미확보');$('gg-rows').append(tr);}
+ }
+ $('gg-search').addEventListener('input',renderGyeonggi);renderGyeonggi();
+}).catch(e=>{$('gg-meta').textContent=`경기 후보 목록을 불러오지 못했습니다: ${e.message}`;});
