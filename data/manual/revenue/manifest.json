@@ -1,0 +1,31 @@
+{
+  "retrieved_at": "2026-10-27",
+  "files": {
+    "sales": {
+      "dataset": "OA-22175",
+      "raw_sha256": "57ce0737c3fc3c6a3f7ac63dd7cf3b7b40c2fff1bf2175d48f4d6509add9884a",
+      "retained_rows": 2412,
+      "quarters": [
+        "20251",
+        "20252",
+        "20253",
+        "20254",
+        "20261",
+        "20262"
+      ]
+    },
+    "shops": {
+      "dataset": "OA-22172",
+      "raw_sha256": "174b5e47f1874209b2f4246b2888a63ccc8a4a04819a5f18b675932c8adc632c",
+      "retained_rows": 2532,
+      "quarters": [
+        "20251",
+        "20252",
+        "20253",
+        "20254",
+        "20261",
+        "20262"
+      ]
+    }
+  }
+}
