@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v17-2026-10-25-field-visits';
+const VERSION = 'v20-2026-10-28-revenue-map';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -14,9 +14,10 @@ const SHELL_ASSETS = [
   './index.html',
   './manifest.json',
   './icon.svg',
-  './research.css?v=15',
-  './research.js?v=14',
+  './research.css?v=17',
+  './research.js?v=15',
   './explorer.js?v=2',
+  './revenue-map.js?v=2',
   './data/research.json',
   './detail/index.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',

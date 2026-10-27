@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#175c4b"><title>개원 입지 · 조사와 검증</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
-<link rel="stylesheet" href="research.css?v=15">
+<link rel="stylesheet" href="research.css?v=17">
 </head>
 <body>
 <header class="masthead"><div><p class="eyebrow">CLINIC LOCATION · RESEARCH</p><h1>개원 입지, 근거부터 확인하기</h1><p class="subtitle">내시경·검진 + 일반 내과 외래 · 1인 시작 → 3인 확장 · 90–100평 선호</p></div><div class="stamp"><b>예산 제외</b><span id="snapshot">자료 불러오는 중</span></div></header>
@@ -17,7 +17,7 @@
 <section id="explore" class="panel">
 <div class="metrics" id="metrics"></div>
 <div class="toolbar"><label>지역·동명 검색<input id="search" type="search" placeholder="상도, 부천, 검단…"></label><label>보기<select id="scope"><option value="research">조사 후보 15곳</option><option value="review">사전 검증 8곳</option><option value="pending">확인 대기</option><option value="all">전체 중심점</option></select></label><label>지역<select id="region"><option value="">전체 지역</option><option>서울</option><option>부천</option><option>인천</option><option>경기 기타</option></select></label><button id="reset">초기화</button><p id="count" aria-live="polite"></p></div>
-<div class="workspace"><div class="results" id="list" aria-label="후보 목록"><p class="empty">검증 자료를 불러오고 있습니다.</p></div><div class="map-column"><div id="explorer-controls"></div><div id="map" aria-label="후보 중심점 지도"></div><p class="map-caption" id="map-caption">초록: 조사 후보 · 황토: 확인 대기 · 회색: 그 외 · 점은 실제 매물이 아닙니다.</p><section id="provider-explorer" class="card"></section><article id="detail" aria-live="polite"><p class="empty">후보를 선택하면 수요·경쟁·확인 사항을 볼 수 있습니다.</p></article></div></div>
+<div class="workspace"><div class="results" id="list" aria-label="후보 목록"><p class="empty">검증 자료를 불러오고 있습니다.</p></div><div class="map-column"><div id="revenue-map-controls"></div><div id="explorer-controls"></div><div id="map" aria-label="후보 중심점 지도"></div><p class="map-caption" id="map-caption">초록: 조사 후보 · 황토: 확인 대기 · 회색: 그 외 · 점은 실제 매물이 아닙니다.</p><section id="map-revenue" class="card" aria-live="polite"></section><section id="provider-explorer" class="card"></section><article id="detail" aria-live="polite"><p class="empty">후보를 선택하면 수요·경쟁·확인 사항을 볼 수 있습니다.</p></article></div></div>
 </section>
 <section id="review" class="panel" hidden></section>
 <section id="audit" class="panel" hidden></section>
@@ -26,5 +26,6 @@
 <footer>검증 기준일 2026-10-22 · 현재 조사 자료는 고정 스냅샷입니다. 이전 점수의 주간 갱신과 구분합니다.</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <script src="explorer.js?v=2"></script>
-<script src="research.js?v=14"></script>
+<script src="revenue-map.js?v=2"></script>
+<script src="research.js?v=15"></script>
 </body></html>
