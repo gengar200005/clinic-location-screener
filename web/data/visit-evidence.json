@@ -1,0 +1,1149 @@
+{
+  "as_of": "2026-10-28",
+  "amount_basis": "원자료 당월_매출_금액; 의료업종 월평균/분기합계 해석 확정 전 금액은 원자료 값으로 표시",
+  "candidates": [
+    {
+      "zone": "숭실대입구·상도",
+      "administrative_area": "서울특별시 동작구 상도1동",
+      "address": "서울특별시 동작구 사당로 2",
+      "visit_order": "1",
+      "v3_joint_rank": "1",
+      "classification": "A",
+      "relevant_clinics_1km": "8",
+      "endoscopy_positive_1km": "7",
+      "unknown_specialist_clinics_1km": "1",
+      "shift_frontier_conditions": "32",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11590530",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 4292845423,
+        "per_resident": 96546.54,
+        "population": 44464,
+        "shops": 31,
+        "yoy": 15.89,
+        "four_quarter_yoy": 28.17,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 1879184599
+          },
+          {
+            "quarter": "20212",
+            "amount": 1785564631
+          },
+          {
+            "quarter": "20213",
+            "amount": 1749269709
+          },
+          {
+            "quarter": "20214",
+            "amount": 2251372632
+          },
+          {
+            "quarter": "20221",
+            "amount": 2012814800
+          },
+          {
+            "quarter": "20222",
+            "amount": 2116590480
+          },
+          {
+            "quarter": "20223",
+            "amount": 2160601138
+          },
+          {
+            "quarter": "20224",
+            "amount": 3152132326
+          },
+          {
+            "quarter": "20231",
+            "amount": 2837976237
+          },
+          {
+            "quarter": "20232",
+            "amount": 2812597169
+          },
+          {
+            "quarter": "20233",
+            "amount": 3079469982
+          },
+          {
+            "quarter": "20234",
+            "amount": 3531207986
+          },
+          {
+            "quarter": "20241",
+            "amount": 3080201274
+          },
+          {
+            "quarter": "20242",
+            "amount": 3091934997
+          },
+          {
+            "quarter": "20243",
+            "amount": 3163024314
+          },
+          {
+            "quarter": "20244",
+            "amount": 4019089204
+          },
+          {
+            "quarter": "20251",
+            "amount": 3655979794
+          },
+          {
+            "quarter": "20252",
+            "amount": 3704104425
+          },
+          {
+            "quarter": "20253",
+            "amount": 4100109560
+          },
+          {
+            "quarter": "20254",
+            "amount": 5486422174
+          },
+          {
+            "quarter": "20261",
+            "amount": 4759998745
+          },
+          {
+            "quarter": "20262",
+            "amount": 4292845423
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "구로동로·구로시장 주변",
+      "administrative_area": "서울특별시 구로구 구로2동",
+      "address": "서울특별시 구로구 구로동로28길 99",
+      "visit_order": "2",
+      "v3_joint_rank": "1",
+      "classification": "A",
+      "relevant_clinics_1km": "31",
+      "endoscopy_positive_1km": "19",
+      "unknown_specialist_clinics_1km": "1",
+      "shift_frontier_conditions": "32",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11530530",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 7730174051,
+        "per_resident": 345405.45,
+        "population": 22380,
+        "shops": 34,
+        "yoy": 4.95,
+        "four_quarter_yoy": 18.24,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 4478400530
+          },
+          {
+            "quarter": "20212",
+            "amount": 5417071599
+          },
+          {
+            "quarter": "20213",
+            "amount": 5038923626
+          },
+          {
+            "quarter": "20214",
+            "amount": 5062393821
+          },
+          {
+            "quarter": "20221",
+            "amount": 4041651051
+          },
+          {
+            "quarter": "20222",
+            "amount": 4192945898
+          },
+          {
+            "quarter": "20223",
+            "amount": 3865256493
+          },
+          {
+            "quarter": "20224",
+            "amount": 5304127878
+          },
+          {
+            "quarter": "20231",
+            "amount": 6075516033
+          },
+          {
+            "quarter": "20232",
+            "amount": 5846615309
+          },
+          {
+            "quarter": "20233",
+            "amount": 6236613153
+          },
+          {
+            "quarter": "20234",
+            "amount": 7067094313
+          },
+          {
+            "quarter": "20241",
+            "amount": 5422319604
+          },
+          {
+            "quarter": "20242",
+            "amount": 6073816474
+          },
+          {
+            "quarter": "20243",
+            "amount": 5530965426
+          },
+          {
+            "quarter": "20244",
+            "amount": 6273742146
+          },
+          {
+            "quarter": "20251",
+            "amount": 6177388945
+          },
+          {
+            "quarter": "20252",
+            "amount": 7365728684
+          },
+          {
+            "quarter": "20253",
+            "amount": 7270536668
+          },
+          {
+            "quarter": "20254",
+            "amount": 8017276408
+          },
+          {
+            "quarter": "20261",
+            "amount": 6954363878
+          },
+          {
+            "quarter": "20262",
+            "amount": 7730174051
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "정릉·보국문로",
+      "administrative_area": "서울특별시 성북구 정릉4동",
+      "address": "서울특별시 성북구 보국문로10길 28-13",
+      "visit_order": "3",
+      "v3_joint_rank": "1",
+      "classification": "A",
+      "relevant_clinics_1km": "11",
+      "endoscopy_positive_1km": "4",
+      "unknown_specialist_clinics_1km": "1",
+      "shift_frontier_conditions": "30",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11290650",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 2914805060,
+        "per_resident": 121404.68,
+        "population": 24009,
+        "shops": 13,
+        "yoy": 14.4,
+        "four_quarter_yoy": 4.66,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 2671376394
+          },
+          {
+            "quarter": "20212",
+            "amount": 2725165134
+          },
+          {
+            "quarter": "20213",
+            "amount": 2955693953
+          },
+          {
+            "quarter": "20214",
+            "amount": 2958564761
+          },
+          {
+            "quarter": "20221",
+            "amount": 2135832591
+          },
+          {
+            "quarter": "20222",
+            "amount": 2758188653
+          },
+          {
+            "quarter": "20223",
+            "amount": 2611284232
+          },
+          {
+            "quarter": "20224",
+            "amount": 3057391261
+          },
+          {
+            "quarter": "20231",
+            "amount": 2642987982
+          },
+          {
+            "quarter": "20232",
+            "amount": 2861400214
+          },
+          {
+            "quarter": "20233",
+            "amount": 2909375030
+          },
+          {
+            "quarter": "20234",
+            "amount": 3185950837
+          },
+          {
+            "quarter": "20241",
+            "amount": 2838102421
+          },
+          {
+            "quarter": "20242",
+            "amount": 3076100870
+          },
+          {
+            "quarter": "20243",
+            "amount": 2687568102
+          },
+          {
+            "quarter": "20244",
+            "amount": 2695143209
+          },
+          {
+            "quarter": "20251",
+            "amount": 2596932762
+          },
+          {
+            "quarter": "20252",
+            "amount": 2547945807
+          },
+          {
+            "quarter": "20253",
+            "amount": 2601259662
+          },
+          {
+            "quarter": "20254",
+            "amount": 2777682222
+          },
+          {
+            "quarter": "20261",
+            "amount": 2724943755
+          },
+          {
+            "quarter": "20262",
+            "amount": 2914805060
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "화곡역·화곡로",
+      "administrative_area": "서울특별시 강서구 우장산동",
+      "address": "서울특별시 강서구 화곡로 175",
+      "visit_order": "4",
+      "v3_joint_rank": "1",
+      "classification": "A",
+      "relevant_clinics_1km": "25",
+      "endoscopy_positive_1km": "17",
+      "unknown_specialist_clinics_1km": "0",
+      "shift_frontier_conditions": "28",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11500615",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 2051938109,
+        "per_resident": 46945.44,
+        "population": 43709,
+        "shops": 32,
+        "yoy": -0.65,
+        "four_quarter_yoy": 0.29,
+        "signal": "방향 혼재·보합",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 993468323
+          },
+          {
+            "quarter": "20212",
+            "amount": 1060435951
+          },
+          {
+            "quarter": "20213",
+            "amount": 1146633276
+          },
+          {
+            "quarter": "20214",
+            "amount": 1124745018
+          },
+          {
+            "quarter": "20221",
+            "amount": 1202998540
+          },
+          {
+            "quarter": "20222",
+            "amount": 1362005101
+          },
+          {
+            "quarter": "20223",
+            "amount": 1440300353
+          },
+          {
+            "quarter": "20224",
+            "amount": 1656806931
+          },
+          {
+            "quarter": "20231",
+            "amount": 1559952194
+          },
+          {
+            "quarter": "20232",
+            "amount": 1625862937
+          },
+          {
+            "quarter": "20233",
+            "amount": 1426440873
+          },
+          {
+            "quarter": "20234",
+            "amount": 1604418783
+          },
+          {
+            "quarter": "20241",
+            "amount": 2028543081
+          },
+          {
+            "quarter": "20242",
+            "amount": 2204849005
+          },
+          {
+            "quarter": "20243",
+            "amount": 2205274618
+          },
+          {
+            "quarter": "20244",
+            "amount": 1846809535
+          },
+          {
+            "quarter": "20251",
+            "amount": 2042267080
+          },
+          {
+            "quarter": "20252",
+            "amount": 2065350729
+          },
+          {
+            "quarter": "20253",
+            "amount": 1957620149
+          },
+          {
+            "quarter": "20254",
+            "amount": 2170093576
+          },
+          {
+            "quarter": "20261",
+            "amount": 2003318964
+          },
+          {
+            "quarter": "20262",
+            "amount": 2051938109
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "서울대입구·중앙길",
+      "administrative_area": "서울특별시 관악구 중앙동",
+      "address": "서울특별시 관악구 중앙길 14",
+      "visit_order": "5",
+      "v3_joint_rank": "1",
+      "classification": "A",
+      "relevant_clinics_1km": "34",
+      "endoscopy_positive_1km": "18",
+      "unknown_specialist_clinics_1km": "7",
+      "shift_frontier_conditions": "28",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11620615",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 5166162898,
+        "per_resident": 341541.91,
+        "population": 15126,
+        "shops": 44,
+        "yoy": 12.39,
+        "four_quarter_yoy": 13.18,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 3894423101
+          },
+          {
+            "quarter": "20212",
+            "amount": 4230250700
+          },
+          {
+            "quarter": "20213",
+            "amount": 4020816897
+          },
+          {
+            "quarter": "20214",
+            "amount": 4682665991
+          },
+          {
+            "quarter": "20221",
+            "amount": 4759348994
+          },
+          {
+            "quarter": "20222",
+            "amount": 4875648307
+          },
+          {
+            "quarter": "20223",
+            "amount": 4709368568
+          },
+          {
+            "quarter": "20224",
+            "amount": 4916939029
+          },
+          {
+            "quarter": "20231",
+            "amount": 5050918302
+          },
+          {
+            "quarter": "20232",
+            "amount": 4815840045
+          },
+          {
+            "quarter": "20233",
+            "amount": 4508809457
+          },
+          {
+            "quarter": "20234",
+            "amount": 5060398962
+          },
+          {
+            "quarter": "20241",
+            "amount": 5019013102
+          },
+          {
+            "quarter": "20242",
+            "amount": 4467131192
+          },
+          {
+            "quarter": "20243",
+            "amount": 4429509190
+          },
+          {
+            "quarter": "20244",
+            "amount": 4553890358
+          },
+          {
+            "quarter": "20251",
+            "amount": 4795427355
+          },
+          {
+            "quarter": "20252",
+            "amount": 4596587486
+          },
+          {
+            "quarter": "20253",
+            "amount": 4833354114
+          },
+          {
+            "quarter": "20254",
+            "amount": 5501757269
+          },
+          {
+            "quarter": "20261",
+            "amount": 5295463420
+          },
+          {
+            "quarter": "20262",
+            "amount": 5166162898
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "까치산·강서로12길",
+      "administrative_area": "서울특별시 강서구 화곡8동",
+      "address": "서울특별시 강서구 강서로12길 8-9",
+      "visit_order": "6",
+      "v3_joint_rank": "17",
+      "classification": "B",
+      "relevant_clinics_1km": "26",
+      "endoscopy_positive_1km": "20",
+      "unknown_specialist_clinics_1km": "3",
+      "shift_frontier_conditions": "30",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11500593",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 4167323572,
+        "per_resident": 177574.72,
+        "population": 23468,
+        "shops": 20,
+        "yoy": 45.08,
+        "four_quarter_yoy": 39.06,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 2611513417
+          },
+          {
+            "quarter": "20212",
+            "amount": 3028449630
+          },
+          {
+            "quarter": "20213",
+            "amount": 2773660910
+          },
+          {
+            "quarter": "20214",
+            "amount": 3349026884
+          },
+          {
+            "quarter": "20221",
+            "amount": 2746136134
+          },
+          {
+            "quarter": "20222",
+            "amount": 2374189921
+          },
+          {
+            "quarter": "20223",
+            "amount": 2813821261
+          },
+          {
+            "quarter": "20224",
+            "amount": 2798599676
+          },
+          {
+            "quarter": "20231",
+            "amount": 2281074204
+          },
+          {
+            "quarter": "20232",
+            "amount": 2742100891
+          },
+          {
+            "quarter": "20233",
+            "amount": 2522228488
+          },
+          {
+            "quarter": "20234",
+            "amount": 3263034852
+          },
+          {
+            "quarter": "20241",
+            "amount": 2944148919
+          },
+          {
+            "quarter": "20242",
+            "amount": 2615092515
+          },
+          {
+            "quarter": "20243",
+            "amount": 2689066942
+          },
+          {
+            "quarter": "20244",
+            "amount": 3258820657
+          },
+          {
+            "quarter": "20251",
+            "amount": 3014277702
+          },
+          {
+            "quarter": "20252",
+            "amount": 2872382933
+          },
+          {
+            "quarter": "20253",
+            "amount": 4053277719
+          },
+          {
+            "quarter": "20254",
+            "amount": 4286869372
+          },
+          {
+            "quarter": "20261",
+            "amount": 3949745444
+          },
+          {
+            "quarter": "20262",
+            "amount": 4167323572
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "독산로 생활권",
+      "administrative_area": "서울특별시 금천구 독산4동",
+      "address": "서울특별시 금천구 독산로75길 12",
+      "visit_order": "7",
+      "v3_joint_rank": "1",
+      "classification": "B",
+      "relevant_clinics_1km": "15",
+      "endoscopy_positive_1km": "10",
+      "unknown_specialist_clinics_1km": "1",
+      "shift_frontier_conditions": "22",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11545640",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": null,
+        "per_resident": null,
+        "population": 14511,
+        "shops": 2,
+        "yoy": null,
+        "four_quarter_yoy": null,
+        "signal": "자료 보완",
+        "history": [
+          {
+            "quarter": "20251",
+            "amount": null
+          },
+          {
+            "quarter": "20252",
+            "amount": null
+          },
+          {
+            "quarter": "20253",
+            "amount": null
+          },
+          {
+            "quarter": "20254",
+            "amount": null
+          },
+          {
+            "quarter": "20261",
+            "amount": null
+          },
+          {
+            "quarter": "20262",
+            "amount": null
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "부개·수변로",
+      "administrative_area": "인천광역시 부평구 부개2동",
+      "address": "인천광역시 부평구 수변로64번길 8-10",
+      "visit_order": "8",
+      "v3_joint_rank": "1",
+      "classification": "판단 보류",
+      "relevant_clinics_1km": "13",
+      "endoscopy_positive_1km": "4",
+      "unknown_specialist_clinics_1km": "0",
+      "shift_frontier_conditions": "26",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": null,
+      "revenue": {
+        "status": "unmatched",
+        "history": []
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "신월로·월정로",
+      "administrative_area": "서울특별시 양천구 신월4동",
+      "address": "서울특별시 양천구 신월로15길 26",
+      "visit_order": "9",
+      "v3_joint_rank": "1",
+      "classification": "B",
+      "relevant_clinics_1km": "17",
+      "endoscopy_positive_1km": "10",
+      "unknown_specialist_clinics_1km": "3",
+      "shift_frontier_conditions": "18",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11470590",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 1310361201,
+        "per_resident": 75113.86,
+        "population": 17445,
+        "shops": 12,
+        "yoy": 11.75,
+        "four_quarter_yoy": 2.53,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 1143072206
+          },
+          {
+            "quarter": "20212",
+            "amount": 1255172179
+          },
+          {
+            "quarter": "20213",
+            "amount": 1265003450
+          },
+          {
+            "quarter": "20214",
+            "amount": 1420127719
+          },
+          {
+            "quarter": "20221",
+            "amount": 1218191977
+          },
+          {
+            "quarter": "20222",
+            "amount": 1233232561
+          },
+          {
+            "quarter": "20223",
+            "amount": 1192240736
+          },
+          {
+            "quarter": "20224",
+            "amount": 1352492941
+          },
+          {
+            "quarter": "20231",
+            "amount": 1448285553
+          },
+          {
+            "quarter": "20232",
+            "amount": 1293524305
+          },
+          {
+            "quarter": "20233",
+            "amount": 1452136598
+          },
+          {
+            "quarter": "20234",
+            "amount": 1443249914
+          },
+          {
+            "quarter": "20241",
+            "amount": 1487291831
+          },
+          {
+            "quarter": "20242",
+            "amount": 1177239283
+          },
+          {
+            "quarter": "20243",
+            "amount": 1244689486
+          },
+          {
+            "quarter": "20244",
+            "amount": 1409204890
+          },
+          {
+            "quarter": "20251",
+            "amount": 1462934386
+          },
+          {
+            "quarter": "20252",
+            "amount": 1172602607
+          },
+          {
+            "quarter": "20253",
+            "amount": 1358500907
+          },
+          {
+            "quarter": "20254",
+            "amount": 1409276239
+          },
+          {
+            "quarter": "20261",
+            "amount": 1345191687
+          },
+          {
+            "quarter": "20262",
+            "amount": 1310361201
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "신림동3길·신림로",
+      "administrative_area": "서울특별시 관악구 신림동",
+      "address": "서울특별시 관악구 신림동3길 16",
+      "visit_order": "10",
+      "v3_joint_rank": "17",
+      "classification": "B",
+      "relevant_clinics_1km": "26",
+      "endoscopy_positive_1km": "15",
+      "unknown_specialist_clinics_1km": "2",
+      "shift_frontier_conditions": "16",
+      "shift_conditions": "32",
+      "access_route_status": "실제 경로 미검증",
+      "revenue_code": "11620695",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 9498955132,
+        "per_resident": 419899.0,
+        "population": 22622,
+        "shops": 41,
+        "yoy": 7.42,
+        "four_quarter_yoy": 0.44,
+        "signal": "증가 방향 일치",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 7619126047
+          },
+          {
+            "quarter": "20212",
+            "amount": 8081180061
+          },
+          {
+            "quarter": "20213",
+            "amount": 8825717032
+          },
+          {
+            "quarter": "20214",
+            "amount": 10109891522
+          },
+          {
+            "quarter": "20221",
+            "amount": 9994567553
+          },
+          {
+            "quarter": "20222",
+            "amount": 10327412855
+          },
+          {
+            "quarter": "20223",
+            "amount": 10177629171
+          },
+          {
+            "quarter": "20224",
+            "amount": 10567823953
+          },
+          {
+            "quarter": "20231",
+            "amount": 9817969656
+          },
+          {
+            "quarter": "20232",
+            "amount": 9855771416
+          },
+          {
+            "quarter": "20233",
+            "amount": 9279031172
+          },
+          {
+            "quarter": "20234",
+            "amount": 9328142516
+          },
+          {
+            "quarter": "20241",
+            "amount": 9488593939
+          },
+          {
+            "quarter": "20242",
+            "amount": 9563137937
+          },
+          {
+            "quarter": "20243",
+            "amount": 9228357140
+          },
+          {
+            "quarter": "20244",
+            "amount": 9124740631
+          },
+          {
+            "quarter": "20251",
+            "amount": 8942215700
+          },
+          {
+            "quarter": "20252",
+            "amount": 8843028377
+          },
+          {
+            "quarter": "20253",
+            "amount": 8876212429
+          },
+          {
+            "quarter": "20254",
+            "amount": 8714904039
+          },
+          {
+            "quarter": "20261",
+            "amount": 9206660050
+          },
+          {
+            "quarter": "20262",
+            "amount": 9498955132
+          }
+        ]
+      },
+      "next_check": "주거단지→건물 실제 동선, 경쟁 내시경 운영, 전용 95~100평·임대조건 확인"
+    },
+    {
+      "zone": "수색·DMC",
+      "administrative_area": "서울특별시 은평구 수색동",
+      "address": "",
+      "visit_order": "",
+      "v3_joint_rank": "",
+      "classification": "추가 검증",
+      "relevant_clinics_1km": "",
+      "endoscopy_positive_1km": "",
+      "unknown_specialist_clinics_1km": "",
+      "shift_frontier_conditions": "",
+      "shift_conditions": "",
+      "access_route_status": "철길 분리 현장 관찰 · 횡단 경로 미검증",
+      "revenue_code": "11380650",
+      "revenue": {
+        "status": "matched",
+        "latest": "20262",
+        "amount": 610261931,
+        "per_resident": 29856.26,
+        "population": 20440,
+        "shops": 11,
+        "yoy": -3.98,
+        "four_quarter_yoy": 2.23,
+        "signal": "방향 혼재·보합",
+        "history": [
+          {
+            "quarter": "20211",
+            "amount": 322560766
+          },
+          {
+            "quarter": "20212",
+            "amount": 381271748
+          },
+          {
+            "quarter": "20213",
+            "amount": 365685667
+          },
+          {
+            "quarter": "20214",
+            "amount": 368853293
+          },
+          {
+            "quarter": "20221",
+            "amount": 336010703
+          },
+          {
+            "quarter": "20222",
+            "amount": 379957264
+          },
+          {
+            "quarter": "20223",
+            "amount": 416924311
+          },
+          {
+            "quarter": "20224",
+            "amount": 410210676
+          },
+          {
+            "quarter": "20231",
+            "amount": 442622925
+          },
+          {
+            "quarter": "20232",
+            "amount": 427707114
+          },
+          {
+            "quarter": "20233",
+            "amount": 422821384
+          },
+          {
+            "quarter": "20234",
+            "amount": 472134705
+          },
+          {
+            "quarter": "20241",
+            "amount": 457511523
+          },
+          {
+            "quarter": "20242",
+            "amount": 467134127
+          },
+          {
+            "quarter": "20243",
+            "amount": 540902546
+          },
+          {
+            "quarter": "20244",
+            "amount": 763046345
+          },
+          {
+            "quarter": "20251",
+            "amount": 603414501
+          },
+          {
+            "quarter": "20252",
+            "amount": 635587554
+          },
+          {
+            "quarter": "20253",
+            "amount": 706905920
+          },
+          {
+            "quarter": "20254",
+            "amount": 695751766
+          },
+          {
+            "quarter": "20261",
+            "amount": 586733398
+          },
+          {
+            "quarter": "20262",
+            "amount": 610261931
+          }
+        ]
+      },
+      "next_check": "이 수색동 매출은 배후 비교용. 두빌191·195 소재지는 증산동으로 상단 후속 검증표 참조. 철길 횡단지점·각 동 공실과 전용면적 확인"
+    }
+  ],
+  "sources": [
+    {
+      "file": "web\\data\\revenue.json",
+      "sha256": "652ffdd3d53db595c9527b700bffc98bdec2d0352ff25233d18e88b8e0f2af7f"
+    },
+    {
+      "file": "SITE_CANDIDATES.csv",
+      "sha256": "558bd5af8faf7f1949999462fd1d91c0c9f854e5c6054f11684941cba90fa35d"
+    }
+  ],
+  "limitations": [
+    "일반의원 행정동 추정매출이며 내과·후보 반경·개별 의원 매출이 아님",
+    "4개 분기 원자료 금액의 합을 전년 동일 4분기와 비교한 증감률; 연매출로 해석하지 않음",
+    "지역 경계·코드·카드 추정 방식의 연속성은 완전 검증되지 않음",
+    "미연결 지역은 0점·부적합이 아님. 경기 전체 확장 미완료",
+    "매출 방향은 검증 신호이며 추천 순위·수익성·성공확률이 아님"
+  ]
+}

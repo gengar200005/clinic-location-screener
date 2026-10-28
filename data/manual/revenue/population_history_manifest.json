@@ -1,0 +1,8 @@
+{
+  "dataset": "OA-22183",
+  "retrieved_at": "2026-10-28",
+  "raw_sha256": "9060f14fcf74eda7970817a25fe28ba0c503201e05f132548e24826fa58c0df0",
+  "retained_rows": 5100,
+  "csv_sha256": "237536fa7ec1e3572af2d570077b8ce47f0351bcc0b0474c311cce142ee40ee9",
+  "source": "https://data.seoul.go.kr/dataList/OA-22183/S/1/datasetView.do"
+}

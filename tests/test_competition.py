@@ -3,6 +3,7 @@
 API·파일 의존 없이 합성 DataFrame으로 공식 검증.
 """
 import pandas as pd
+import pytest
 
 from scoring.competition import (
     _weighted_doctors,
@@ -54,14 +55,22 @@ def test_competition_radius_only_mode():
     assert out.set_index("adm_cd").loc["B", "c_raw"] == 0.0
 
 
-def test_competition_zero_population_safe():
-    """인구 0 동은 0으로 나누지 않고 density=0으로 처리."""
+@pytest.mark.parametrize("value", [0, None, -1, float("inf")])
+def test_competition_invalid_population_rejected(value):
+    """Unknown/invalid denominators must not appear as weak competition."""
     n = pd.DataFrame({"adm_cd": ["A"], "n_clinic": [3], "n_clinic_gi": [0]})
     w = pd.DataFrame({"adm_cd": ["A"], "n_within_radius": [1]})
-    p = pd.DataFrame({"adm_cd": ["A"], "population": [0]})
-    out = compute_competition_raw(n, w, population=p)
-    assert out["density_per_10k"].iloc[0] == 0
-    assert out["c_raw"].iloc[0] == 0.5 * 1  # density 0 + radius 1
+    p = pd.DataFrame({"adm_cd": ["A"], "population": [value]})
+    with pytest.raises(ValueError, match="finite positive population"):
+        compute_competition_raw(n, w, population=p)
+
+
+def test_competition_duplicate_population_rejected():
+    n = pd.DataFrame({"adm_cd": ["A"], "n_clinic": [3]})
+    w = pd.DataFrame({"adm_cd": ["A"], "n_within_radius": [1]})
+    p = pd.DataFrame({"adm_cd": ["A", "A"], "population": [1000, 1000]})
+    with pytest.raises(ValueError, match="duplicate adm_cd"):
+        compute_competition_raw(n, w, population=p)
 
 
 def test_competition_station_penalty():

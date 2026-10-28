@@ -50,7 +50,7 @@
   }
   function draw() {
     const rows=filtered();
-    window.revenueMap?.update(rows);
+    window.revenueMap?.update(rows,data.anchors);
     $('count').textContent=rows.length+'개 표시';
     $('list').innerHTML=rows.length?rows.map(r=>`<button class="candidate" data-id="${esc(r.adm_cd)}" aria-pressed="false">${badge(r)}<span class="name">${esc(r.adm_nm)}</span><small>${isPending(r)?esc(r.research_pending_reason):'상위50 포함률 '+pct(r.uniform_top50_fraction)+' / '+pct(r.reweighted_top50_fraction)}</small>${r.review?`<small>${esc(r.review.group)}</small>`:''}</button>`).join(''):'<p class="empty">조건에 맞는 중심점이 없습니다. 검색어나 지역을 변경해 주세요.</p>';
     $('list').querySelectorAll('.candidate').forEach(b=>b.addEventListener('click',()=>renderDetail(rows.find(r=>r.adm_cd===b.dataset.id))));

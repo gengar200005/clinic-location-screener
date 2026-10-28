@@ -240,7 +240,13 @@ def compute_competition_raw(
     - subcluster_penalty: adm_cd + n_doctors_subcluster_max_med (선택).
         compute_subcluster_max_doctors 결과. W_COMP_SUBCLUSTER 기본 0이면 영향 없음.
     """
-    df = n_by_dong.merge(within_radius, on="adm_cd", how="left")
+    # Reject multiplicative joins before they can change the comparison cohort.
+    for label, frame in [("counts", n_by_dong), ("radius", within_radius),
+                         ("population", population), ("station", station_penalty),
+                         ("subcluster", subcluster_penalty)]:
+        if frame is not None and (frame["adm_cd"].isna().any() or frame["adm_cd"].duplicated().any()):
+            raise ValueError(f"{label}: missing or duplicate adm_cd")
+    df = n_by_dong.merge(within_radius, on="adm_cd", how="left", validate="one_to_one")
     df["n_within_radius"] = df["n_within_radius"].fillna(0)
 
     # 역세권 페널티 머지 (없으면 0)
@@ -265,9 +271,10 @@ def compute_competition_raw(
 
     if population is not None:
         df = df.merge(population[["adm_cd", "population"]], on="adm_cd", how="left")
-        safe_pop = df["population"].replace(0, np.nan)
+        safe_pop = pd.to_numeric(df["population"], errors="coerce")
+        if (~np.isfinite(safe_pop) | safe_pop.le(0)).any():
+            raise ValueError("Competition density requires finite positive population; missing/zero is not zero competition")
         df["density_per_10k"] = df["n_clinic"] / (safe_pop / 10_000)
-        df["density_per_10k"] = df["density_per_10k"].fillna(0)
         df["c_raw"] = (
             W_COMP_DENSITY * df["density_per_10k"]
             + W_COMP_RADIUS * df["n_within_radius"]

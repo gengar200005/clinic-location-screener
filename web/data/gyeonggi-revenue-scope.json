@@ -1,11 +1,11 @@
 {
   "scope": "research.json 내 비교 순위가 있는 경기도 후보",
   "ranking_as_of": "2026-10-22",
-  "checked_at": "2026-10-27T12:44:22.554607+00:00",
+  "checked_at": "2026-10-28T12:46:55.406320+00:00",
   "status": "validation_pending",
   "source_url": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=H92OOSWZXICJM0UO4IHH38259217&infSeq=1",
   "catalog_url": "https://www.data.go.kr/data/15151650/fileData.do",
-  "reason": "이용조건 확인 · 원자료 다운로드 서버 오류 · 의원 업종·기간·코드 연결 검증 대기. 경기 매출 추세 연동은 아직 미완료입니다.",
+  "reason": "2026-10-28 재확인: 공식 상세 페이지 중단·CSV GET/POST HTTP 500. 경기 원자료 미확보, 의원 업종·기간·코드 검증 미완료.",
   "checks": [
     {
       "id": "catalog",
@@ -23,7 +23,7 @@
       "id": "raw",
       "label": "원자료",
       "status": "blocked",
-      "detail": "상세 페이지는 HTTP 200이지만 HTML이 중간에 끊김. 공개 CSV 다운로드는 정상 세션 GET·POST 모두 HTTP 500."
+      "detail": "2026-10-28 재확인: 상세 HTML 645,527바이트에서 중단. 정상 세션 CSV GET/POST 모두 HTTP500. 공공 카탈로그의 CSV 링크도 동일 경로."
     },
     {
       "id": "industry",

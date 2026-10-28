@@ -1,0 +1,46 @@
+{
+  "retrieved_at": "2026-10-28",
+  "dataset": "OA-22175",
+  "source": "https://data.seoul.go.kr/dataList/OA-22175/S/1/datasetView.do",
+  "files": [
+    {
+      "year": 2021,
+      "seq": 3,
+      "rows": 1604,
+      "raw_zip_sha256": "803d50b6edbf263a2548ed1dc8f630906bce25939d23477afb25b9f300b77d7b",
+      "csv_sha256": "af85fccd5ce5ce38c93ab505d7632a81f54dcbcde4380793fa9b0575e6602644",
+      "quarters": [
+        "20211",
+        "20212",
+        "20213",
+        "20214"
+      ]
+    },
+    {
+      "year": 2022,
+      "seq": 4,
+      "rows": 1612,
+      "raw_zip_sha256": "93b8ace5467df3747f6ea68fdce1ddfb2868c6fa7e32390238dabe5b2a7f5e0d",
+      "csv_sha256": "f4cd58d0120983f97d4a931f3c858fab89dc98769b1d52c9782ca86679309393",
+      "quarters": [
+        "20221",
+        "20222",
+        "20223",
+        "20224"
+      ]
+    },
+    {
+      "year": 2023,
+      "seq": 5,
+      "rows": 1612,
+      "raw_zip_sha256": "788c62cfc2502110e6b9fb9593734fcab21e49a54b42431e2d7be3ad92cbfaaf",
+      "csv_sha256": "9fdca65a92282770d86b73109b65282eccb8b4e5d1f0b36ae57f7e2f3931de31",
+      "quarters": [
+        "20231",
+        "20232",
+        "20233",
+        "20234"
+      ]
+    }
+  ]
+}

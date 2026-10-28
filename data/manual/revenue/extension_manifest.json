@@ -1,0 +1,16 @@
+{
+  "retrieved_at": "2026-10-28",
+  "sales_2024": {
+    "dataset": "OA-22175",
+    "file_seq": "6",
+    "raw_sha256": "767e8a4d8de50e9f785e7013d2a6ed45cdc7d6d4886a08640e8af746c548a8b7",
+    "rows": 1609,
+    "url": "https://data.seoul.go.kr/dataList/OA-22175/S/1/datasetView.do"
+  },
+  "population": {
+    "dataset": "OA-22183",
+    "raw_sha256": "9060f14fcf74eda7970817a25fe28ba0c503201e05f132548e24826fa58c0df0",
+    "rows": 4250,
+    "url": "https://data.seoul.go.kr/dataList/OA-22183/S/1/datasetView.do"
+  }
+}
