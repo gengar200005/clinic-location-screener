@@ -5,18 +5,23 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v17-2026-10-25-field-visits';
+const VERSION = 'v30-2026-10-29-progress';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
 const SHELL_ASSETS = [
   './',
   './index.html',
+  './visit-evidence.html',
+  './visit-evidence.js?v=3',
+  './field-followup.js?v=1',
+  './progress.html',
   './manifest.json',
   './icon.svg',
-  './research.css?v=15',
-  './research.js?v=14',
+  './research.css?v=17',
+  './research.js?v=17',
   './explorer.js?v=2',
+  './revenue-map.js?v=9',
   './data/research.json',
   './detail/index.html',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -52,6 +57,10 @@ self.addEventListener('fetch', e => {
   const isData =
     url.pathname.includes('/web/v3/') ||
     url.pathname.endsWith('/research.json') ||
+    url.pathname.endsWith('/revenue.json') ||
+    url.pathname.endsWith('/visit-evidence.json') ||
+    url.pathname.endsWith('/field-followup.json') ||
+    url.pathname.endsWith('/gyeonggi-revenue-scope.json') ||
     url.pathname.endsWith('/research_providers.json') ||
     url.pathname.endsWith('/heatmap.json') ||
     url.pathname.endsWith('/boundaries.geojson') ||

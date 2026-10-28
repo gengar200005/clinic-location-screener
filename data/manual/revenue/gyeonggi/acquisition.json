@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-10-28T12:46:55.406320+00:00",
+  "dataset": "H92OOSWZXICJM0UO4IHH38259217",
+  "catalog_url": "https://www.data.go.kr/data/15151650/fileData.do",
+  "source_url": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=H92OOSWZXICJM0UO4IHH38259217&infSeq=1",
+  "download_url": "https://data.gg.go.kr/portal/data/sheet/downloadSheetData.do",
+  "attempts": [
+    {
+      "status": "http_error",
+      "http_status": 500,
+      "method": "GET",
+      "bytes": 17,
+      "sha256": "02aa8cf5a16dfc0a86ffdfeb1d41439f04895720c30ede476e9c45b6ff487c0e"
+    },
+    {
+      "status": "http_error",
+      "http_status": 500,
+      "method": "POST",
+      "bytes": 1178,
+      "sha256": "8eb33006fa98e43d698cd49b525c109294533d9979b46fb1ebb5b57bd10394e2"
+    }
+  ],
+  "detail_page": {
+    "http_status": 200,
+    "bytes": 645527,
+    "complete_html": false
+  }
+}

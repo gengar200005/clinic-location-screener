@@ -1,0 +1,14 @@
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=n=>n==null?'미연결':Number(n).toLocaleString('ko-KR',{maximumFractionDigits:0});
+const pct=n=>n==null?'미연결':`${n>0?'+':''}${Number(n).toFixed(1)}%`;
+const quarter=q=>q?`${q.slice(0,4)}년 ${q.slice(-1)}분기`:'기간 미연결';
+let candidates=[];
+function render(){
+ const key=document.querySelector('#sort').value, search=document.querySelector('#search').value.trim(), signal=document.querySelector('#signal').value;
+ const rows=candidates.filter(c=>(c.zone+c.administrative_area).includes(search)&&(!signal||(c.revenue.signal||'자료 보완')===signal));
+ rows.sort((a,b)=>key==='original'?Number(a.visit_order||999)-Number(b.visit_order||999):(b.revenue[key]??-Infinity)-(a.revenue[key]??-Infinity)||Number(a.visit_order||999)-Number(b.visit_order||999));
+ document.querySelector('#count').textContent=`${rows.length}곳 · ${key==='original'?'기존 방문 순서 유지':'선택한 매출 지표 내림차순 · 추천 순위 아님 · 미연결은 뒤에 표시'}`;
+ document.querySelector('#cards').innerHTML=rows.map(c=>{const r=c.revenue;return `<article><span class="badge">${esc(r.signal||'자료 보완')}</span><h2>${esc(c.zone)}</h2><p class="muted">${esc(c.administrative_area)}${c.classification==='판단 보류'?' · 현재 서울·경기 범위 밖':''} · 기존 방문 ${esc(c.visit_order||'추가 검증')} / 모델 공동순위 ${esc(c.v3_joint_rank||'미산정')}</p><div class="metrics"><div><b>${pct(r.yoy)}</b><span>${quarter(r.latest)} 전년 동기</span></div><div><b>${pct(r.four_quarter_yoy)}</b><span>최근 4분기 / 전년 동일 4분기</span></div><div><b>${r.amount==null?'미연결':(r.amount/1e8).toFixed(2)+'억 원'}</b><span>행정동 일반의원 원자료 금액</span></div><div><b>${num(r.per_resident)}${r.per_resident==null?'':'원'}</b><span>행정동 주민 1인당 · 외부 소비 포함</span></div></div><p>1km 내시경 관측 의원 <b>${esc(c.endoscopy_positive_1km||'미확인')}</b> · 관련 의원 ${esc(c.relevant_clinics_1km||'미확인')}</p><p class="muted">반경 집계이며 같은 생활권의 경쟁기관 수와 다릅니다.</p><p><b>접근성:</b> ${esc(c.access_route_status)}</p><p><b>건물:</b> 전용 95~100평 확보·임대조건 미검증</p><details><summary>근거와 다음 확인사항</summary><p>${esc(c.next_check)}</p><p>행정동 코드: ${esc(c.revenue_code||'미연결')} · 전문의 미확인 관련 의원 ${esc(c.unknown_specialist_clinics_1km||'미확인')}곳</p><p>매출 방향만으로 신규 수요·시장 점유 가능성 또는 개원 적합성을 판단하지 않습니다. 결제 건수 변화는 상단 후속 검증표에 별도 연결했습니다. 내과 전용 매출은 미확인입니다.</p><table><caption>원자료 추이 · 개별 내과 매출 아님</caption><thead><tr><th>분기</th><th>금액(원)</th></tr></thead><tbody>${r.history.map(h=>`<tr><td>${quarter(h.quarter)}</td><td>${num(h.amount)}</td></tr>`).join('')}</tbody></table></details></article>`}).join('');
+}
+fetch('data/visit-evidence.json?v=20261028').then(r=>{if(!r.ok)throw Error('자료를 불러오지 못했습니다.');return r.json()}).then(d=>{candidates=d.candidates;document.querySelector('#limits').innerHTML=d.limitations.map(x=>`<li>${esc(x)}</li>`).join('');render()}).catch(e=>document.querySelector('#error').textContent=e.message);
+for(const id of ['search','sort','signal'])document.getElementById(id).addEventListener('input',render);
