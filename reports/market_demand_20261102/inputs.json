@@ -1,0 +1,94 @@
+{
+  "data\\manual\\market_demand_20261102\\250_LOCAL_RESD_20261029.zip": {
+    "bytes": 15089592,
+    "sha256": "8d561c37ed3186af30f174ae46fb04d5c216fcd957198e3d191bcfe1453efa7d"
+  },
+  "data\\manual\\market_demand_20261102\\acquisition.json": {
+    "bytes": 6170,
+    "sha256": "1f009d63f6272440ee8f6c3e64dbfb66d43bfb1f6fc0a7afa6bf23e2b2a2ad66"
+  },
+  "data\\manual\\market_demand_20261102\\boundaries_20250630.geojson": {
+    "bytes": 236761,
+    "sha256": "60a7dc30240bce95e86a68fb4a65d91fcd08f17cb741b317f63dd5cf37c2dd6d"
+  },
+  "data\\manual\\market_demand_20261102\\definition_25.zip": {
+    "bytes": 21265,
+    "sha256": "509363344b07afed1cf444f154f65b639da4a6f34436ae7b654d2b13357a3125"
+  },
+  "data\\manual\\market_demand_20261102\\definition_29.zip": {
+    "bytes": 329428,
+    "sha256": "5f7f95db30f1d4a433d9905b281c3fb95b59cd8200985512a897326208bf525e"
+  },
+  "data\\manual\\market_demand_20261102\\grid_centers.json": {
+    "bytes": 554669,
+    "sha256": "2a041cffe8a7d0c89dfc377709be20d4f55670fc13962f733cb8239871b6b44c"
+  },
+  "data\\manual\\market_demand_20261102\\living_definition_34.zip": {
+    "bytes": 266797,
+    "sha256": "18238af79d3af821d4b2b029d7512385286a3a0e9ae76113f0fbef8f744bf93a"
+  },
+  "data\\manual\\market_demand_20261102\\living_definition_35.pdf": {
+    "bytes": 3364488,
+    "sha256": "40aa05083957e013096490da18ab977ea3115105a3415ad4e14c0ac028ba3b65"
+  },
+  "data\\manual\\market_demand_20261102\\living_definition_37.zip": {
+    "bytes": 329428,
+    "sha256": "5f7f95db30f1d4a433d9905b281c3fb95b59cd8200985512a897326208bf525e"
+  },
+  "data\\manual\\market_demand_20261102\\OA-22166.csv": {
+    "bytes": 1496286,
+    "sha256": "48d11f590dfad1157c065531f0e10780adf5f96df8c3a098d724944021f53684"
+  },
+  "data\\manual\\market_demand_20261102\\OA-22178.csv": {
+    "bytes": 2201460,
+    "sha256": "2524e3a8383978353b869bcc2f9eae402fa55655fe60c43f0cfe8c588ff7f9f1"
+  },
+  "data\\manual\\market_demand_20261102\\OA-22184.csv": {
+    "bytes": 1377925,
+    "sha256": "11beb91e6ed5836faefadf3b4441e2229c301f3894d1b2084043db3ac31ceb17"
+  },
+  "data\\manual\\market_demand_20261102\\pilots.json": {
+    "bytes": 918,
+    "sha256": "8844d94cd5cd4ffbec1378ffcaf1a8cce05cde3a8c0b887bfb0373ae3e8f4128"
+  },
+  "data\\manual\\revenue\\sales.csv": {
+    "bytes": 965916,
+    "sha256": "b48cac847115bbb724dd5a37cd865ee7fb95e45e5b8ee60e642abc56f42e7bc9"
+  },
+  "data\\manual\\revenue\\sales_2021.csv": {
+    "bytes": 634055,
+    "sha256": "af85fccd5ce5ce38c93ab505d7632a81f54dcbcde4380793fa9b0575e6602644"
+  },
+  "data\\manual\\revenue\\sales_2022.csv": {
+    "bytes": 641982,
+    "sha256": "f4cd58d0120983f97d4a931f3c858fab89dc98769b1d52c9782ca86679309393"
+  },
+  "data\\manual\\revenue\\sales_2023.csv": {
+    "bytes": 645141,
+    "sha256": "9fdca65a92282770d86b73109b65282eccb8b4e5d1f0b36ae57f7e2f3931de31"
+  },
+  "data\\manual\\revenue\\sales_2024.csv": {
+    "bytes": 643566,
+    "sha256": "4813c2049888ecece135647009960baac12a56c7172d1613516fe00a122cfb1c"
+  },
+  "data\\manual\\revenue\\shops.csv": {
+    "bytes": 163697,
+    "sha256": "53ed6c4a12496bc61a7c5b6ebb566d61cc3825a127c6eb5fddfb593348c38013"
+  },
+  "web\\data\\revenue.json": {
+    "bytes": 2797633,
+    "sha256": "652ffdd3d53db595c9527b700bffc98bdec2d0352ff25233d18e88b8e0f2af7f"
+  },
+  "web\\data\\visit-evidence.json": {
+    "bytes": 34059,
+    "sha256": "2b1438f58ccdf4fead4fdf4fe38db295ecb92fd125d481d6f7062ceab67f8984"
+  },
+  "reports\\patient_opportunity_phase1_20261102_final\\field_visit_axes.csv": {
+    "bytes": 17450,
+    "sha256": "f4ac9070156aa9a8a909831bfae8d89d02e8e9b2a7717c5393d191aa9b3c11ba"
+  },
+  "SITE_CANDIDATES.csv": {
+    "bytes": 9042,
+    "sha256": "558bd5af8faf7f1949999462fd1d91c0c9f854e5c6054f11684941cba90fa35d"
+  }
+}

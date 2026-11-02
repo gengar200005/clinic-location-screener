@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v32-2026-11-02-gg-inventory';
+const VERSION = 'v34-2026-11-02-market-demand';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -13,13 +13,16 @@ const SHELL_ASSETS = [
   './',
   './index.html',
   './visit-evidence.html',
+  './market-demand.html',
+  './market-demand.css?v=1',
+  './market-demand.js?v=2',
   './visit-evidence.js?v=3',
   './field-followup.js?v=1',
   './progress.html',
   './manifest.json',
   './icon.svg',
   './research.css?v=17',
-  './research.js?v=18',
+  './research.js?v=19',
   './explorer.js?v=2',
   './revenue-map.js?v=9',
   './data/research.json',
@@ -58,6 +61,7 @@ self.addEventListener('fetch', e => {
     url.pathname.includes('/web/v3/') ||
     url.pathname.endsWith('/research.json') ||
     url.pathname.endsWith('/revenue.json') ||
+    url.pathname.endsWith('/market-demand.json') ||
     url.pathname.endsWith('/visit-evidence.json') ||
     url.pathname.endsWith('/field-followup.json') ||
     url.pathname.endsWith('/gyeonggi-revenue-scope.json') ||

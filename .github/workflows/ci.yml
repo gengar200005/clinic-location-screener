@@ -40,3 +40,10 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/ -v
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check map and market-demand UI contracts
+        run: node --test tests/test_market_demand.cjs tests/test_revenue_map.cjs
