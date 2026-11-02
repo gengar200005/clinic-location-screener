@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v31-2026-11-02-scope';
+const VERSION = 'v32-2026-11-02-gg-inventory';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -61,6 +61,7 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/visit-evidence.json') ||
     url.pathname.endsWith('/field-followup.json') ||
     url.pathname.endsWith('/gyeonggi-revenue-scope.json') ||
+    url.pathname.endsWith('/gyeonggi-revenue-inventory.json') ||
     url.pathname.endsWith('/research_providers.json') ||
     url.pathname.endsWith('/heatmap.json') ||
     url.pathname.endsWith('/boundaries.geojson') ||

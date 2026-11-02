@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-11-02T09:39:29.692610+00:00",
+  "key_configured": true,
+  "key_authentication": "not_tested_no_verified_service_endpoint",
+  "dataset": "H92OOSWZXICJM0UO4IHH38259217",
+  "attempts": [
+    {
+      "kind": "metadata",
+      "http_status": 200,
+      "bytes": 645527,
+      "sha256": "44181a1b3579faa655b9580d22a20b06c2bb1efed442aa87837f4107ba6e24bd",
+      "complete_html": false
+    },
+    {
+      "kind": "csv",
+      "http_status": 200,
+      "bytes": 130,
+      "sha256": "6ebe71379d5ecf8eed13ef4a0eab973042ca6297b9e69d566166a5ca6e8f981e",
+      "status": "html_instead_of_csv"
+    }
+  ]
+}
