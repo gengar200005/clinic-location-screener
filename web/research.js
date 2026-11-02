@@ -44,7 +44,7 @@
   }
   function filtered() {
     const q=$('search').value.trim(), scope=$('scope').value, region=$('region').value;
-    return data.anchors.filter(r=>(!q || (r.adm_nm+' '+(r.population_name||'')).includes(q)) && (!region||r.region===region) &&
+    return data.anchors.filter(r=>(scope==='all'||!r.adm_nm.includes('정릉')) && (!q || (r.adm_nm+' '+(r.population_name||'')).includes(q)) && (!region||r.region===region) &&
       (scope==='all'||scope==='research'&&r.research_order!=null||scope==='review'&&r.review||scope==='pending'&&isPending(r)))
       .sort((a,b)=>(a.research_order??999)-(b.research_order??999)||a.adm_nm.localeCompare(b.adm_nm,'ko'));
   }
@@ -59,7 +59,7 @@
   }
   function jump(id){tab('explore');$('scope').value='all';$('search').value='';$('region').value='';selected=id;draw();renderDetail(data.anchors.find(r=>r.adm_cd===id));$('detail').scrollIntoView({behavior:'smooth',block:'start'});}
   function renderPanels(){
-    const reviewed=data.anchors.filter(r=>r.review).sort((a,b)=>(a.research_order??999)-(b.research_order??999));
+    const reviewed=data.anchors.filter(r=>r.review&&!r.adm_nm.includes('정릉')).sort((a,b)=>(a.research_order??999)-(b.research_order??999));
     $('review').innerHTML=`<div class="card"><p class="eyebrow">FIELDWORK PREPARATION</p><h2>매물은 임장에서, 지금은 생활권 검증</h2><p>상도1·중계2·3·개봉2·남가좌2·쌍문4·부천 상1은 잠정 답사 가설입니다. 중동·심곡2는 비교 예비로 유지합니다.</p><p class="callout">6곳을 확정하지 않았습니다. 최신 소지역 인구, 실제 경쟁 진료, 인천 경계 보완을 먼저 진행한 뒤 임장할 3~5개 생활권과 방문 동선을 정합니다. 온라인 매물 유무로 후보를 탈락시키지 않습니다.</p><ol><li>최신 소지역 인구와 재개발 이주·입주 확인</li><li>주요 경쟁기관의 실제 진료 구성과 의료진 역할 확인</li><li>인천 경계 보완 후 비교에서 빠진 후보 재검토</li><li>임장 생활권·방문 순서 확정 후 현장에서 중개업소와 건물 확인</li></ol></div><div class="grid2">${reviewed.map(r=>`<article><p class="badge">${esc(r.review.group)}</p><h2>${esc(r.adm_nm)}</h2><p>${esc(r.review.challenge)}</p><p class="muted">주거 변화: ${esc(r.review.housing)}</p><p><b>현장 확인:</b> ${esc(r.review.walk)}</p><button data-jump="${esc(r.adm_cd)}">수요·경쟁 근거 보기</button></article>`).join('')}</div>`;
     $('review').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>jump(b.dataset.jump)));
     const coverage=['서울','부천','인천','경기 기타'].map(region=>{const rows=data.anchors.filter(r=>r.region===region);return [region,num(rows.length),num(rows.filter(r=>!isPending(r)).length),num(rows.filter(r=>r.research_order!=null).length)];});
