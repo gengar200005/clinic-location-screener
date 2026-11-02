@@ -1,0 +1,74 @@
+{
+  "checkedAt": "2026-11-02",
+  "finalChecks": [
+    {
+      "chart": 1,
+      "comparisonRows": 6,
+      "error": "",
+      "heading": "숭실대입구·상도"
+    },
+    {
+      "chart": 1,
+      "comparisonRows": 6,
+      "error": "",
+      "heading": "구로동로·구로시장 주변"
+    },
+    {
+      "chart": 1,
+      "comparisonRows": 6,
+      "error": "",
+      "heading": "화곡역·화곡로"
+    },
+    {
+      "chart": 1,
+      "comparisonRows": 6,
+      "error": "",
+      "heading": "서울대입구·중앙길"
+    },
+    {
+      "chart": 1,
+      "comparisonRows": 6,
+      "error": "",
+      "heading": "까치산·강서로12길"
+    },
+    {
+      "chart": 1,
+      "comparisonRows": 6,
+      "error": "",
+      "heading": "수색·DMC 두빌191"
+    }
+  ],
+  "desktopCheck": {
+    "requestedWidth": 1280,
+    "scrollWidth": 1265,
+    "width": 1280
+  },
+  "mobileCheck": {
+    "controls": [
+      351.4285888671875,
+      351.4285888671875
+    ],
+    "requestedWidth": 390,
+    "scrollWidth": 375,
+    "tables": [
+      {
+        "scrollWidth": 660,
+        "width": 318
+      },
+      {
+        "scrollWidth": 660,
+        "width": 318
+      }
+    ],
+    "width": 390
+  },
+  "consoleErrors": [],
+  "existingRegression": {
+    "clinicRadius": "1km→1.5km:48→116 providers",
+    "revenueQuarter": "20262→20252:42.93→37.04억원",
+    "candidateSelection": "all scope / 구로2동→integrated Guro detail",
+    "map": "12 tiles / 892 paths present",
+    "error": ""
+  },
+  "viewportCorrection": "Viewport capability affects selected tab. Intermediate observations from background tab discarded; final dimensions verified on selected tab."
+}

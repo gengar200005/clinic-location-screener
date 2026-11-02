@@ -19,7 +19,7 @@
   function table(headers,rows) {return `<div class="scroll"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>'<tr>'+row.map(v=>`<td>${v}</td>`).join('')+'</tr>').join('')}</tbody></table></div>`;}
   function renderDetail(r, pan=true) {
     selected=r.adm_cd;
-    window.revenueMap?.select(r);
+    window.revenueMap?.select(r);window.marketDemand?.select(r);
     if(map) window.clinicExplorer?.select(r);
     document.querySelectorAll('.candidate').forEach(b=>{const active=b.dataset.id===selected;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
     const review=r.review;
@@ -55,7 +55,7 @@
     $('list').innerHTML=rows.length?rows.map(r=>`<button class="candidate" data-id="${esc(r.adm_cd)}" aria-pressed="false">${badge(r)}<span class="name">${esc(r.adm_nm)}</span><small>${isPending(r)?esc(r.research_pending_reason):'상위50 포함률 '+pct(r.uniform_top50_fraction)+' / '+pct(r.reweighted_top50_fraction)}</small>${r.review?`<small>${esc(r.review.group)}</small>`:''}</button>`).join(''):'<p class="empty">조건에 맞는 중심점이 없습니다. 검색어나 지역을 변경해 주세요.</p>';
     $('list').querySelectorAll('.candidate').forEach(b=>b.addEventListener('click',()=>renderDetail(rows.find(r=>r.adm_cd===b.dataset.id))));
     if(map){layer.clearLayers();markers=new Map(); rows.forEach(r=>{const color=isPending(r)?'#ad7a28':r.research_order!=null?'#175c4b':'#7a8981'; const m=L.circleMarker([r.lat_shops,r.lon_shops],{radius:r.research_order!=null?7:5,color,fillColor:color,fillOpacity:.8,weight:1,bubblingMouseEvents:false}).addTo(layer).bindPopup(`<b>${esc(r.adm_nm)}</b><br>${esc(status(r))}`);m.on('click',()=>renderDetail(r,false));markers.set(r.adm_cd,m);});if(rows.length)map.fitBounds(rows.map(r=>[r.lat_shops,r.lon_shops]),{padding:[25,25],maxZoom:13,animate:false});}
-    if(rows.length)renderDetail(rows.find(r=>r.adm_cd===selected)||rows[0],false);else{$('detail').innerHTML='<p class="empty">현재 필터에 표시되는 후보가 없습니다.</p>';selected=null;window.clinicExplorer?.clear();window.revenueMap?.select(null);}
+    if(rows.length)renderDetail(rows.find(r=>r.adm_cd===selected)||rows[0],false);else{$('detail').innerHTML='<p class="empty">현재 필터에 표시되는 후보가 없습니다.</p>';selected=null;window.clinicExplorer?.clear();window.revenueMap?.select(null);window.marketDemand?.select(null);}
   }
   function jump(id){tab('explore');$('scope').value='all';$('search').value='';$('region').value='';selected=id;draw();renderDetail(data.anchors.find(r=>r.adm_cd===id));$('detail').scrollIntoView({behavior:'smooth',block:'start'});}
   function renderPanels(){
