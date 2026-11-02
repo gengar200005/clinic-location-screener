@@ -1,0 +1,104 @@
+{
+  "purpose": "입지의 환자확보 가설과 건물 손익/운영능력을 잇는 입력 계약; 숫자 예측 아님",
+  "physician_stages": [
+    1,
+    2,
+    3
+  ],
+  "building": {
+    "exclusive_sqm": null,
+    "deposit": null,
+    "monthly_rent": null,
+    "monthly_management": null,
+    "verified_on": null,
+    "source": null
+  },
+  "fixed_costs": {
+    "staffing": null,
+    "other_operating": null,
+    "physician_compensation": null,
+    "depreciation": null,
+    "debt_service_cash": null
+  },
+  "service_inputs": {
+    "outpatient": {
+      "monthly_visits_or_procedures": null,
+      "net_collected_revenue_per_unit": null,
+      "variable_cost_per_unit": null,
+      "doctor_minutes": null,
+      "staff_minutes": null,
+      "room_minutes": null,
+      "recovery_bed_minutes": null,
+      "overlap_with_other_services": null,
+      "source": null
+    },
+    "upper_endoscopy": {
+      "monthly_visits_or_procedures": null,
+      "net_collected_revenue_per_unit": null,
+      "variable_cost_per_unit": null,
+      "doctor_minutes": null,
+      "staff_minutes": null,
+      "room_minutes": null,
+      "recovery_bed_minutes": null,
+      "overlap_with_other_services": null,
+      "source": null
+    },
+    "colonoscopy": {
+      "monthly_visits_or_procedures": null,
+      "net_collected_revenue_per_unit": null,
+      "variable_cost_per_unit": null,
+      "doctor_minutes": null,
+      "staff_minutes": null,
+      "room_minutes": null,
+      "recovery_bed_minutes": null,
+      "overlap_with_other_services": null,
+      "source": null
+    },
+    "ultrasound": {
+      "monthly_visits_or_procedures": null,
+      "net_collected_revenue_per_unit": null,
+      "variable_cost_per_unit": null,
+      "doctor_minutes": null,
+      "staff_minutes": null,
+      "room_minutes": null,
+      "recovery_bed_minutes": null,
+      "overlap_with_other_services": null,
+      "source": null
+    },
+    "checkup": {
+      "monthly_visits_or_procedures": null,
+      "net_collected_revenue_per_unit": null,
+      "variable_cost_per_unit": null,
+      "doctor_minutes": null,
+      "staff_minutes": null,
+      "room_minutes": null,
+      "recovery_bed_minutes": null,
+      "overlap_with_other_services": null,
+      "source": null
+    },
+    "infusion": {
+      "monthly_visits_or_procedures": null,
+      "net_collected_revenue_per_unit": null,
+      "variable_cost_per_unit": null,
+      "doctor_minutes": null,
+      "staff_minutes": null,
+      "room_minutes": null,
+      "recovery_bed_minutes": null,
+      "overlap_with_other_services": null,
+      "source": null
+    }
+  },
+  "capacity_inputs": {
+    "doctor_available_minutes": null,
+    "nurse_available_minutes": null,
+    "room_available_minutes": null,
+    "recovery_bed_available_minutes": null
+  },
+  "demand_acquisition": {
+    "observed_patients": null,
+    "observed_visits": null,
+    "repeat_visit_rate": null,
+    "choice_share": null,
+    "validation_status": "미확인·자동 생성 금지"
+  }
+}

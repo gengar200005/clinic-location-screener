@@ -33,7 +33,9 @@ def inspect_download(status, content):
     if re.search(r'<(?:!doctype|html|script|head|body)\b', text, re.I):
         return dict(status='html_instead_of_csv')
     try:
-        rows = list(csv.reader(io.StringIO(text), strict=True))
+        # The official export ends in a blank line. Ignore empty records only;
+        # reject every non-empty malformed row as before.
+        rows = [r for r in csv.reader(io.StringIO(text), strict=True) if r]
     except csv.Error:
         return dict(status='invalid_csv')
     if len(rows) < 2 or len(rows[0]) < 4 or any(len(r) != len(rows[0]) for r in rows[1:]):

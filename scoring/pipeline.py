@@ -184,6 +184,35 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER, strict: bool = Fa
         subcluster_meta["n_doctors_subcluster_max_med"].max(),
     )
 
+    # 후보 범위를 먼저 확정: 범위 밖 분모 오류가 유효 후보 계산을 막지 않음.
+    # 4. 통근 60분 필터 (v7) — 점수 미반영, 후보 판정 전용.
+    #    percentile rank가 후보 집합 기준이어야 하므로 가중합 전에 필터.
+    logger.info("=== 3. commute filter (출퇴근 %d분) ===", COMMUTE_LIMIT_MIN)
+    base["adm_cd"] = base["adm_cd"].astype(str)
+    base = base.merge(apply_manual_transit(load_commute_v7()), on="adm_cd", how="left")
+    base = classify_commute(base, COMMUTE_LIMIT_MIN)
+    status_counts = base["commute_status"].value_counts().to_dict()
+    logger.info(
+        "commute: %s (자차 OK %d / 대중교통 OK %d)",
+        status_counts, int(base["commute_ok_car"].sum()), int(base["commute_ok_transit"].sum()),
+    )
+    excluded = base[~base["commute_ok"]]
+    excluded_path = DATA_SCORED / f"excluded_commute_{date_str}.parquet"
+    excluded[["adm_cd", "sido", "sgg", "adm_nm", "commute_status",
+              "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm"]].to_parquet(
+        excluded_path, index=False,
+    )
+    n_car = int((excluded["commute_status"] == "exceed_car").sum())
+    if n_car:
+        logger.info("자차 60분 초과·대중교통 미확인 %d동 → 제외 (수동 확인: data/manual/transit_manual.csv)", n_car)
+    if (excluded["commute_status"] == "unknown").any():
+        logger.warning(
+            "통근 판정불가(자차 경로 없음) %d동 → 후보 제외 (%s).",
+            int((excluded["commute_status"] == "unknown").sum()), excluded_path.name,
+        )
+    base = base[base["commute_ok"]].copy()
+    logger.info("후보 확정: %d동", len(base))
+
     # 3. 경쟁 점수 (내과 의사 수 / 1.5km 배후 50~69세 인구 + 역세권 페널티)
     # density 분모 우선순위:
     #   1) catchment_pop_5069 (50~69세 환자풀)
@@ -243,34 +272,6 @@ def run(date_str: str, gi_multiplier: float = W_GI_MULTIPLIER, strict: bool = Fa
     # 호환성 컬럼: 의사 수 기준
     base["n_within_radius"] = base["n_within_radius_med"]
     base["density_per_10k"] = base["density_per_10k_med"]
-
-    # 4. 통근 60분 필터 (v7) — 점수 미반영, 후보 판정 전용.
-    #    percentile rank가 후보 집합 기준이어야 하므로 가중합 전에 필터.
-    logger.info("=== 3. commute filter (출퇴근 %d분) ===", COMMUTE_LIMIT_MIN)
-    base["adm_cd"] = base["adm_cd"].astype(str)
-    base = base.merge(apply_manual_transit(load_commute_v7()), on="adm_cd", how="left")
-    base = classify_commute(base, COMMUTE_LIMIT_MIN)
-    status_counts = base["commute_status"].value_counts().to_dict()
-    logger.info(
-        "commute: %s (자차 OK %d / 대중교통 OK %d)",
-        status_counts, int(base["commute_ok_car"].sum()), int(base["commute_ok_transit"].sum()),
-    )
-    excluded = base[~base["commute_ok"]]
-    excluded_path = DATA_SCORED / f"excluded_commute_{date_str}.parquet"
-    excluded[["adm_cd", "sido", "sgg", "adm_nm", "commute_status",
-              "t_car_am", "t_car_pm", "t_transit_am", "t_transit_pm"]].to_parquet(
-        excluded_path, index=False,
-    )
-    n_car = int((excluded["commute_status"] == "exceed_car").sum())
-    if n_car:
-        logger.info("자차 60분 초과·대중교통 미확인 %d동 → 제외 (수동 확인: data/manual/transit_manual.csv)", n_car)
-    if (excluded["commute_status"] == "unknown").any():
-        logger.warning(
-            "통근 판정불가(자차 경로 없음) %d동 → 후보 제외 (%s).",
-            int((excluded["commute_status"] == "unknown").sum()), excluded_path.name,
-        )
-    base = base[base["commute_ok"]].copy()
-    logger.info("후보 확정: %d동", len(base))
 
     # 5. 역세권 메타 컬럼 머지 (위에서 계산한 station_meta — display용)
     if station_meta is not None:

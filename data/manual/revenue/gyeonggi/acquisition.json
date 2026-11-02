@@ -1,28 +1,26 @@
 {
-  "checked_at": "2026-10-28T12:46:55.406320+00:00",
+  "checked_at": "2026-11-02T09:39:29.692610+00:00",
+  "key_configured": true,
+  "key_authentication": "not_tested_no_verified_service_endpoint",
   "dataset": "H92OOSWZXICJM0UO4IHH38259217",
-  "catalog_url": "https://www.data.go.kr/data/15151650/fileData.do",
-  "source_url": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=H92OOSWZXICJM0UO4IHH38259217&infSeq=1",
-  "download_url": "https://data.gg.go.kr/portal/data/sheet/downloadSheetData.do",
   "attempts": [
     {
-      "status": "http_error",
-      "http_status": 500,
-      "method": "GET",
-      "bytes": 17,
-      "sha256": "02aa8cf5a16dfc0a86ffdfeb1d41439f04895720c30ede476e9c45b6ff487c0e"
+      "kind": "metadata",
+      "http_status": 200,
+      "bytes": 645527,
+      "sha256": "44181a1b3579faa655b9580d22a20b06c2bb1efed442aa87837f4107ba6e24bd",
+      "complete_html": false
     },
     {
-      "status": "http_error",
-      "http_status": 500,
-      "method": "POST",
-      "bytes": 1178,
-      "sha256": "8eb33006fa98e43d698cd49b525c109294533d9979b46fb1ebb5b57bd10394e2"
+      "kind": "csv",
+      "http_status": 200,
+      "bytes": 130,
+      "sha256": "6ebe71379d5ecf8eed13ef4a0eab973042ca6297b9e69d566166a5ca6e8f981e",
+      "status": "html_instead_of_csv"
     }
   ],
-  "detail_page": {
-    "http_status": 200,
-    "bytes": 645527,
-    "complete_html": false
-  }
+  "source_url": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=H92OOSWZXICJM0UO4IHH38259217&infSeq=1",
+  "catalog_url": "https://www.data.go.kr/data/15151650/fileData.do",
+  "raw_file": "reports/gyeonggi_api_20261102/b0be0b2314db2d9d08b3f4bf8bf9895562ca9a0a3f8ad2690aead2546981f88f.raw",
+  "raw_rows": 1750297
 }

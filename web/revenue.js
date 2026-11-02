@@ -26,7 +26,8 @@ fetch('data/revenue.json?v=20261028-fullpopulation').then(r=>{if(!r.ok)throw Err
  for(const id of ['quarter','search','candidate'])$(id).addEventListener('input',render);render();
 }).catch(e=>{$('meta').textContent=`자료를 불러오지 못했습니다: ${e.message}`;});
 
-fetch('data/gyeonggi-revenue-scope.json?v=20261028-recheck').then(r=>{if(!r.ok)throw Error('자료 응답 오류');return r.json();}).then(x=>{
+Promise.all(['data/gyeonggi-revenue-scope.json?v=20261102','data/gyeonggi-revenue-inventory.json?v=20261102'].map(url=>fetch(url).then(r=>{if(!r.ok)throw Error('자료 응답 오류');return r.json()}))).then(([x,inventory])=>{
+ const observed=new Map(inventory.candidates.map(r=>[r.anchor_id,r]));
  $('gg-meta').textContent=`비교 순위 기준 ${x.ranking_as_of} · 확인 ${new Date(x.checked_at).toLocaleString("ko-KR",{timeZone:"Asia/Seoul"})} (한국시간) · ${x.reason}`;
  const statusLabel={verified:'확인',blocked:'확보 실패',pending:'검증 대기'};
  $('gg-checks').replaceChildren();
@@ -34,9 +35,9 @@ fetch('data/gyeonggi-revenue-scope.json?v=20261028-recheck').then(r=>{if(!r.ok)t
  $('gg-coverage').textContent=`검증된 매출 추세 ${x.coverage.verified_trends} / ${x.coverage.candidates}개 · 검증된 행정동 코드 연결 ${x.coverage.verified_code_matches}개`;
  function renderGyeonggi(){
   const rows=x.candidates.filter(r=>r.name.includes($('gg-search').value.trim()));
-  $('gg-count').textContent=`${rows.length} / ${x.candidates.length}개 비교 후보 · 매출 미확보`;
+  $('gg-count').textContent=`${rows.length} / ${x.candidates.length}개 비교 후보 · 과거 의료기관 관측은 별도 검증 중`;
   $('gg-rows').replaceChildren();
-  for(const r of rows){const tr=document.createElement('tr');td(tr,r.name);td(tr,r.rank);td(tr,'미확보');td(tr,'원자료 코드표 대기');$('gg-rows').append(tr);}
+  for(const r of rows){const tr=document.createElement('tr');td(tr,r.name);td(tr,r.rank);const o=observed.get(r.anchor_id);td(tr,o?.historical_observations?`과거 ${o.historical_observations}건 · ${o.last}까지`:'동명 연결 미확인');td(tr,o?.code_status||'검증 대기');$('gg-rows').append(tr);}
  }
  $('gg-search').addEventListener('input',renderGyeonggi);renderGyeonggi();
 }).catch(e=>{$('gg-meta').textContent=`경기 후보 목록을 불러오지 못했습니다: ${e.message}`;});

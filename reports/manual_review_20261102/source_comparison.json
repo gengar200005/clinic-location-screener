@@ -1,0 +1,38 @@
+{
+  "sources": [
+    {
+      "file": "카드매출_행정동_집계.zip",
+      "sha256": "17d36ae4823d0b85e2c3ddfc0c4c19762b0fa2c11b8a0949aaf9b21a1f3a58be"
+    },
+    {
+      "file": "경기도 개방 민간데이터 기본 매뉴얼(가이드).pdf",
+      "sha256": "5a1a0a6b4056cab60fecd48562968557917c4df0331dc160f6ab87780430a824"
+    },
+    {
+      "file": "경기도 개방 민간데이터 활용 매뉴얼(가이드).pdf",
+      "sha256": "a36524cc2f032db3934de04507dde05f19a1fd4b044151f4b99d90d7c2585659"
+    },
+    {
+      "file": "경기도 생활이동인구 상황판 이용 매뉴얼(가이드).pdf",
+      "sha256": "b9bbc1316ccac9a2f89d5a26526a704af1bebf10b8128195568ab27ccd79c7be"
+    }
+  ],
+  "zip_csv_sha256": "ae7f3158344dcb7a24dc7c29e9a1cd708638a02b35798874d09fe383e48b992c",
+  "zip_csv_rows": 1750297,
+  "J0_comparison": {
+    "common_J0": 28368,
+    "different_J0": 27528,
+    "max_absolute_difference": "1049.68000000000000000000",
+    "max_relative_difference": "1.021141632817910237547342563E-7"
+  },
+  "manual_pages": {
+    "basic": 18,
+    "usage": 15,
+    "mobility": 22
+  },
+  "decisions": [
+    "ZIP 영문 컬럼을 정규화하고 금액 소수 문자열 보존",
+    "매뉴얼의 전수화 보정 설명은2024 대상체계 설명. 모든 역사자료에 적용 확정하지 않음",
+    "단위 및 신규 업종코드·시점별 경계 검증 전 의원 추세0 유지"
+  ]
+}

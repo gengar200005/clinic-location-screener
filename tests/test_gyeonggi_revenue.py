@@ -25,6 +25,18 @@ class GyeonggiRevenueTests(unittest.TestCase):
             self.assertEqual(result['status'], 'downloaded_unverified')
             self.assertEqual(result['row_count'], 1)
 
+    def test_official_trailing_blank_is_not_malformed_data(self):
+        self.assertEqual(inspect_download(200,b'a,b,c,d\r\n1,2,3,4\r\n\r\n')['row_count'],1)
+        self.assertEqual(inspect_download(200,b'a,b,c,d\n1,2,3,4\n1,2\n')['status'],'invalid_csv_shape')
+
+    def test_inventory_does_not_promote_historical_medical_to_clinic_trend(self):
+        d=json.loads((ROOT/'web/data/gyeonggi-revenue-inventory.json').read_text(encoding='utf-8'))
+        self.assertEqual(d['coverage']['candidates'],len(d['candidates']))
+        self.assertEqual(d['coverage']['historical_observation_candidates'],sum(bool(r['history']) for r in d['candidates']))
+        self.assertEqual(d['coverage']['verified_clinic_trends'],0)
+        self.assertEqual(d['raw_profile']['duplicate_keys'],0)
+        self.assertEqual(d['industry']['label'],'의료기관')
+
     def test_scope_preserves_bucheon_and_excludes_unranked(self):
         rows = build([dict(adm_cd='SGIS1', adm_nm='경기도 부천시 중동', rank=2),
                       dict(adm_cd='SGIS2', adm_nm='경기도 고양시 일산1동', rank=1),

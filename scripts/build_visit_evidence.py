@@ -52,7 +52,7 @@ def build(root=ROOT):
                   'address': '', 'visit_order': '', 'v3_joint_rank': '',
                   'classification': '추가 검증', 'access_route_status': '철길 분리 현장 관찰 · 횡단 경로 미검증'})
     allowed = ['zone','administrative_area','address','visit_order','v3_joint_rank','classification',
-               'relevant_clinics_1km','endoscopy_positive_1km','unknown_specialist_clinics_1km',
+               'residents_1km_uniform','age5069_lower','age5069_upper','without_age_top30','without_hospital_top30','without_outpatient_top30','relevant_clinics_1km','endoscopy_positive_1km','unknown_specialist_clinics_1km',
                'shift_frontier_conditions','shift_conditions','access_route_status']
     result = []
     for site in sites:
