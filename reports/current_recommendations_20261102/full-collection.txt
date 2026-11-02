@@ -1,0 +1,144 @@
+tests/test_checkup_competition.py::test_sgg_from_addr_handles_city_with_gu
+tests/test_checkup_competition.py::test_egd_keys_dedupes_multi_device_institutions
+tests/test_commute_competition_scope.py::test_out_of_scope_zero_and_in_scope_invalid_population
+tests/test_commute_competition_scope.py::test_pipeline_scopes_before_density_without_removing_guard
+tests/test_commute_filter.py::test_both_directions_must_pass
+tests/test_commute_filter.py::test_either_mode_is_enough
+tests/test_commute_filter.py::test_car_exceed_with_transit_unchecked_is_exceed_car
+tests/test_commute_filter.py::test_no_car_route_and_no_transit_is_unknown
+tests/test_commute_filter.py::test_manual_transit_override
+tests/test_commute_filter.py::test_missing_leg_but_other_mode_ok
+tests/test_commute_filter.py::test_gyeongbu_exclusion_prefix_match
+tests/test_commute_filter.py::test_quota_error_keeps_completed_rows
+tests/test_competition.py::test_count_clinics_per_dong_basic
+tests/test_competition.py::test_competition_density_formula
+tests/test_competition.py::test_competition_radius_only_mode
+tests/test_competition.py::test_competition_invalid_population_rejected[0]
+tests/test_competition.py::test_competition_invalid_population_rejected[None]
+tests/test_competition.py::test_competition_invalid_population_rejected[-1]
+tests/test_competition.py::test_competition_invalid_population_rejected[inf]
+tests/test_competition.py::test_competition_duplicate_population_rejected
+tests/test_competition.py::test_competition_station_penalty
+tests/test_competition.py::test_competition_station_penalty_none_means_zero
+tests/test_competition.py::test_compute_subcluster_max_doctors_basic
+tests/test_competition.py::test_compute_subcluster_max_doctors_empty
+tests/test_competition.py::test_competition_subcluster_penalty_zero_default
+tests/test_competition.py::test_weighted_doctors_no_gi_column
+tests/test_competition.py::test_weighted_doctors_multiplier_one_is_passthrough
+tests/test_competition.py::test_weighted_doctors_gi_amplified
+tests/test_competition.py::test_weighted_doctors_partial_multiplier
+tests/test_competition.py::test_count_clinics_per_dong_with_gi_multiplier
+tests/test_competition.py::test_count_clinics_within_radius_with_gi_multiplier
+tests/test_competition.py::test_count_clinics_within_radius_excludes_outside_radius
+tests/test_competition.py::test_compute_subcluster_with_gi_multiplier
+tests/test_current_recommendations.py::CurrentRecommendationTests::test_dense_supply_is_comparable_and_stable_order_is_deterministic
+tests/test_current_recommendations.py::CurrentRecommendationTests::test_four_quarter_direction_changes_explanation_and_priority
+tests/test_current_recommendations.py::CurrentRecommendationTests::test_missing_period_and_zero_baseline_are_not_low_demand
+tests/test_current_recommendations.py::CurrentRecommendationTests::test_one_quarter_spike_is_not_persistent_growth
+tests/test_current_recommendations.py::CurrentRecommendationTests::test_personal_exclusions_and_whole_cohort_actual_output
+tests/test_current_recommendations.py::CurrentRecommendationTests::test_space_verification_changes_visit_state_without_promoting_bad_building_to_bad_area
+tests/test_field_followup.py::FieldFollowupTests::test_building_boundary_and_unverified_premises
+tests/test_field_followup.py::FieldFollowupTests::test_decomposition_identity_and_null
+tests/test_field_followup.py::FieldFollowupTests::test_new_provider_not_overwritten_as_old_equipment
+tests/test_field_visit_phase2.py::test_personal_exclusion_never_promoted
+tests/test_field_visit_phase2.py::test_duplicate_or_too_many_visits_rejected
+tests/test_field_visit_phase2.py::test_requested_visit_scope_accepts_four
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_committed_snapshot_is_reproducible_and_has_no_invented_sales
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_csv_acquisition_does_not_mean_verified
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_duplicate_candidates_fail
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_failed_empty_and_malformed_downloads
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_html_success_is_not_data
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_inventory_does_not_promote_historical_medical_to_clinic_trend
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_official_trailing_blank_is_not_malformed_data
+tests/test_gyeonggi_revenue.py::GyeonggiRevenueTests::test_scope_preserves_bucheon_and_excludes_unranked
+tests/test_gyeonggi_zip.py::ZipSourceTests::test_ambiguous_archive_and_malformed_rows_rejected
+tests/test_gyeonggi_zip.py::ZipSourceTests::test_english_schema_preserves_decimal_and_codes
+tests/test_integration_audit.py::test_new_and_departed_candidates_survive_comparison
+tests/test_integration_audit.py::test_ambiguous_identity_is_not_aggregated[values0]
+tests/test_integration_audit.py::test_ambiguous_identity_is_not_aggregated[values1]
+tests/test_market_demand.py::MarketDemandTests::test_annual_cadence_conflict_not_quarter_growth
+tests/test_market_demand.py::MarketDemandTests::test_exact_yoy_scope_and_unrounded_unit_growth
+tests/test_market_demand.py::MarketDemandTests::test_keys_industry_period_and_duplicates
+tests/test_market_demand.py::MarketDemandTests::test_living_fixture_does_not_double_count_or_invent_means
+tests/test_market_demand.py::MarketDemandTests::test_marginal_age_is_not_age_time_cross
+tests/test_market_demand.py::MarketDemandTests::test_observation_states_and_decimal_precision
+tests/test_market_demand.py::MarketDemandTests::test_unavailable_living_does_not_block_other_modules
+tests/test_market_demand.py::MarketDemandTests::test_zero_denominator_and_no_fabricated_growth
+tests/test_normalize.py::test_strictly_increasing_sequence
+tests/test_normalize.py::test_ties_get_equal_rank
+tests/test_normalize.py::test_inverted_flips_order
+tests/test_normalize.py::test_output_bounded_0_to_1
+tests/test_patient_opportunity_phase1.py::test_invalid_demand_does_not_turn_into_zero_rank_or_success
+tests/test_patient_opportunity_phase1.py::test_equal_demands_keep_equal_position
+tests/test_patient_opportunity_phase1.py::test_ambiguous_identity_is_not_merged_or_summed
+tests/test_patient_opportunity_phase1.py::test_entering_and_departing_candidates_are_visible
+tests/test_population.py::test_p_raw_uses_pop_5069_when_available
+tests/test_population.py::test_p_raw_uses_catchment_when_available
+tests/test_population.py::test_catchment_nan_falls_back_to_dong_pop_5069
+tests/test_population.py::test_min_population_filter_excludes_small
+tests/test_population.py::test_p_raw_falls_back_to_pop_total_when_no_age
+tests/test_population.py::test_crosswalk_codes_by_name_within_sido
+tests/test_revenue.py::RevenueTests::test_inconsistent_totals_fail
+tests/test_revenue.py::RevenueTests::test_missing_and_zero_baseline_are_not_declines
+tests/test_revenue.py::RevenueTests::test_missing_sales_and_code_systems
+tests/test_revenue.py::RevenueTests::test_quarter_boundaries
+tests/test_revenue_population.py::RevenuePopulationTests::test_historical_yoy_and_current_population
+tests/test_revenue_population.py::RevenuePopulationTests::test_population_requires_same_period_code_name_and_positive_denominator
+tests/test_sensitivity.py::test_pct_rank_matches_pipeline_normalize
+tests/test_survival.py::test_counts_and_survival_within_radius
+tests/test_survival.py::test_small_sample_is_nan_and_flagged
+tests/test_visit_evidence.py::VisitEvidenceTests::test_actual_outputs_preserve_scope_and_ranks
+tests/test_visit_evidence.py::VisitEvidenceTests::test_duplicate_rejected
+tests/test_visit_evidence.py::VisitEvidenceTests::test_missing_is_not_zero
+tests/test_visit_evidence.py::VisitEvidenceTests::test_rolling_year_boundary_and_missing_period
+tests/test_weighted_sum.py::test_score_in_unit_interval
+tests/test_weighted_sum.py::test_ranking_orders_by_score_desc
+tests/test_weighted_sum.py::test_weights_applied_correctly
+tests/test_weighted_sum.py::test_missing_columns_raises
+tests/test_weighted_sum.py::test_top_n_returns_correct_count
+tests/test_weighted_sum.py::test_p_norm_blends_trend_and_imputes_missing
+tests/test_weighted_sum.py::test_c_norm_blends_checkup_with_hospital_weight
+
+=================================== ERRORS ====================================
+__________________ ERROR collecting tests/test_hira_guard.py __________________
+ImportError while importing test module '<repo>\tests\test_hira_guard.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_hira_guard.py:4: in <module>
+    import scrapers.hira_clinic as hc
+scrapers\hira_clinic.py:24: in <module>
+    from tenacity import retry, stop_after_attempt, wait_exponential
+E   ModuleNotFoundError: No module named 'tenacity'
+____________ ERROR collecting tests/test_pop_weighted_centroid.py _____________
+ImportError while importing test module '<repo>\tests\test_pop_weighted_centroid.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_pop_weighted_centroid.py:5: in <module>
+    from scoring.spatial_join import apply_pop_weighted_centroid
+scoring\spatial_join.py:16: in <module>
+    import geopandas as gpd
+E   ModuleNotFoundError: No module named 'geopandas'
+________________ ERROR collecting tests/test_web_export_v7.py _________________
+ImportError while importing test module '<repo>\tests\test_web_export_v7.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_web_export_v7.py:7: in <module>
+    from publishers.web_export import data_gaps, v7_block
+publishers\web_export.py:43: in <module>
+    import geopandas as gpd
+E   ModuleNotFoundError: No module named 'geopandas'
+=========================== short test summary info ===========================
+ERROR tests/test_hira_guard.py
+ERROR tests/test_pop_weighted_centroid.py
+ERROR tests/test_web_export_v7.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!
+100 tests collected, 3 errors in 1.55s

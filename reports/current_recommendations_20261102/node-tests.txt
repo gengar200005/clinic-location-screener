@@ -1,0 +1,20 @@
+✔ all current views share one source; outside-six candidates can enter (2.484ms)
+✔ current coordinate uses its own supply/location and audited administrative medical context (0.8475ms)
+✔ current detail and field cards display same version and visit state, historical ranking is not subtracted (14.6668ms)
+✔ historical field entry points explicitly link to current state without rewriting snapshots (4.8344ms)
+✔ a verified visit-ready building outside the market shortlist is still shown as ready everywhere (0.9629ms)
+✔ exact administrative identity, no fuzzy name or Gyeonggi join (0.727ms)
+✔ zero, suppression and absence remain distinct in the UI (13.5015ms)
+✔ pilots keep radius-independent finance, blocked grid aggregation, no new success score (0.7657ms)
+✔ integration preserves original map/revenue hooks and isolates the new module (1.3108ms)
+✔ candidate list filtering does not remove revenue areas from the map (1.0864ms)
+✔ missing is distinct from zero growth (0.1685ms)
+✔ reuse exact audited identity; never join same-looking codes or renamed areas (1.945ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 149.0519

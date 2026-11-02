@@ -6,6 +6,10 @@ const RevenueView = {
   percent: v => Number.isFinite(v) ? `${v>0?'+':''}${v.toFixed(1)}%` : '자료 없음',
   color: v => !Number.isFinite(v) ? '#969fa5' : v>=10 ? '#176b63' : v>0 ? '#75bcb1' : v===0 ? '#e5dcb6' : v>-10 ? '#dca46d' : '#af5932',
   record(data, anchor, quarter) {
+    if(anchor?.current_record?.id===anchor.adm_cd && anchor.market_link_verified){
+      const verified=data.matches.some(m=>m.name===anchor.adm_nm && m.code===anchor.market_code && m.method==='unique_exact_name');
+      return verified?data.records.find(r=>r.code===anchor.market_code&&r.quarter===quarter)??null:null;
+    }
     const match=data.matches.find(m=>m.anchor_id===anchor.adm_cd && m.name===anchor.adm_nm && m.method==='unique_exact_name');
     return match?.code ? data.records.find(r=>r.code===match.code && r.quarter===quarter) ?? null : null;
   }
@@ -80,7 +84,7 @@ class RevenueMap {
     const title=document.createElement('h2');title.textContent=`${anchor.adm_nm} · 매출 요약`;this.box.append(title);
     const r=RevenueView.record(this.data,anchor,this.quarter);
     const note=document.createElement('p');note.className='muted';
-    if(!r){note.textContent=anchor.adm_nm.startsWith('경기도 ')?'경기 매출 원자료 미확보 · 의원 업종·기간·행정동 코드 연결 검증 대기. 0원이나 경쟁 부재라는 뜻이 아닙니다.':'이 후보와 연결할 매출 자료가 없습니다. 코드·동명 연결 미확인 또는 제공 범위 밖입니다.';this.box.append(note);return;}
+    if(!r){note.textContent=anchor.adm_nm.startsWith('경기도 ')?'경기 카드 원자료 일부 확보 · 현재 의원 업종·기간·행정동 연결 추세는 검증 대기. 0원이나 경쟁 부재라는 뜻이 아닙니다.':'이 후보와 연결할 매출 자료가 없습니다. 코드·동명 연결 미확인 또는 제공 범위 밖입니다.';this.box.append(note);return;}
     note.textContent=`${this.quarterLabel(this.quarter)} · 서울 일반의원 업종 추정매출 · 내과 전용·개별 의원 실매출 아님`;
     this.box.append(note);
     const stats=document.createElement('div');stats.className='revenue-stats';

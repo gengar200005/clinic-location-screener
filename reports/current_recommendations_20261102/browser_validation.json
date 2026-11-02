@@ -1,0 +1,76 @@
+{
+  "version": "515caf22c80f",
+  "main": "2026-11-02 · 현재추천 515caf22c80f",
+  "review": {
+    "cards": 45,
+    "version": "515caf22c80f"
+  },
+  "market": {
+    "error": "",
+    "options": 850,
+    "rows": 45,
+    "version": "515caf22c80f"
+  },
+  "desktop": {
+    "boundaries": 745,
+    "filledBoundaries": 0,
+    "list": 30,
+    "scrollWidth": 1265,
+    "version": "2026-11-02 · 현재추천 f777e5e20f56",
+    "width": 1280
+  },
+  "mobile": {
+    "main": {
+      "scrollWidth": 375,
+      "width": 390
+    },
+    "market": {
+      "comparisonRows": 45,
+      "scrollWidth": 375,
+      "tableWidths": [
+        {
+          "client": 351,
+          "scroll": 560
+        },
+        {
+          "client": 310,
+          "scroll": 560
+        },
+        {
+          "client": 318,
+          "scroll": 660
+        },
+        {
+          "client": 318,
+          "scroll": 660
+        }
+      ],
+      "version": "f777e5e20f56",
+      "width": 390
+    },
+    "fieldwork": {
+      "cards": 45,
+      "scrollWidth": 375,
+      "version": "f777e5e20f56",
+      "width": 390
+    }
+  },
+  "fieldwork": {
+    "cards": 45,
+    "version": "515caf22c80f"
+  },
+  "regressions": {
+    "ggCheck": {
+      "count": "15개 표시",
+      "revenue": "경기도 부천시 소사구 소사본1동 · 매출 요약\n\n경기 카드 원자료 일부 확보 · 현재 의원 업종·기간·행정동 연결 추세는 검증 대기. 0원이나 경쟁 부재라는 뜻이 아닙니다."
+    },
+    "exclusionCheck": "0개 표시",
+    "radiusCheck": "반경 1,500m · 병·의원 150곳 / 내과 전문의 기관 33곳",
+    "quarterCheck": "서울특별시 도봉구 쌍문3동 · 매출 요약\n\n2025년 2분기 · 서울 일반의원 업종 추정매출 · 내과 전용·개별 의원 실매출 아님\n\n총 추정매출(원자료)\n12.60억원\n주민 1인당 환산액\n76,592원\n상주인구\n16,449명\n전년 동"
+  },
+  "errors": {
+    "main": [],
+    "market": []
+  },
+  "notes": "Responsive dimensions recorded before a final presentation-only inclusion guard for future verified nonrepresentative buildings. No current candidates/orders/states changed; final data versions rechecked on every current view."
+}

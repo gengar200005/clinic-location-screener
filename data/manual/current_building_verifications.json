@@ -1,0 +1,9 @@
+{
+  "as_of": "2026-11-02",
+  "target_exclusive_pyeong": [
+    95,
+    100
+  ],
+  "records": [],
+  "note": "현재 검증 완료 건물 없음. candidate_id, building_id, floor, vacant, exclusive_pyeong, layout_verified, elevator_verified, checked_on, source를 실제 근거로만 입력. 기존 광고는 현 공실·전용 확인과 구별. 부적합 건물은 후보 지역 탈락을 뜻하지 않음. layout_verified=True는 내시경·초음파·검사실·회복실 및 향후2~3인 확장 배치를 모두 검증했다는 의미. 방문 준비는 개설 허가나 계약 적합 판정이 아님."
+}
