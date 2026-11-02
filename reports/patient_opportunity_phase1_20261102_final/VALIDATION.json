@@ -1,0 +1,14 @@
+{
+  "v7_rows": 745,
+  "v3_rows": 9446,
+  "field_rows": 20,
+  "unique_keys_valid": true,
+  "input_hashes_unchanged": true,
+  "new_recommended_rank": false,
+  "success_probabilities_created": false,
+  "patient_counts_predicted": false,
+  "unlinked_market_rows_v7": 335,
+  "market_rows_v3": 2084,
+  "web_unchanged": "이번 작업의 git diff에 web 변경 없음",
+  "related_tests_passed": 7
+}

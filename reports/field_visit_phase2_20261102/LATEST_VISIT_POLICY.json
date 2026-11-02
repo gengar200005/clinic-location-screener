@@ -1,0 +1,31 @@
+{
+  "recorded_on": "2026-11-02",
+  "source": "사용자 직접 임장 보고",
+  "applies_to_all_candidates": true,
+  "visit_gate": "가능한 건물의 층·공실·전용면적 근거를 먼저 확인한 후 방문 결정",
+  "existing_four": "기존4생활권은 공간 사전확인 대상으로 유지. 방문 확정이나 적합 건물 확정이 아님",
+  "missing_listing_interpretation": "방문 당시 적정 규모 매물 미확보. 지역의 건축적 불가능이나 영구 부적합으로 일반화 금지",
+  "visited_areas": [
+    {
+      "area": "DMC·수색동",
+      "visit_date": null,
+      "exact_boundary_verified": false,
+      "finding": "사용자가 방문 당시 의원 개원 규모의 상가 매물을 찾지 못함",
+      "reason_for_low_clinic_supply": "공간 제약 가능성. 인과관계 미확정"
+    },
+    {
+      "area": "월계동",
+      "visit_date": null,
+      "exact_boundary_verified": false,
+      "finding": "사용자가 방문 당시 의원 개원 규모의 상가 매물을 찾지 못함",
+      "reason_for_low_clinic_supply": "공간 제약 가능성. 인과관계 미확정"
+    },
+    {
+      "area": "답십리 인근 청량리역 반대편(메인 상권 아님)",
+      "visit_date": null,
+      "exact_boundary_verified": false,
+      "finding": "사용자가 방문 당시 의원 개원 규모의 상가 매물을 찾지 못함",
+      "reason_for_low_clinic_supply": "공간 제약 가능성. 인과관계 미확정"
+    }
+  ]
+}

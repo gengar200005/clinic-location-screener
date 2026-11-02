@@ -1,0 +1,40 @@
+{
+  "v7_source": "scores_2026-10-24.parquet",
+  "v7_rows": 745,
+  "v7_demand_diagnostic": {
+    "old": 30,
+    "diagnostic": 30,
+    "retained": 4,
+    "entered": 26,
+    "departed": 26
+  },
+  "v7_population_component_diagnostic": {
+    "old": 30,
+    "diagnostic": 30,
+    "retained": 5,
+    "entered": 25,
+    "departed": 25
+  },
+  "v3_rows": 4723,
+  "v3_radius_comparisons": [
+    {
+      "radius_m": 1000,
+      "cohort": 4723,
+      "old": 44,
+      "diagnostic": 30,
+      "retained": 11,
+      "entered": 19,
+      "departed": 33
+    },
+    {
+      "radius_m": 1500,
+      "cohort": 4723,
+      "old": 44,
+      "diagnostic": 30,
+      "retained": 10,
+      "entered": 20,
+      "departed": 34
+    }
+  ],
+  "note": "수요 규모만 비교한 설명용 진단이며 신규 진입 성공순위가 아님. 기존 8시나리오 재계산 없음."
+}

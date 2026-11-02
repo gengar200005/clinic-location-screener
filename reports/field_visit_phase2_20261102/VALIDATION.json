@@ -1,0 +1,12 @@
+{
+  "primary_living_areas": 4,
+  "conditional_living_areas": 1,
+  "adequate_premises_confirmed": 0,
+  "new_success_score": false,
+  "new_patient_estimate": false,
+  "new_network_travel_time": false,
+  "related_tests": 7,
+  "source_hashes_unchanged": true,
+  "current_sources_checked_on": "2026-11-02",
+  "model_upgrade_required": false
+}
