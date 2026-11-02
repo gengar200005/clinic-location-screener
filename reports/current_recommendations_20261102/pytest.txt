@@ -1,0 +1,13 @@
+........................................................................ [ 72%]
+............................                                             [100%]
+============================== warnings summary ===============================
+tests/test_commute_filter.py::test_quota_error_keeps_completed_rows
+  <repo>\scrapers\commute_isochrone.py:271: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+    cache = pd.concat([cache, pd.DataFrame(results)], ignore_index=True)
+
+tests/test_survival.py::test_small_sample_is_nan_and_flagged
+  <userhome>\AppData\Local\Programs\Python\Python311\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1213: RuntimeWarning: Mean of empty slice
+    return np.nanmean(a, axis, out=out, keepdims=keepdims)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+100 passed, 2 warnings in 2.15s

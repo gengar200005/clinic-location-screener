@@ -1,0 +1,17 @@
+{
+  "rule_version": "investigation-v1-20261102",
+  "purpose": "조사 자원 배분을 위한 가정. 환자 확보·성공·수익 예측계수 아님",
+  "demand_weight": 0.5,
+  "alternative_demand_weights": [0.35, 0.5, 0.65],
+  "hospital_burdens": [1, 2, 3],
+  "radii_m": [1000, 1500],
+  "trend_adjustment": {"persistent_growth": 5, "mixed": 0, "amount_only": -2, "persistent_decline": -5},
+  "unknown_trend_investigation_interval": [-5, 5],
+  "priority_band_width": 5,
+  "seoul_shortlist": 30,
+  "gyeonggi_shortlist": 15,
+  "representative_unit": "동일 행정동의 조사 묶음별 대표좌표 1개. 실제 생활권 동일성이나 장벽 통과를 뜻하지 않음",
+  "tie_break": "통근 확인 단계→5단위 조사군→공통 구조지수→안정적인 후보ID",
+  "supply_interpretation": "인구/(1+관측기관) 비율의 상대 백분위는 조사용 공급부담 프록시. 분모1은 가상 신규기관의 비교 정규화이며 실제 처리능력·환자 수 아님",
+  "unverified_excluded_from_scoring": ["소비활동", "직장인구 연간반복 성장률", "250m 생활인구 합계", "경기 매출"]
+}

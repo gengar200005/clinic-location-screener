@@ -1,10 +1,10 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>시장 수요·의료소비</title><link rel="stylesheet" href="market-demand.css?v=1"></head>
-<body><main id="market-page" class="md-page"><nav><a href="index.html">← 후보 지도</a> · <a href="visit-evidence.html">임장 근거</a> · <a href="revenue.html">매출 조회</a></nav>
-<header><p class="md-muted">6개 생활권 시범 분석 · 기록 갱신 2026-11-02</p><h1>시장 수요·의료소비</h1><p>기존 의원이 있어도 신규 검진내과가 선택받을 여지가 있는지, 주거·의료 결제·상권 활동·공급을 나란히 봅니다.</p></header>
-<aside class="md-note"><b>공간부터 확인한 뒤 방문합니다.</b> 정릉 개인조건 제외와 기존 지역·러프 통근60분 조건을 유지합니다. 이 화면은 새 성공점수나 추천순위가 아닙니다. 행정동 시장 활동을 개별 건물 매출·예상 환자 수로 바꾸지 않습니다.</aside>
-<p id="market-status" role="status">자료 불러오는 중</p><p id="market-error" role="alert"></p><p><a href="#market-comparison-section">6곳 판단 비교 ↓</a> · <a href="#market-detail">선택 후보 상세 ↓</a> · <a href="#market-sources">출처와 미확인 ↓</a></p>
-<div class="md-controls"><label>시범 생활권 <select id="market-pilot"></select></label><label>좌표 비교 반경 <select id="market-radius"><option value="1000">1km 직선반경</option><option value="1500">1.5km 직선반경</option></select></label></div>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>시장 수요·의료소비</title><link rel="stylesheet" href="market-demand.css?v=2"></head>
+<body><main id="market-page" class="md-page"><nav><a href="index.html">← 후보 지도</a> · <a href="current-fieldwork.html">현재 조사·방문 준비</a> · <a href="revenue.html">매출 조회</a></nav>
+<header><p class="md-muted">전체 후보 재검토 · 기록 갱신 2026-11-02</p><h1>시장 수요·의료소비</h1><p>기존 의원이 있어도 신규 검진내과가 선택받을 여지가 있는지, 주거·의료 결제·상권 활동·공급을 나란히 봅니다.</p></header>
+<aside class="md-note"><b>공간부터 확인한 뒤 방문합니다.</b> 정릉 개인조건 제외와 기존 지역·러프 통근60분 조건을 유지합니다. 이 화면의 순서는 조사 우선순위이며 개원 성공 순위나 성공확률이 아닙니다. 행정동 시장 활동을 개별 건물 매출·예상 환자 수로 바꾸지 않습니다.</aside>
+<p id="market-status" role="status">자료 불러오는 중</p><p id="market-error" role="alert"></p><p><a href="#market-comparison-section">현재 판단 비교 ↓</a> · <a href="#market-detail">선택 후보 상세 ↓</a> · <a href="#market-sources">출처와 미확인 ↓</a></p>
+<div class="md-controls"><label>현재 조사 후보 <select id="market-pilot"></select></label><span>두 직선반경 1km·1.5km를 함께 비교합니다.</span></div>
 <div id="market-detail"></div>
-<section id="market-comparison-section" class="md-card"><h2>후보 비교: 기존 판단 → 새 근거 → 다음 행동</h2><p class="md-muted">표 순서는 시범 목록 순서입니다. 매출이나 기관 수로 자동 순위를 만들지 않습니다.</p><div class="md-scroll"><table><thead><tr><th>생활권</th><th>기존 판단</th><th>의료금액/건수/건당금액 YoY</th><th>새 근거와 해석</th><th>이번 판단</th></tr></thead><tbody id="market-comparison"></tbody></table></div></section>
+<section id="market-comparison-section" class="md-card"><h2>후보 비교: 기존 판단 → 새 근거 → 다음 행동</h2><p class="md-muted">서울·경기 조사 순서는 별도입니다. 공통 수요·공급, 서울의 검증된4분기 추세에 조사 배분 가정을 적용했습니다. 실제 환자·성공확률 예측이 아닙니다.</p><div class="md-scroll"><table><thead><tr><th>생활권</th><th>기존 판단</th><th>최근4분기 의료금액/건수/건당금액 비교</th><th>새 근거와 해석</th><th>이번 판단</th></tr></thead><tbody id="market-comparison"></tbody></table></div></section>
 <section class="md-card"><h2>출처·관측기간·연결률</h2><div id="market-sources"></div><p>출처: 서울특별시 서울열린데이터광장 · 상권분석서비스 서울특별시/서울신용보증재단(공공누리 제1유형). 원자료는 아래 재해석의 결론이나 개원 수익성을 보증하지 않습니다.</p><p>의료매출과 소비활동은 서로 다른 자료입니다. 카드사·분류·추정 범위를 확인하지 않고 합치지 않습니다. 주민·직장·생활인구도 합산하지 않습니다. 경기 자료는 <a href="gyeonggi-inventory.html">기존 검증 상태</a>로 유지합니다.</p></section>
-</main><script src="market-demand.js?v=2"></script></body></html>
+</main><script src="current-view.js?v=2"></script><script src="market-demand.js?v=4"></script></body></html>

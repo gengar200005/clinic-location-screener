@@ -4,9 +4,9 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = value => value == null ? '미확인' : Number(value).toLocaleString('ko-KR',{maximumFractionDigits:0});
   const pct = value => value == null ? '미확인' : Math.round(value*100)+'%';
-  let data, map, layer, selected, markers = new Map();
+  let data, currentData, map, layer, selected, markers = new Map();
   const isPending = r => Boolean(r.research_pending_reason);
-  const status = r => isPending(r) ? '확인 대기' : r.research_order != null ? `조사 순서 ${r.research_order}` : '비교 가능 · 현장 미확인';
+  const status = r => r.current_record ? CurrentView.priority(r.current_record)+' · '+r.current_record.visit_state : '과거 행정동 참고 · 현재 추천 아님';
   function tab(name) {
     document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== name);
     document.querySelectorAll('[data-tab]').forEach(b => {b.classList.toggle('active',b.dataset.tab===name); b.setAttribute('aria-pressed',String(b.dataset.tab===name));});
@@ -22,6 +22,11 @@
     window.revenueMap?.select(r);window.marketDemand?.select(r);
     if(map) window.clinicExplorer?.select(r);
     document.querySelectorAll('.candidate').forEach(b=>{const active=b.dataset.id===selected;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
+    if(r.current_record){
+      $('detail').innerHTML=CurrentView.detail(r.current_record,currentData);
+      if(map&&pan){map.setView([r.lat_shops,r.lon_shops],14);markers.get(r.adm_cd)?.openPopup();}
+      return;
+    }
     const review=r.review;
     const nearby=data.providers[r.adm_cd] || [];
     const matches=data.provider_matches.filter(p=>nearby.some(n=>n.provider_id===p.provider_id));
@@ -43,25 +48,24 @@
     if(map && pan) {map.setView([r.lat_shops,r.lon_shops],14);markers.get(r.adm_cd)?.openPopup();}
   }
   function filtered() {
-    const q=$('search').value.trim(), scope=$('scope').value, region=$('region').value;
-    return data.anchors.filter(r=>(scope==='all'||!r.adm_nm.includes('정릉')) && (!q || (r.adm_nm+' '+(r.population_name||'')).includes(q)) && (!region||r.region===region) &&
-      (scope==='all'||scope==='research'&&r.research_order!=null||scope==='review'&&r.review||scope==='pending'&&isPending(r)))
-      .sort((a,b)=>(a.research_order??999)-(b.research_order??999)||a.adm_nm.localeCompare(b.adm_nm,'ko'));
+    const q=$('search').value.trim(),scope=$('scope').value,region=$('region').value;
+    if(scope==='all')return data.anchors.filter(r=>(!q||(r.adm_nm+' '+(r.population_name||'')).includes(q))&&(!region||r.region===region||region==='경기'&&r.adm_nm.startsWith('경기도'))).sort((a,b)=>a.adm_nm.localeCompare(b.adm_nm,'ko'));
+    let rows=scope==='research'?CurrentView.shortlist(currentData):currentData.candidates.filter(p=>!p.exclusion&&(scope==='review'?p.visit_state==='방문 준비 완료':scope==='pending'?p.visit_state!=='방문 준비 완료':p.research_order));
+    return rows.filter(p=>(!q||(p.area+' '+p.name+' '+p.zone).includes(q))&&(!region||p.region===region||region==='부천'&&p.area.includes('부천'))).sort(CurrentView.order).map(CurrentView.adapt);
   }
   function draw() {
     const rows=filtered();
     window.revenueMap?.update(rows,data.anchors);
     $('count').textContent=rows.length+'개 표시';
-    $('list').innerHTML=rows.length?rows.map(r=>`<button class="candidate" data-id="${esc(r.adm_cd)}" aria-pressed="false">${badge(r)}<span class="name">${esc(r.adm_nm)}</span><small>${isPending(r)?esc(r.research_pending_reason):'상위50 포함률 '+pct(r.uniform_top50_fraction)+' / '+pct(r.reweighted_top50_fraction)}</small>${r.review?`<small>${esc(r.review.group)}</small>`:''}</button>`).join(''):'<p class="empty">조건에 맞는 중심점이 없습니다. 검색어나 지역을 변경해 주세요.</p>';
+    $('list').innerHTML=rows.length?rows.map(r=>`<button class="candidate" data-id="${esc(r.adm_cd)}" aria-pressed="false">${badge(r)}<span class="name">${esc(r.current_record?r.current_record.name+" · "+r.adm_nm:r.adm_nm)}</span><small>${isPending(r)?esc(r.research_pending_reason):r.current_record?esc(r.current_record.history_change||r.current_record.change):'과거 행정동 조회 · 추천 아님'}</small>${r.review?`<small>${esc(r.review.group)}</small>`:''}</button>`).join(''):'<p class="empty">조건에 맞는 중심점이 없습니다. 검색어나 지역을 변경해 주세요.</p>';
     $('list').querySelectorAll('.candidate').forEach(b=>b.addEventListener('click',()=>renderDetail(rows.find(r=>r.adm_cd===b.dataset.id))));
-    if(map){layer.clearLayers();markers=new Map(); rows.forEach(r=>{const color=isPending(r)?'#ad7a28':r.research_order!=null?'#175c4b':'#7a8981'; const m=L.circleMarker([r.lat_shops,r.lon_shops],{radius:r.research_order!=null?7:5,color,fillColor:color,fillOpacity:.8,weight:1,bubblingMouseEvents:false}).addTo(layer).bindPopup(`<b>${esc(r.adm_nm)}</b><br>${esc(status(r))}`);m.on('click',()=>renderDetail(r,false));markers.set(r.adm_cd,m);});if(rows.length)map.fitBounds(rows.map(r=>[r.lat_shops,r.lon_shops]),{padding:[25,25],maxZoom:13,animate:false});}
+    if(map){layer.clearLayers();markers=new Map(); rows.forEach(r=>{const color=isPending(r)?'#ad7a28':(r.current_record||r.research_order!=null)?'#175c4b':'#7a8981'; const m=L.circleMarker([r.lat_shops,r.lon_shops],{radius:r.current_record||r.research_order!=null?7:5,color,fillColor:color,fillOpacity:.8,weight:1,bubblingMouseEvents:false}).addTo(layer).bindPopup(`<b>${esc(r.adm_nm)}</b><br>${esc(status(r))}`);m.on('click',()=>renderDetail(r,false));markers.set(r.adm_cd,m);});if(rows.length)map.fitBounds(rows.map(r=>[r.lat_shops,r.lon_shops]),{padding:[25,25],maxZoom:13,animate:false});}
     if(rows.length)renderDetail(rows.find(r=>r.adm_cd===selected)||rows[0],false);else{$('detail').innerHTML='<p class="empty">현재 필터에 표시되는 후보가 없습니다.</p>';selected=null;window.clinicExplorer?.clear();window.revenueMap?.select(null);window.marketDemand?.select(null);}
   }
   function jump(id){tab('explore');$('scope').value='all';$('search').value='';$('region').value='';selected=id;draw();renderDetail(data.anchors.find(r=>r.adm_cd===id));$('detail').scrollIntoView({behavior:'smooth',block:'start'});}
   function renderPanels(){
-    const reviewed=data.anchors.filter(r=>r.review&&!r.adm_nm.includes('정릉')).sort((a,b)=>(a.research_order??999)-(b.research_order??999));
-    $('review').innerHTML=`<div class="card"><p class="eyebrow">FIELDWORK PREPARATION</p><h2>매물은 임장에서, 지금은 생활권 검증</h2><p>상도1·중계2·3·개봉2·남가좌2·쌍문4·부천 상1은 잠정 답사 가설입니다. 중동·심곡2는 비교 예비로 유지합니다.</p><p class="callout">6곳을 확정하지 않았습니다. 최신 소지역 인구, 실제 경쟁 진료, 인천 경계 보완을 먼저 진행한 뒤 임장할 3~5개 생활권과 방문 동선을 정합니다. 온라인 매물 유무로 후보를 탈락시키지 않습니다.</p><ol><li>최신 소지역 인구와 재개발 이주·입주 확인</li><li>주요 경쟁기관의 실제 진료 구성과 의료진 역할 확인</li><li>인천 경계 보완 후 비교에서 빠진 후보 재검토</li><li>임장 생활권·방문 순서 확정 후 현장에서 중개업소와 건물 확인</li></ol></div><div class="grid2">${reviewed.map(r=>`<article><p class="badge">${esc(r.review.group)}</p><h2>${esc(r.adm_nm)}</h2><p>${esc(r.review.challenge)}</p><p class="muted">주거 변화: ${esc(r.review.housing)}</p><p><b>현장 확인:</b> ${esc(r.review.walk)}</p><button data-jump="${esc(r.adm_cd)}">수요·경쟁 근거 보기</button></article>`).join('')}</div>`;
-    $('review').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>jump(b.dataset.jump)));
+
+    $('review').innerHTML=`<div class="card"><h2>현재 조사 후보와 방문 준비를 구분합니다</h2>${CurrentView.coverage(currentData)}</div>${CurrentView.cards(currentData)}`;
     const coverage=['서울','부천','인천','경기 기타'].map(region=>{const rows=data.anchors.filter(r=>r.region===region);return [region,num(rows.length),num(rows.filter(r=>!isPending(r)).length),num(rows.filter(r=>r.research_order!=null).length)];});
     $('audit').innerHTML=`<div class="card"><h2>인구 결측보다, 배분 방식과 경쟁 정의가 문제였습니다</h2><ul><li>기존 745곳의 동별 총인구·50~69세 인구가 2026년 9월 공식 자료와 모두 일치했습니다.</li><li>총인구·50~69세·연령비율·최종 P 값 결측은 없었습니다. 3년 추세 4건은 중앙값 대체 대상이며 기존 Top30에 없었습니다.</li><li>기존 경쟁 밀도는 동 단위 의사 수와 반경 인구의 공간 범위가 달랐습니다. 이번 조사는 같은 반경의 인구와 기관을 비교합니다.</li><li>기관명 대신 전문의·장비 양성 기록을 연결했습니다. 수도권 내과 전문의 의원 3,352곳 중 이름에 ‘내과’가 없는 곳은 363곳입니다.</li></ul></div>
     <div class="card"><h2>인구 계산만 바꿔 본 기존 Top30</h2><p>기존 경쟁·추세 점수는 고정하고 인구 규모 항만 교체한 진단입니다. 경쟁 오류까지 전부 수정한 새 추천 순위가 아닙니다.</p>${table(['진단','비교 표본','부천 포함','기존 Top30 유지'],data.diagnostics.map(r=>[esc(r.scenario),num(r.comparable_n),r.bucheon+' / 30',r.retained+' / 30']))}</div>
@@ -75,16 +79,27 @@
       const response=await fetch('data/research.json',{cache:'no-cache'});
       if(!response.ok)throw new Error('HTTP '+response.status);
       data=await response.json();
+      currentData=await CurrentView.load();
       if(data.status!=='research_not_recommendation'||!Array.isArray(data.anchors)||data.anchors.length!==827)throw new Error('검증 자료 형식 불일치');
-      $('snapshot').textContent=data.as_of+' 검증';
-      $('metrics').innerHTML=[['15곳','검증 우선 조사 후보'],['8곳','기관·주거 변화 사전 조사'],[data.method.pending+'곳','확인 대기 · 부적합 아님'],['144가지','가정 비교 · 성공확률 아님']].map(([n,label])=>`<div class="metric"><b>${esc(n)}</b><span>${esc(label)}</span></div>`).join('');
+      $('snapshot').textContent=currentData.as_of+' · 현재추천 '+currentData.version;
+      const currentRows=CurrentView.shortlist(currentData);
+      $('metrics').innerHTML=[[currentRows.filter(p=>p.region==='서울').length+'곳','서울 조사 우선군'],[currentRows.filter(p=>p.region==='경기').length+'곳','경기 별도 비교'],[CurrentView.ready(currentData).length+'곳','방문 준비 완료'],[currentData.coverage.reduce((n,r)=>n+r.comparable_common,0)+'좌표','기존 계산으로 공통 비교']].map(([n,label])=>`<div class="metric"><b>${esc(n)}</b><span>${esc(label)}</span></div>`).join('');
+      document.querySelector('[data-tab="review"]').textContent='조사·방문 준비 '+currentRows.length+'곳';
+      $('scope').options[0].textContent='현재 조사 우선군 '+currentRows.length+'곳';
+      $('review').dataset.currentVersion=currentData.version;
       if(window.L){try{map=L.map('map').setView([37.52,126.95],10);layer=L.layerGroup().addTo(map);const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);tiles.on('tileerror',()=>{$('map-caption').textContent='배경지도를 불러오지 못했습니다. 중심점과 목록은 사용할 수 있습니다.';});}catch(error){map=null;$('map').textContent='지도를 불러오지 못했습니다. 목록에서 후보를 선택해 주세요.';}}
       else $('map').innerHTML='<p class="empty">지도 연결이 불가능합니다. 모든 후보와 검증 내용은 목록에서 확인할 수 있습니다.</p>';
       if(map) window.clinicExplorer = new ClinicExplorer(map);
       window.revenueMap = new RevenueMap(map, r=>renderDetail(r,false));
-      renderPanels();draw();
+      renderPanels();
+      $('audit').insertAdjacentHTML('afterbegin','<div class="notice"><b>아래는 과거 고정 진단 기록입니다.</b> 현재 추천은 최신 공통 데이터로 별도 산출합니다. <a href="current-fieldwork.html">현재 조사 목록 →</a></div>');
+      $('sources').insertAdjacentHTML('afterbegin','<div class="card">'+CurrentView.coverage(currentData)+'</div>');
+      const requested=new URLSearchParams(location.search).get('candidate');
+      const requestedPoint=currentData.candidates.find(p=>p.id===requested&&!p.exclusion);
+      if(requestedPoint){selected=requestedPoint.id;$('region').value=requestedPoint.region;$('scope').value=requestedPoint.research_order?'current-all':'pending';}
+      draw();
       ['search','scope','region'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',draw));
-      $('reset').addEventListener('click',()=>{$('search').value='';$('scope').value='research';$('region').value='';draw();});
+      $('reset').addEventListener('click',()=>{$('search').value='';$('scope').value='research';$('region').value='서울';draw();});
     } catch(error){$('error').hidden=false;$('error').textContent='조사 자료를 불러오지 못했습니다. 연결을 확인하고 새로고침해 주세요. 이전 점수를 새 조사 결과로 대신 표시하지 않습니다.';$('list').innerHTML='';console.error(error);}
   }
   init();

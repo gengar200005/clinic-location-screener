@@ -46,4 +46,4 @@ jobs:
           node-version: '22'
 
       - name: Check map and market-demand UI contracts
-        run: node --test tests/test_market_demand.cjs tests/test_revenue_map.cjs
+        run: node --test tests/*.cjs
