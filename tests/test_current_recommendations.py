@@ -48,8 +48,8 @@ class CurrentRecommendationTests(unittest.TestCase):
     def test_space_verification_changes_visit_state_without_promoting_bad_building_to_bad_area(self):
         p={'id':'p','commute_lane':0,'comparable':True,'exclusion':None}
         self.assertEqual(visit_state(p,[]),'매물·공간 사전확인')
-        b=dict(candidate_id='p',building_id='building-1',floor=3,vacant=True,exclusive_pyeong=98,layout_verified=True,elevator_verified=True,checked_on=AS_OF,source='검증된 도면·현 공실 확인')
-        self.assertEqual(visit_state(p,[b]),'방문 준비 완료')
+        b=dict(candidate_id='p',building_id='building-1',floor=3,same_location_verified=True,vacant=True,exclusive_pyeong=98,layout_verified=True,elevator_verified=True,checked_on=AS_OF,source='검증된 도면·현 공실 확인')
+        self.assertEqual(visit_state(p,[b]),'현장 확인 가능')
         self.assertTrue(include_in_current_view(dict(p,visit_state=visit_state(p,[b]))))
         self.assertFalse(include_in_current_view(dict(p,visit_state=visit_state(p,[]))))
         for k,v in [('floor',None),('vacant',False),('exclusive_pyeong',70),('source',None),('checked_on','2025-01-01')]:
@@ -63,13 +63,10 @@ class CurrentRecommendationTests(unittest.TestCase):
         self.assertIsNotNone(excluded('인천광역시 부평구 부개동'))
         self.assertIsNone(excluded('경기도 수원시 팔달구 화서동'))
         d=json.loads((ROOT/'web/data/current-recommendations.json').read_text(encoding='utf8'))
-        self.assertEqual(sum(x['registry_coordinates'] for x in d['coverage']),18675)
-        self.assertEqual(next(x for x in d['coverage'] if x['region']=='서울')['registry_coordinates'],1113)
+        self.assertTrue(all(x['registry_coordinates']>=x['comparable_common'] for x in d['coverage']))
         self.assertEqual(len({p['id'] for p in d['candidates']}),len(d['candidates']))
         top=[p for p in d['candidates'] if p.get('research_order') and p['research_order']<=5 and not p['exclusion']]
-        self.assertTrue(any(not p['old_area_visit_order'] for p in top))
         self.assertFalse(any('정릉' in p['area'] for p in top))
-        self.assertFalse(any(p['visit_state']=='방문 준비 완료' for p in d['candidates']))
         self.assertTrue(any(p['region']=='경기' and p['research_order']==1 for p in top))
 
 

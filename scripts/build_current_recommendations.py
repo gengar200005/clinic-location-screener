@@ -7,9 +7,11 @@ import pandas as pd
 from shapely.geometry import Point, shape
 from scripts.market_demand import read_csv, index_rows, medical_history, ROOT, CACHE, change, dec
 
-REPORT=ROOT/'reports/current_recommendations_20261102'
+REPORT=ROOT/'reports/recommendation_reliability_20261103'
 LEGACY=ROOT.parent/'clinic-location-screener/reports/screening_v3/2026-10-23'
-AS_OF='2026-11-02'
+from scripts.recommendation_policy import as_of_date, parse_rules, premises_review
+from scripts.recommendation_density import reference_weights, percentile
+AS_OF=as_of_date()
 
 
 def number(x):
@@ -57,25 +59,18 @@ def excluded(area):
     return None
 
 
-def visit_state(candidate,buildings):
-    if candidate.get('exclusion'):
-        return '추가 분석 필요' if candidate['exclusion'].startswith('러프') else '개인조건 또는 범위 제외'
-    for b in buildings:
-        if b.get('candidate_id')!=candidate['id']:continue
-        area=number(b.get('exclusive_pyeong'))
-        if b.get('building_id') and b.get('floor') is not None and b.get('vacant') is True and area is not None and 95<=area<=100 and b.get('layout_verified') is True and b.get('elevator_verified') is True and b.get('checked_on')==AS_OF and b.get('source'):
-            return '방문 준비 완료'
-    if candidate.get('manual_revisit'):return '새 정보 확보 후 재방문'
-    if candidate.get('commute_lane',2)>0 or not candidate.get('comparable',True):return '추가 분석 필요'
-    return '매물·공간 사전확인'
+def visit_state(candidate,buildings,rules=None,as_of=None):
+    rules=parse_rules(json.loads((ROOT/'config/current_recommendations.json').read_text(encoding='utf8'))) if rules is None else rules
+    return premises_review(candidate,buildings,rules,as_of or AS_OF)['state']
 
 
-def score_frame(frame,weight,hospital,radius):
+def score_frame(frame,weight,hospital,radius,reference=None):
+    weights=reference_weights(frame,reference) if reference else None
     p=frame[f'demand_{radius}']
-    demand=p.rank(pct=True)*100
-    burdens=pd.concat([(p/(1+frame[f'internal_{radius}'])).rank(pct=True)*100,
-        (p/(1+frame[f'endo_{radius}']+hospital*frame[f'hospital_{radius}'])).rank(pct=True)*100,
-        (p/(1+frame[f'gastric_{radius}'])).rank(pct=True)*100],axis=1).median(axis=1)
+    demand=percentile(p,weights)
+    burdens=pd.concat([percentile(p/(1+frame[f'internal_{radius}']),weights),
+        percentile(p/(1+frame[f'endo_{radius}']+hospital*frame[f'hospital_{radius}']),weights),
+        percentile(p/(1+frame[f'gastric_{radius}']),weights)],axis=1).median(axis=1)
     return weight*demand+(1-weight)*burdens
 
 
@@ -84,12 +79,24 @@ def stable_order(frame,score,width=5):
         ['commute_lane','_band','structural','anchor_id'],ascending=[True,False,False,True],kind='stable')
 
 
+def structural_score(frame,rules,weight=None,hospital=None,radius=None,reference=None):
+    rules=parse_rules(rules)
+    return pd.concat([score_frame(frame,rules['demand_weight'] if weight is None else weight,
+        rules['hospital_burden'] if hospital is None else hospital,r,
+        rules['reference_distribution'] if reference is None else reference)
+        for r in (rules['radii_m'] if radius is None else [radius])],axis=1).min(axis=1)
+
+
 def include_in_current_view(p):
-    return bool(p.get('research_order') or p.get('old_visit_order') or p['id']=='deuxville191' or p.get('visit_state')=='방문 준비 완료')
+    return bool(p.get('research_order') or p.get('old_visit_order') or p['id']=='deuxville191' or p.get('visit_state')=='현장 확인 가능')
 
 
-def build():
-    rules=json.loads((ROOT/'config/current_recommendations.json').read_text(encoding='utf8'))
+def build(as_of=None,rules=None):
+    cutoff=as_of_date(as_of)
+    rules=parse_rules(rules if rules is not None else json.loads((ROOT/'config/current_recommendations.json').read_text(encoding='utf8')))
+    baseline_path=REPORT/'before/reports/current_recommendations_20261102/all_candidate_decisions.csv'
+    baseline=pd.read_csv(baseline_path,low_memory=False)
+    prior_reps={r.area:r for r in baseline[baseline.research_order.notna()].itertuples()}
     input_paths=[]
     def parquet(name):
         path=LEGACY/name;input_paths.append(path);return pd.read_parquet(path)
@@ -101,7 +108,7 @@ def build():
     demand=parquet('metro_commercial_age_catchments.parquet');supply=parquet('commercial_node_evidence.parquet')
     for t in [demand,supply]:
         if t.duplicated(['anchor_id','radius_m']).any():raise ValueError('Duplicate radius identity')
-    for radius in rules['radii_m']:
+    for radius in [1000,1500]:
         d=demand[demand.radius_m.eq(radius)][['anchor_id','comparable_population_5069_lower','comparable_population_5069_upper','total_population_uniform']].rename(columns={
             'comparable_population_5069_lower':f'demand_{radius}','comparable_population_5069_upper':f'demand_upper_{radius}','total_population_uniform':f'residents_{radius}'})
         s=supply[supply.radius_m.eq(radius)][['anchor_id','internal_specialist_clinics','egd_equipment_clinics','egd_equipment_hospitals','gastric_designation_clinics']].rename(columns={
@@ -115,7 +122,7 @@ def build():
     f['admin_code']=f.population_code.astype(str).str[:8]
     metrics=[f'{n}_{r}' for r in rules['radii_m'] for n in ['demand','internal','endo','hospital','gastric']]
     numeric=f[metrics].apply(pd.to_numeric,errors='coerce').replace([np.inf,-np.inf],np.nan)
-    f['comparable']=numeric.notna().all(axis=1)&numeric.ge(0).all(axis=1)&f[['demand_1000','demand_1500']].gt(0).all(axis=1)
+    f['comparable']=numeric.notna().all(axis=1)&numeric.ge(0).all(axis=1)&f[[f'demand_{r}' for r in rules['radii_m']]].gt(0).all(axis=1)
     f[metrics]=numeric
     bounds=json.loads((CACHE/'boundaries_20250630.geojson').read_text(encoding='utf8'))['features']
     geom={x['properties']['name']:shape(x['geometry']) for x in bounds}
@@ -134,10 +141,15 @@ def build():
         if not name:continue
         short=name.split()[-1]
         hist=medical_history(raw,shops,normalized,code,short)
+        from calendar import monthrange
+        def available_quarter(q):
+            month=int(q[-1])*3;year=int(q[:4])
+            return f'{year:04d}-{month:02d}-{monthrange(year,month)[1]:02d}'<=cutoff
+        hist=[h for h in hist if available_quarter(h['quarter'])]
         if not hist:continue
         context={}
         for kind,ix in contexts.items():
-            qs=sorted(q for c,q in ix if c==code);q=qs[-1] if qs else None;row=ix.get((code,q),{})
+            qs=sorted(q for c,q in ix if c==code and available_quarter(q));q=qs[-1] if qs else None;row=ix.get((code,q),{})
             if row and row['행정동_코드_명']!=short:raise ValueError('Context code/name inconsistency')
             field={'consumption':'지출_총금액','workers':'총_직장_인구_수','street':'총_유동인구_수'}[kind]
             context[kind]=dict(period=q,value=row.get(field),fields={k:v for k,v in row.items() if k not in ['기준_년분기_코드','행정동_코드','행정동_코드_명']},status='참고·평가미반영')
@@ -161,11 +173,11 @@ def build():
     full=[];variants={};group_reports=[]
     for region in ['서울','경기']:
         group=f[f.region.eq(region)&f.exclusion.isna()&f.comparable].copy()
-        group['structural']=pd.concat([score_frame(group,.5,2,r) for r in [1000,1500]],axis=1).min(axis=1)
+        group['structural']=structural_score(group,rules)
         adjustments=group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][0]) if region=='서울' else pd.Series(0,index=group.index)
         group['decision_lower']=group.structural+adjustments
         group['decision_upper']=group.structural+(group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][1]) if region=='서울' else 0)
-        ordered=stable_order(group,group.decision_lower)
+        ordered=stable_order(group,group.decision_lower,rules['priority_band_width'])
         ordered['coordinate_order']=range(1,len(ordered)+1)
         representatives=ordered.drop_duplicates('admin_code').copy();representatives['research_order']=range(1,len(representatives)+1)
         reps=dict(zip(representatives.anchor_id,representatives.research_order))
@@ -173,12 +185,19 @@ def build():
         for weight in rules['alternative_demand_weights']:
             for h in rules['hospital_burdens']:
                 for radius in rules['radii_m']:
-                    score=score_frame(group,weight,h,radius)+adjustments
-                    alt=stable_order(group,score).drop_duplicates('admin_code')
+                    score=structural_score(group,rules,weight,h,radius)+adjustments
+                    alt=stable_order(group,score,rules['priority_band_width']).drop_duplicates('admin_code')
                     # Rank each current representative's area, not an unrelated replacement point.
                     alt_ranks[f'w{weight}_h{h}_r{radius}']={c:i+1 for i,c in enumerate(alt.admin_code)}
+        for size in rules['reference_distribution']['alternative_cell_sizes_m']:
+            for dx in rules['reference_distribution']['alternative_offset_fractions']:
+                for dy in rules['reference_distribution']['alternative_offset_fractions']:
+                    spec=dict(rules['reference_distribution'],cell_size_m=size,offset_m=[dx*size,dy*size])
+                    structural=structural_score(group,rules,reference=spec)
+                    alt=stable_order(group.assign(structural=structural),structural+adjustments,rules['priority_band_width']).drop_duplicates('admin_code')
+                    alt_ranks[f'grid{size}_offset{dx}_{dy}']={c:i+1 for i,c in enumerate(alt.admin_code)}
         if region=='서울':
-            optimistic=stable_order(group,group.structural+group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][1])).drop_duplicates('admin_code')
+            optimistic=stable_order(group,group.structural+group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][1]),rules['priority_band_width']).drop_duplicates('admin_code')
             alt_ranks['unknown_trend_optimistic']={c:i+1 for i,c in enumerate(optimistic.admin_code)}
         for idx,r in ordered.iterrows():
             vals=[v[r.admin_code] for v in alt_ranks.values()]
@@ -209,17 +228,23 @@ def build():
             evidence={str(radius):{n:number(row[f'{n}_{radius}']) for n in ['demand','demand_upper','residents','internal','endo','hospital','gastric']} for radius in [1000,1500]})
         old_point=old.get(p['id']);old_area=old_areas.get(p['area'])
         p['representative_id']=representative_ids.get(p['admin_code'])
+        previous=prior_reps.get(p['area'])
+        p['density_change']=dict(previous_area_order=number(previous.research_order) if previous else None,
+            previous_representative_id=previous.id if previous else None,
+            representative_changed=bool(previous and p['representative_id']!=previous.id),
+            interpretation='같은 시장자료·공통 설정에서 비교기준 보정. 행정동 조사순서이며 특정 건물 안정성이 아님')
         p['name']=old_point.zone if old_point else f"{p['area'].split()[-1]} · {p['zone'].split()[-2] if len(p['zone'].split())>2 else '조사점'}"
         p['old_visit_order']=int(old_point.visit_order) if old_point else None
         p['old_area_visit_order']=int(old_area.visit_order) if old_area else None
         p['change']='개인조건/범위 제외' if p['exclusion'] else '기존 조사점·현재 대표' if old_point and p['research_order'] else '같은 행정동의 대표 조사점 변경' if old_area and p['research_order'] else '신규 조사권' if p['research_order'] else '비대표 좌표·대안 보존'
         was_primary=old_area is not None and int(old_area.visit_order) in [1,2,4,5]
         p['history_change']='개인조건/범위 제외' if p['exclusion'] else '유지' if old_area and was_primary and p['area'] in selected_areas else '상향·예비에서 우선군' if old_area and p['area'] in selected_areas else '하향·현재 우선군 밖' if old_area and was_primary else '예비·비교 유지' if old_area else '신규' if p['area'] in selected_areas else '비교 보존'
-        p['manual_opinion']=dict(recorded_on=AS_OF,source='기존 임장2단계·SITE_CANDIDATES.csv',input_version=hashlib.sha256((ROOT/'SITE_CANDIDATES.csv').read_bytes()).hexdigest()[:12],requires_review=True,reason='새 전체비교 결과와 실제 공간 조건에 대해 수동 의견 재확인 필요') if old_area else None
+        p['manual_opinion']=dict(recorded_on=policy['recorded_on'],source='기존 임장2단계·SITE_CANDIDATES.csv',input_version=hashlib.sha256((ROOT/'SITE_CANDIDATES.csv').read_bytes()).hexdigest()[:12],requires_review=True,reason='새 전체비교 결과와 실제 공간 조건에 대해 수동 의견 재확인 필요') if old_area else None
         p['buildings']=[{k:b[k] for k in ['zone','address','record_type','exclusive_area_sqm','availability','checked_on','source']} for b in ledger.to_dict('records') if old_area and str(b['zone']).startswith(old_area.zone) and b['record_type']!='기존 조사좌표·공실 아님']
-        p['visit_state']=visit_state(p,building_data)
+        p['building_review']=premises_review(p,building_data,rules,cutoff)
+        p['visit_state']=p['building_review']['state']
         m=markets.get(p['market_code']);t=m['trend'] if m else None
-        p['reasons']=[f"동일 {p['region']} 비교군의 두 반경 수요·공급을 함께 비교",f"50~69세 하한 추정 {round(p['evidence']['1000']['demand']):,}명·관측 내과 {p['evidence']['1000']['internal']}곳, 내시경 {p['evidence']['1000']['endo']}곳"] if p['comparable'] else ['공통 지표 부족·수요0으로 판정하지 않음']
+        p['reasons']=[f"동일 {p['region']} 비교군의 {rules['radii_m']}m 수요·공급 비교",f"50~69세 하한 추정 {round(p['evidence']['1000']['demand']):,}명·관측 내과 {p['evidence']['1000']['internal']}곳, 내시경 {p['evidence']['1000']['endo']}곳"] if p['comparable'] else ['공통 지표 부족·수요0으로 판정하지 않음']
         p['reasons'].append(t['explanation'] if t else '의료소비 미연결/비교보류. 공통 수요·공급 비교는 유지')
         p['counter_evidence']=['실제 검사 가동률·예약·FTE·보행 장벽 미확인','전용95~100평 공실·설비 미확인']
         if p['coordinate_identity']!='reported_building_id':p['counter_evidence'].append('원본 상가의 건물 식별번호 미연결: 주소·조사좌표부터 재확인. 실제 임대건물 확인 아님')
@@ -231,34 +256,43 @@ def build():
             p['counter_evidence'].append('사용자 과거 인근 임장에서 적정 규모 공간 미확보. 정확 중첩 미확인·새 공간 근거 없이 반복 방문하지 않음')
         if t and t.get('low_base_or_outlier'):p['counter_evidence'].append('4분기 중 큰 증감: 낮은 기준값/분류·기관 변화 확인 필요')
         p['next_check']='층·현 공실·전용95~100평 도면 확보 → 내시경/초음파/회복·확장 구성·승강기·주차 → 실제 경쟁 운영·통근·보행 동선'
+        if p['visit_state']=='현장 확인 가능':
+            p['counter_evidence']=[x for x in p['counter_evidence'] if x!='전용95~100평 공실·설비 미확인']+['공간 사전확인 완료·현장 임상 동선/설비/개설 용도는 별도 검증']
+            p['next_check']='사전 확보한 층·전용 도면을 들고 현장 확인: 임상 동선·승강기·주차·승하차·환자 접근·용도·설비. 개원 적합 확정 아님'
         records.append(p)
     # A concrete visited building is preserved as a separate non-ranked case, not made a synthetic whole-cohort observation.
     records.append(dict(id='deuxville191',name='수색·DMC 두빌191',area='서울특별시 은평구 증산동',zone='두빌191·195는 별동',lat=37.5782607,lon=126.9010885,region='서울',admin_code='11380640',
         research_order=None,coordinate_order=None,representative=False,structural=None,decision_interval=[None,None],sensitivity=[None,None],commute_lane=2,commute={'state':'미확인','am':None,'pm':None},
         comparable=False,exclusion=None,market_code='11380640',market_state=markets.get('11380640',{}).get('trend',{}).get('status','unlinked_or_insufficient'),evidence={},old_visit_order=None,old_area_visit_order=None,
-        change='수동 방문 사례·순위 비교 불가',manual_revisit=True,manual_opinion={'recorded_on':AS_OF,'source':'사용자 직접 임장·LATEST_VISIT_POLICY.json','requires_review':True},
+        change='수동 방문 사례·순위 비교 불가',manual_revisit=True,manual_opinion={'recorded_on':policy['recorded_on'],'source':'사용자 직접 임장·LATEST_VISIT_POLICY.json','requires_review':True},
         buildings=[{k:b[k] for k in ['zone','address','record_type','exclusive_area_sqm','availability','checked_on','source']} for b in ledger.to_dict('records') if str(b['zone']).startswith('두빌')],
         visit_state='새 정보 확보 후 재방문',reasons=['철길 양측의 실제 진료권 미검증. 증산동 매출을 수색 배후에 배분하지 않음'],counter_evidence=['현재 공실·각동 전용95~100평 미확인'],next_check='두빌191·195 각동 층·공실·전용도면 확보 후 재방문'))
-    records[-1]['visit_state']=visit_state(records[-1],building_data)
+    records[-1]['building_review']=premises_review(records[-1],building_data,rules,cutoff)
+    records[-1]['visit_state']=records[-1]['building_review']['state']
     coverage=[]
     for region,g in result.groupby('region'):
         coverage.append(dict(region=region,registry_coordinates=len(g),personal_or_scope_excluded=int(g.exclusion.notna().sum()),comparable_common=int((g.comparable & g.exclusion.isna()).sum()),
             common_unlinked_eligible=int((~g.comparable & g.exclusion.isna()).sum()),exclusion_reasons=g.exclusion.dropna().value_counts().to_dict(),
             market_link_failure_reasons=g.loc[~g.market_linked,'market_link_state'].value_counts().to_dict(),
             market_linked=int(g.market_linked.sum()),unlinked_market=int((~g.market_linked).sum()),commute_unknown=int(g.commute_lane.eq(2).sum())))
-    extra=[ROOT/'scripts/build_current_recommendations.py',ROOT/'scripts/market_demand.py',ROOT/'config/current_recommendations.json',ROOT/'web/data/revenue.json',ROOT/'data/manual/current_building_verifications.json',ROOT/'SITE_CANDIDATES.csv',policy_path,ROOT/'reports/patient_opportunity_phase1_20261102_final/field_visit_axes.csv',CACHE/'boundaries_20250630.geojson',ROOT/'data/manual/revenue/shops.csv']+[CACHE/(x+'.csv') for x in ['OA-22166','OA-22178','OA-22184']]
-    inputs={str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else 'legacy-v3/'+p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in input_paths+extra}
-    version=hashlib.sha256(json.dumps(inputs,sort_keys=True).encode()).hexdigest()[:12]
+    extra=[ROOT/'scripts/build_current_recommendations.py',ROOT/'scripts/market_demand.py',ROOT/'scripts/recommendation_policy.py',ROOT/'scripts/recommendation_density.py',ROOT/'config/current_recommendations.json',ROOT/'web/data/revenue.json',ROOT/'data/manual/current_building_verifications.json',ROOT/'SITE_CANDIDATES.csv',policy_path,ROOT/'reports/patient_opportunity_phase1_20261102_final/field_visit_axes.csv',CACHE/'boundaries_20250630.geojson',ROOT/'data/manual/revenue/shops.csv']+[CACHE/(x+'.csv') for x in ['OA-22166','OA-22178','OA-22184']]
+    inputs={str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else 'legacy-v3/'+p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in input_paths+extra+[baseline_path]}
+    version=hashlib.sha256(json.dumps(dict(inputs=inputs,as_of=cutoff,rules=rules),sort_keys=True).encode()).hexdigest()[:12]
     # All rows are exported for reproducible full-cohort audit. Web uses all representatives, old points and scope exclusions.
     public=[p for p in records if include_in_current_view(p)]
-    data=dict(version=version,as_of=AS_OF,source_main='70e6cc5',rules=rules,coverage=coverage,comparison_groups=group_reports,candidates=public,markets=markets,
+    data=dict(version=version,as_of=cutoff,source_main='d122429',reference_definition=('공간 셀당 총가중치1·셀 내 고유 근거서명 균등·가중 중간누적 백분위. 모든 후보 보존' if rules['reference_distribution']['mode']=='spatial_cells' else '보정 전 좌표별 pandas 평균순위/N 백분위'),historical_replay_limit='기준일 이후 건물 확인정보는 미사용. 원자료 수집시점 전체 이력은 없어 과거 당시 알려진 시장정보의 완전한 복원은 아님',collection_dates={'market_context':'2026-11-02 로컬 수집 기록·원자료별 전체 수집 이력 없음','medical':'기존 원자료 재사용·정확한 최초 수집일 미확인','building':'각 항목 checked_on 별도'},rules=rules,coverage=coverage,comparison_groups=group_reports,candidates=public,markets=markets,
         periods={'residents':'2026-09 면적배분/연령추정','providers':'인력2026-09·장비2025-12 신고 스냅샷','medical':'2021Q1~2026Q2; 최근4분기2025Q3~2026Q2','boundary':'2025-06-30 공식경계: 관측분기까지 연속성 최종 미검증'},
         limitations=['행정동별 조사 묶음은 실제 생활권이 아님. 철길·하천·대로 양측을 같은 시장으로 단정하지 않음','공식 점수·순위 보존. 새 값은 조사 배분 가정이며 예상 환자수·성공률 아님','소비·직장·250m 생활인구는 미검증 정의/갱신 때문에 평가 미반영','경기 의료매출 비교보류·서울과 같은 순위로 합치지 않음','미연결 추세는 [-5,+5] 조사 가정 범위로 표시·하한으로 순서 결정. 관측값0 대체가 아님','구조지표의1+기관 분모와 병원1/2/3은 조사용 가정·검사 처리능력 아님'])
     return data,records,inputs,variants
 
 
 def main():
-    data,records,inputs,variants=build();REPORT.mkdir(exist_ok=True)
+    import argparse
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--as-of',type=as_of_date)
+    parser.add_argument('--config',type=Path,default=ROOT/'config/current_recommendations.json')
+    args=parser.parse_args()
+    data,records,inputs,variants=build(args.as_of,json.loads(args.config.read_text(encoding='utf8')));REPORT.mkdir(exist_ok=True)
     (ROOT/'web/data/current-recommendations.json').write_text(json.dumps(data,ensure_ascii=False,allow_nan=False,separators=(',',':')),encoding='utf8')
     flat=[dict({k:v for k,v in p.items() if not isinstance(v,(dict,list))},**{f'{n}_{radius}':v for radius,e in p['evidence'].items() for n,v in e.items()}) for p in records]
     pd.DataFrame(flat).to_csv(REPORT/'all_candidate_decisions.csv',index=False,encoding='utf-8-sig')

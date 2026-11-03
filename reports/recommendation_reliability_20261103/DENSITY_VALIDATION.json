@@ -1,0 +1,516 @@
+{
+  "서울": {
+    "compared_coordinates": 1101,
+    "baseline_max_calculation_error": 7.105427357601002e-15,
+    "corrected_membership": {
+      "retained": 29,
+      "entered": [
+        11470611
+      ],
+      "departed": [
+        11350570
+      ]
+    },
+    "midpoint_only_membership": {
+      "retained": 30,
+      "entered": [],
+      "departed": []
+    },
+    "density_after_midpoint": {
+      "retained": 29,
+      "entered": [
+        11470611
+      ],
+      "departed": [
+        11350570
+      ]
+    },
+    "medical_effect_before_correction": {
+      "retained": 25,
+      "entered": [
+        11200535,
+        11230650,
+        11350580,
+        11350619,
+        11545670
+      ],
+      "departed": [
+        11350611,
+        11410690,
+        11470611,
+        11500615,
+        11620765
+      ]
+    },
+    "medical_effect_after_correction": {
+      "retained": 25,
+      "entered": [
+        11200535,
+        11230650,
+        11350580,
+        11350619,
+        11545670
+      ],
+      "departed": [
+        11350570,
+        11350611,
+        11410690,
+        11620715,
+        11620765
+      ]
+    },
+    "representatives_changed": 8,
+    "tracked_candidates": [
+      {
+        "area": "쌍문3동",
+        "old_order": 1,
+        "new_order": 1,
+        "old_id": "commercial_1132010500100880112005379",
+        "new_id": "commercial_1132010500100880112005379",
+        "alternative_range": [
+          1,
+          2
+        ]
+      },
+      {
+        "area": "길음2동",
+        "old_order": 2,
+        "new_order": 2,
+        "old_id": "commercial_unresolved_shop_MA010120220803911390",
+        "new_id": "commercial_unresolved_shop_MA010120220803911390",
+        "alternative_range": [
+          2,
+          6
+        ]
+      },
+      {
+        "area": "상도1동",
+        "old_order": 3,
+        "new_order": 3,
+        "old_id": "commercial_1159010200105010012020196",
+        "new_id": "commercial_1159010200105010012020196",
+        "alternative_range": [
+          1,
+          6
+        ]
+      }
+    ],
+    "duplicate_controls": [
+      {
+        "kind": "exact",
+        "copies": 1,
+        "legacy_max_score_shift": 0.0898374848141682,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": true
+      },
+      {
+        "kind": "same_cell_jitter",
+        "copies": 1,
+        "legacy_max_score_shift": 0.0898374848141682,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": true
+      },
+      {
+        "kind": "unknown_boundary_jitter",
+        "copies": 1,
+        "legacy_max_score_shift": 0.0898374848141682,
+        "corrected_max_score_shift": 0.11259948015061627,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": false
+      },
+      {
+        "kind": "exact",
+        "copies": 10,
+        "legacy_max_score_shift": 0.8910972841153325,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": true
+      },
+      {
+        "kind": "same_cell_jitter",
+        "copies": 10,
+        "legacy_max_score_shift": 0.8910972841153325,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": true
+      },
+      {
+        "kind": "unknown_boundary_jitter",
+        "copies": 10,
+        "legacy_max_score_shift": 0.8910972841153325,
+        "corrected_max_score_shift": 0.11259948015061627,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": false
+      },
+      {
+        "kind": "exact",
+        "copies": 100,
+        "legacy_max_score_shift": 8.24320635014267,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": true
+      },
+      {
+        "kind": "same_cell_jitter",
+        "copies": 100,
+        "legacy_max_score_shift": 8.24320635014267,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": true
+      },
+      {
+        "kind": "unknown_boundary_jitter",
+        "copies": 100,
+        "legacy_max_score_shift": 8.24320635014267,
+        "corrected_max_score_shift": 0.11259948015061627,
+        "retained_top": 30,
+        "target_admin": "11650660",
+        "invariant_claim": false
+      }
+    ],
+    "search_opportunity_controls": [
+      {
+        "cell_size_m": 125,
+        "seed": 7,
+        "retained_coordinates": 1061,
+        "retained_top_fixed_reference": 29,
+        "unrepresented_admins": 0,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 125,
+        "seed": 19,
+        "retained_coordinates": 1061,
+        "retained_top_fixed_reference": 29,
+        "unrepresented_admins": 1,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 125,
+        "seed": 43,
+        "retained_coordinates": 1061,
+        "retained_top_fixed_reference": 30,
+        "unrepresented_admins": 0,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 250,
+        "seed": 7,
+        "retained_coordinates": 878,
+        "retained_top_fixed_reference": 28,
+        "unrepresented_admins": 10,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 250,
+        "seed": 19,
+        "retained_coordinates": 878,
+        "retained_top_fixed_reference": 26,
+        "unrepresented_admins": 12,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 250,
+        "seed": 43,
+        "retained_coordinates": 878,
+        "retained_top_fixed_reference": 28,
+        "unrepresented_admins": 10,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 500,
+        "seed": 7,
+        "retained_coordinates": 676,
+        "retained_top_fixed_reference": 24,
+        "unrepresented_admins": 27,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 500,
+        "seed": 19,
+        "retained_coordinates": 676,
+        "retained_top_fixed_reference": 23,
+        "unrepresented_admins": 26,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 500,
+        "seed": 43,
+        "retained_coordinates": 676,
+        "retained_top_fixed_reference": 27,
+        "unrepresented_admins": 24,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      }
+    ],
+    "actual_new_location_control": {
+      "actual_cached_location_id": "commercial_1132010500100880112005379",
+      "withheld_coordinates": 1100,
+      "restored_coordinates": 1101,
+      "old_representative_for_area": null,
+      "restored_representative_for_area": "commercial_1132010500100880112005379",
+      "max_existing_score_change": 0.09188240091634725,
+      "meaning": "기존 캐시의 실제 서로 다른 위치를 잠시 보류했다가 복원. 가상 매물·새 관측값 생성 아님"
+    },
+    "new_top": [
+      {
+        "area": "서울특별시 도봉구 쌍문3동",
+        "candidate_id": "commercial_1132010500100880112005379",
+        "order": 1
+      },
+      {
+        "area": "서울특별시 성북구 길음2동",
+        "candidate_id": "commercial_unresolved_shop_MA010120220803911390",
+        "order": 2
+      },
+      {
+        "area": "서울특별시 동작구 상도1동",
+        "candidate_id": "commercial_1159010200105010012020196",
+        "order": 3
+      },
+      {
+        "area": "서울특별시 강서구 화곡4동",
+        "candidate_id": "commercial_1150010300108030027020209",
+        "order": 4
+      },
+      {
+        "area": "서울특별시 금천구 독산4동",
+        "candidate_id": "commercial_1154510200101950008008965",
+        "order": 5
+      }
+    ]
+  },
+  "경기": {
+    "compared_coordinates": 13214,
+    "baseline_max_calculation_error": 1.4210854715202004e-14,
+    "corrected_membership": {
+      "retained": 15,
+      "entered": [],
+      "departed": []
+    },
+    "midpoint_only_membership": {
+      "retained": 15,
+      "entered": [],
+      "departed": []
+    },
+    "density_after_midpoint": {
+      "retained": 15,
+      "entered": [],
+      "departed": []
+    },
+    "medical_effect_before_correction": {
+      "retained": 15,
+      "entered": [],
+      "departed": []
+    },
+    "medical_effect_after_correction": {
+      "retained": 15,
+      "entered": [],
+      "departed": []
+    },
+    "representatives_changed": 6,
+    "tracked_candidates": [],
+    "duplicate_controls": [
+      {
+        "kind": "exact",
+        "copies": 1,
+        "legacy_max_score_shift": 0.00591331005003326,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": true
+      },
+      {
+        "kind": "same_cell_jitter",
+        "copies": 1,
+        "legacy_max_score_shift": 0.00591331005003326,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": true
+      },
+      {
+        "kind": "unknown_boundary_jitter",
+        "copies": 1,
+        "legacy_max_score_shift": 0.00591331005003326,
+        "corrected_max_score_shift": 0.0069384338755575925,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": false
+      },
+      {
+        "kind": "exact",
+        "copies": 10,
+        "legacy_max_score_shift": 0.059092855649716114,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": true
+      },
+      {
+        "kind": "same_cell_jitter",
+        "copies": 10,
+        "legacy_max_score_shift": 0.059092855649716114,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": true
+      },
+      {
+        "kind": "unknown_boundary_jitter",
+        "copies": 10,
+        "legacy_max_score_shift": 0.059092855649716114,
+        "corrected_max_score_shift": 0.0069384338755575925,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": false
+      },
+      {
+        "kind": "exact",
+        "copies": 100,
+        "legacy_max_score_shift": 0.5869339966289999,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": true
+      },
+      {
+        "kind": "same_cell_jitter",
+        "copies": 100,
+        "legacy_max_score_shift": 0.5869339966289999,
+        "corrected_max_score_shift": 0.0,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": true
+      },
+      {
+        "kind": "unknown_boundary_jitter",
+        "copies": 100,
+        "legacy_max_score_shift": 0.5869339966289999,
+        "corrected_max_score_shift": 0.0069384338755575925,
+        "retained_top": 15,
+        "target_admin": "41820310",
+        "invariant_claim": false
+      }
+    ],
+    "search_opportunity_controls": [
+      {
+        "cell_size_m": 125,
+        "seed": 7,
+        "retained_coordinates": 12464,
+        "retained_top_fixed_reference": 15,
+        "unrepresented_admins": 2,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 125,
+        "seed": 19,
+        "retained_coordinates": 12464,
+        "retained_top_fixed_reference": 15,
+        "unrepresented_admins": 2,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 125,
+        "seed": 43,
+        "retained_coordinates": 12464,
+        "retained_top_fixed_reference": 15,
+        "unrepresented_admins": 3,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 250,
+        "seed": 7,
+        "retained_coordinates": 11138,
+        "retained_top_fixed_reference": 14,
+        "unrepresented_admins": 5,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 250,
+        "seed": 19,
+        "retained_coordinates": 11138,
+        "retained_top_fixed_reference": 14,
+        "unrepresented_admins": 2,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 250,
+        "seed": 43,
+        "retained_coordinates": 11138,
+        "retained_top_fixed_reference": 14,
+        "unrepresented_admins": 5,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 500,
+        "seed": 7,
+        "retained_coordinates": 8997,
+        "retained_top_fixed_reference": 13,
+        "unrepresented_admins": 12,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 500,
+        "seed": 19,
+        "retained_coordinates": 8997,
+        "retained_top_fixed_reference": 14,
+        "unrepresented_admins": 7,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      },
+      {
+        "cell_size_m": 500,
+        "seed": 43,
+        "retained_coordinates": 8997,
+        "retained_top_fixed_reference": 14,
+        "unrepresented_admins": 10,
+        "interpretation": "B만: 기준분포·기존 좌표 점수 고정, 탐색대상만 축소. 미선택 동은 부적합 아님"
+      }
+    ],
+    "actual_new_location_control": {
+      "actual_cached_location_id": "commercial_4119710100102020001010151",
+      "withheld_coordinates": 13213,
+      "restored_coordinates": 13214,
+      "old_representative_for_area": "commercial_4119710100101600038041624",
+      "restored_representative_for_area": "commercial_4119710100102020001010151",
+      "max_existing_score_change": 0.008759465647045772,
+      "meaning": "기존 캐시의 실제 서로 다른 위치를 잠시 보류했다가 복원. 가상 매물·새 관측값 생성 아님"
+    },
+    "new_top": [
+      {
+        "area": "경기도 부천시 소사구 소사본1동",
+        "candidate_id": "commercial_4119710100102020001010151",
+        "order": 1
+      },
+      {
+        "area": "경기도 부천시 소사구 소사본동",
+        "candidate_id": "commercial_4119710100101810033008166",
+        "order": 2
+      },
+      {
+        "area": "경기도 안산시 상록구 부곡동",
+        "candidate_id": "commercial_4127110700106130011040002",
+        "order": 3
+      },
+      {
+        "area": "경기도 부천시 오정구 성곡동",
+        "candidate_id": "commercial_4119910200100050002029199",
+        "order": 4
+      },
+      {
+        "area": "경기도 고양시 일산서구 덕이동",
+        "candidate_id": "commercial_4128710500103730034000001",
+        "order": 5
+      }
+    ]
+  }
+}

@@ -5,5 +5,6 @@
     100
   ],
   "records": [],
-  "note": "현재 검증 완료 건물 없음. candidate_id, building_id, floor, vacant, exclusive_pyeong, layout_verified, elevator_verified, checked_on, source를 실제 근거로만 입력. 기존 광고는 현 공실·전용 확인과 구별. 부적합 건물은 후보 지역 탈락을 뜻하지 않음. layout_verified=True는 내시경·초음파·검사실·회복실 및 향후2~3인 확장 배치를 모두 검증했다는 의미. 방문 준비는 개설 허가나 계약 적합 판정이 아님."
+  "note": "실제 근거만 records에 입력. candidate_id, building_id, floor, vacant, exclusive_pyeong, source, checked_on과 same_location_verified 필요. layout_prechecked/elevator_prechecked는 전화·도면 사전확인. 임상배치는 최소 내시경·초음파·검사·회복·2~3인 확장 요구 유지. vacancy/lease/area/layout/elevator/parking_checked_on으로 항목별 날짜 지정 가능. parking/dropoff/patient_access는 true/false/null. 다른 주소는 위치 재평가 필요. 현장 확인 가능은 개원 적합 확정이 아님. 기준일은 실행 옵션에서 지정.",
+  "schema_updated_on": "2026-11-03"
 }

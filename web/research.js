@@ -50,7 +50,7 @@
   function filtered() {
     const q=$('search').value.trim(),scope=$('scope').value,region=$('region').value;
     if(scope==='all')return data.anchors.filter(r=>(!q||(r.adm_nm+' '+(r.population_name||'')).includes(q))&&(!region||r.region===region||region==='경기'&&r.adm_nm.startsWith('경기도'))).sort((a,b)=>a.adm_nm.localeCompare(b.adm_nm,'ko'));
-    let rows=scope==='research'?CurrentView.shortlist(currentData):currentData.candidates.filter(p=>!p.exclusion&&(scope==='review'?p.visit_state==='방문 준비 완료':scope==='pending'?p.visit_state!=='방문 준비 완료':p.research_order));
+    let rows=scope==='research'?CurrentView.shortlist(currentData):currentData.candidates.filter(p=>!p.exclusion&&(scope==='review'?p.visit_state==='현장 확인 가능':scope==='pending'?p.visit_state!=='현장 확인 가능':p.research_order));
     return rows.filter(p=>(!q||(p.area+' '+p.name+' '+p.zone).includes(q))&&(!region||p.region===region||region==='부천'&&p.area.includes('부천'))).sort(CurrentView.order).map(CurrentView.adapt);
   }
   function draw() {
@@ -82,8 +82,9 @@
       currentData=await CurrentView.load();
       if(data.status!=='research_not_recommendation'||!Array.isArray(data.anchors)||data.anchors.length!==827)throw new Error('검증 자료 형식 불일치');
       $('snapshot').textContent=currentData.as_of+' · 현재추천 '+currentData.version;
+      $('work-status').innerHTML=`<strong>진행상황 · ${esc(currentData.as_of)}</strong> 설정·확인일·방문 준비 갱신 및 표본 밀도 보정 반영 · 250m 생활인구 집계·경기 검증 추세·실제 공실 확인은 남음 · <a href="current-fieldwork.html">현재 조사·방문 상태 →</a>`;
       const currentRows=CurrentView.shortlist(currentData);
-      $('metrics').innerHTML=[[currentRows.filter(p=>p.region==='서울').length+'곳','서울 조사 우선군'],[currentRows.filter(p=>p.region==='경기').length+'곳','경기 별도 비교'],[CurrentView.ready(currentData).length+'곳','방문 준비 완료'],[currentData.coverage.reduce((n,r)=>n+r.comparable_common,0)+'좌표','기존 계산으로 공통 비교']].map(([n,label])=>`<div class="metric"><b>${esc(n)}</b><span>${esc(label)}</span></div>`).join('');
+      $('metrics').innerHTML=[[currentRows.filter(p=>p.region==='서울').length+'곳','서울 조사 우선군'],[currentRows.filter(p=>p.region==='경기').length+'곳','경기 별도 비교'],[CurrentView.ready(currentData).length+'곳','현장 확인 가능'],[currentData.coverage.reduce((n,r)=>n+r.comparable_common,0)+'좌표','기존 계산으로 공통 비교']].map(([n,label])=>`<div class="metric"><b>${esc(n)}</b><span>${esc(label)}</span></div>`).join('');
       document.querySelector('[data-tab="review"]').textContent='조사·방문 준비 '+currentRows.length+'곳';
       $('scope').options[0].textContent='현재 조사 우선군 '+currentRows.length+'곳';
       $('review').dataset.currentVersion=currentData.version;

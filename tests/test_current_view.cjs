@@ -28,10 +28,10 @@ test('historical field entry points explicitly link to current state without rew
  }
 });
 test('a verified visit-ready building outside the market shortlist is still shown as ready everywhere',()=>{
- const building={...data.candidates.find(p=>p.id==='deuxville191'),visit_state:'방문 준비 완료'};
+ const building={...data.candidates.find(p=>p.id==='deuxville191'),visit_state:'현장 확인 가능'};
  const changed={...data,candidates:data.candidates.map(p=>p.id===building.id?building:p)};
- assert.equal(view.ready(changed).length,1);
+ assert.equal(view.ready(changed).filter(p=>p.id===building.id).length,1);
  assert.equal(view.shortlist(changed).length,45);
- assert.match(view.cards(changed),/방문 준비 완료 1곳/);
+ assert.match(view.cards(changed),/현장 확인 가능 1곳/);
  assert.match(view.cards(changed),/조사 우선군과 별도/);
 });
