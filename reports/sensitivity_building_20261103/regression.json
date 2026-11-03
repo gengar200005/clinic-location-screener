@@ -1,0 +1,99 @@
+{
+  "version": "7b5574bc07c5",
+  "baseline": "f0b99325bd62",
+  "identical_except_sensitivity_rows": 18676,
+  "regions": {
+    "서울": {
+      "scenarios": 31,
+      "changed_ranges": 324,
+      "changed_top_counts": 37,
+      "top3": [
+        {
+          "region": "서울",
+          "area": "서울특별시 도봉구 쌍문3동",
+          "id": "commercial_1132010500100880112005379",
+          "base_rank": 1,
+          "old_low": 1,
+          "old_high": 2,
+          "new_low": 1,
+          "new_high": 7,
+          "old_top_count": 31,
+          "new_top_count": 31,
+          "scenarios": 31
+        },
+        {
+          "region": "서울",
+          "area": "서울특별시 성북구 길음2동",
+          "id": "commercial_unresolved_shop_MA010120220803911390",
+          "base_rank": 2,
+          "old_low": 2,
+          "old_high": 6,
+          "new_low": 1,
+          "new_high": 11,
+          "old_top_count": 31,
+          "new_top_count": 31,
+          "scenarios": 31
+        },
+        {
+          "region": "서울",
+          "area": "서울특별시 동작구 상도1동",
+          "id": "commercial_1159010200105010012020196",
+          "base_rank": 3,
+          "old_low": 1,
+          "old_high": 6,
+          "new_low": 1,
+          "new_high": 9,
+          "old_top_count": 31,
+          "new_top_count": 31,
+          "scenarios": 31
+        }
+      ]
+    },
+    "경기": {
+      "scenarios": 30,
+      "changed_ranges": 478,
+      "changed_top_counts": 37,
+      "top3": [
+        {
+          "region": "경기",
+          "area": "경기도 부천시 소사구 소사본1동",
+          "id": "commercial_4119710100102020001010151",
+          "base_rank": 1,
+          "old_low": 1,
+          "old_high": 1,
+          "new_low": 1,
+          "new_high": 8,
+          "old_top_count": 30,
+          "new_top_count": 30,
+          "scenarios": 30
+        },
+        {
+          "region": "경기",
+          "area": "경기도 부천시 소사구 소사본동",
+          "id": "commercial_4119710100101810033008166",
+          "base_rank": 2,
+          "old_low": 2,
+          "old_high": 2,
+          "new_low": 2,
+          "new_high": 18,
+          "old_top_count": 30,
+          "new_top_count": 28,
+          "scenarios": 30
+        },
+        {
+          "region": "경기",
+          "area": "경기도 안산시 상록구 부곡동",
+          "id": "commercial_4127110700106130011040002",
+          "base_rank": 3,
+          "old_low": 3,
+          "old_high": 3,
+          "new_low": 2,
+          "new_high": 44,
+          "old_top_count": 30,
+          "new_top_count": 24,
+          "scenarios": 30
+        }
+      ]
+    }
+  }
+}

@@ -1,18 +1,22 @@
 """Cached full-cohort density controls; no collection or catchment recomputation."""
 import json
+from pathlib import Path
 import copy
 import hashlib
 import numpy as np
 import pandas as pd
-from scripts.build_current_recommendations import ROOT, LEGACY, REPORT, structural_score, score_frame, stable_order
+from scripts.build_current_recommendations import ROOT, LEGACY, REPORT, DENSITY_REPORT, structural_score, score_frame, stable_order
 from scripts.recommendation_density import density_summary, reference_weights, percentile
 
 
 def main():
-    before=pd.read_csv(REPORT/'before/reports/current_recommendations_20261102/all_candidate_decisions.csv',low_memory=False)
-    current=pd.read_csv(REPORT/'all_candidate_decisions.csv',low_memory=False)
+    import argparse
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--legacy-dir',type=Path,default=LEGACY)
+    args=parser.parse_args()
+    before=pd.read_csv(DENSITY_REPORT/'before/reports/current_recommendations_20261102/all_candidate_decisions.csv',low_memory=False)
     data=json.loads((ROOT/'web/data/current-recommendations.json').read_text(encoding='utf8'))
-    rules=data['rules'];registry=pd.read_parquet(LEGACY/'commercial_node_registry.parquet')
+    rules=data['rules'];registry=pd.read_parquet(args.legacy_dir/'commercial_node_registry.parquet')
     f=before.rename(columns={'id':'anchor_id','area':'population_name'}).merge(registry[['anchor_id','building_key','building_identity_state','x','y']],on='anchor_id',how='inner',validate='one_to_one')
     density_summary(f,rules['reference_distribution']).to_csv(REPORT/'density_by_admin.csv',index=False,encoding='utf-8-sig')
     cells=f.assign(cell_x=np.floor(f.x/250).astype(int),cell_y=np.floor(f.y/250).astype(int)).groupby(['region','cell_x','cell_y']).size().rename('coordinate_rows')

@@ -7,7 +7,8 @@ import pandas as pd
 from shapely.geometry import Point, shape
 from scripts.market_demand import read_csv, index_rows, medical_history, ROOT, CACHE, change, dec
 
-REPORT=ROOT/'reports/recommendation_reliability_20261103'
+REPORT=ROOT/'reports/sensitivity_building_20261103'
+DENSITY_REPORT=ROOT/'reports/recommendation_reliability_20261103'
 LEGACY=ROOT.parent/'clinic-location-screener/reports/screening_v3/2026-10-23'
 from scripts.recommendation_policy import as_of_date, parse_rules, premises_review
 from scripts.recommendation_density import reference_weights, percentile
@@ -79,6 +80,10 @@ def stable_order(frame,score,width=5):
         ['commute_lane','_band','structural','anchor_id'],ascending=[True,False,False,True],kind='stable')
 
 
+def scenario_order(frame, structural, adjustment, width):
+    return stable_order(frame.assign(structural=structural), structural+adjustment, width)
+
+
 def structural_score(frame,rules,weight=None,hospital=None,radius=None,reference=None):
     rules=parse_rules(rules)
     return pd.concat([score_frame(frame,rules['demand_weight'] if weight is None else weight,
@@ -91,15 +96,16 @@ def include_in_current_view(p):
     return bool(p.get('research_order') or p.get('old_visit_order') or p['id']=='deuxville191' or p.get('visit_state')=='현장 확인 가능')
 
 
-def build(as_of=None,rules=None):
+def build(as_of=None,rules=None,legacy_dir=None):
+    legacy_dir=Path(legacy_dir) if legacy_dir is not None else LEGACY
     cutoff=as_of_date(as_of)
     rules=parse_rules(rules if rules is not None else json.loads((ROOT/'config/current_recommendations.json').read_text(encoding='utf8')))
-    baseline_path=REPORT/'before/reports/current_recommendations_20261102/all_candidate_decisions.csv'
+    baseline_path=DENSITY_REPORT/'before/reports/current_recommendations_20261102/all_candidate_decisions.csv'
     baseline=pd.read_csv(baseline_path,low_memory=False)
     prior_reps={r.area:r for r in baseline[baseline.research_order.notna()].itertuples()}
     input_paths=[]
     def parquet(name):
-        path=LEGACY/name;input_paths.append(path);return pd.read_parquet(path)
+        path=legacy_dir/name;input_paths.append(path);return pd.read_parquet(path)
     registry=parquet('commercial_node_registry.parquet');commute=parquet('full_cohort_rough_commute_worklist.parquet')
     if not registry.population_code.astype(str).str.fullmatch(r'\d{8}00').all():raise ValueError('Expected MOIS10 code ending00; no fuzzy name join')
     for f in [registry,commute]:
@@ -177,7 +183,7 @@ def build(as_of=None,rules=None):
         adjustments=group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][0]) if region=='서울' else pd.Series(0,index=group.index)
         group['decision_lower']=group.structural+adjustments
         group['decision_upper']=group.structural+(group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][1]) if region=='서울' else 0)
-        ordered=stable_order(group,group.decision_lower,rules['priority_band_width'])
+        ordered=scenario_order(group,group.structural,adjustments,rules['priority_band_width'])
         ordered['coordinate_order']=range(1,len(ordered)+1)
         representatives=ordered.drop_duplicates('admin_code').copy();representatives['research_order']=range(1,len(representatives)+1)
         reps=dict(zip(representatives.anchor_id,representatives.research_order))
@@ -185,8 +191,8 @@ def build(as_of=None,rules=None):
         for weight in rules['alternative_demand_weights']:
             for h in rules['hospital_burdens']:
                 for radius in rules['radii_m']:
-                    score=structural_score(group,rules,weight,h,radius)+adjustments
-                    alt=stable_order(group,score,rules['priority_band_width']).drop_duplicates('admin_code')
+                    structural=structural_score(group,rules,weight,h,radius)
+                    alt=scenario_order(group,structural,adjustments,rules['priority_band_width']).drop_duplicates('admin_code')
                     # Rank each current representative's area, not an unrelated replacement point.
                     alt_ranks[f'w{weight}_h{h}_r{radius}']={c:i+1 for i,c in enumerate(alt.admin_code)}
         for size in rules['reference_distribution']['alternative_cell_sizes_m']:
@@ -194,10 +200,10 @@ def build(as_of=None,rules=None):
                 for dy in rules['reference_distribution']['alternative_offset_fractions']:
                     spec=dict(rules['reference_distribution'],cell_size_m=size,offset_m=[dx*size,dy*size])
                     structural=structural_score(group,rules,reference=spec)
-                    alt=stable_order(group.assign(structural=structural),structural+adjustments,rules['priority_band_width']).drop_duplicates('admin_code')
+                    alt=scenario_order(group,structural,adjustments,rules['priority_band_width']).drop_duplicates('admin_code')
                     alt_ranks[f'grid{size}_offset{dx}_{dy}']={c:i+1 for i,c in enumerate(alt.admin_code)}
         if region=='서울':
-            optimistic=stable_order(group,group.structural+group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][1]),rules['priority_band_width']).drop_duplicates('admin_code')
+            optimistic=scenario_order(group,group.structural,group.trend_delta.fillna(rules['unknown_trend_investigation_interval'][1]),rules['priority_band_width']).drop_duplicates('admin_code')
             alt_ranks['unknown_trend_optimistic']={c:i+1 for i,c in enumerate(optimistic.admin_code)}
         for idx,r in ordered.iterrows():
             vals=[v[r.admin_code] for v in alt_ranks.values()]
@@ -290,9 +296,10 @@ def main():
     import argparse
     parser=argparse.ArgumentParser()
     parser.add_argument('--as-of',type=as_of_date)
+    parser.add_argument('--legacy-dir',type=Path,default=LEGACY)
     parser.add_argument('--config',type=Path,default=ROOT/'config/current_recommendations.json')
     args=parser.parse_args()
-    data,records,inputs,variants=build(args.as_of,json.loads(args.config.read_text(encoding='utf8')));REPORT.mkdir(exist_ok=True)
+    data,records,inputs,variants=build(args.as_of,json.loads(args.config.read_text(encoding='utf8')),args.legacy_dir);REPORT.mkdir(exist_ok=True)
     (ROOT/'web/data/current-recommendations.json').write_text(json.dumps(data,ensure_ascii=False,allow_nan=False,separators=(',',':')),encoding='utf8')
     flat=[dict({k:v for k,v in p.items() if not isinstance(v,(dict,list))},**{f'{n}_{radius}':v for radius,e in p['evidence'].items() for n,v in e.items()}) for p in records]
     pd.DataFrame(flat).to_csv(REPORT/'all_candidate_decisions.csv',index=False,encoding='utf-8-sig')

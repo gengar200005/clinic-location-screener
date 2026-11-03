@@ -1,5 +1,12 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const view=require('../web/current-view.js'),data=require('../web/data/current-recommendations.json'),revenueView=require('../web/revenue-map.js'),revenue=require('../web/data/revenue.json');
+test('building conflict shows the affected field and dated sources',()=>{
+ const checked_on='2026-11-03';
+ const p={building_review:{records:[{floor:'3',dates:{area:{state:'conflict',checked_on,observations:[{checked_on,source:'도면 A'},{checked_on,source:'도면 B'}]}},pending:['전용면적 근거 재확인']}]}};
+ const html=view.buildingDetail(p,{as_of:checked_on});
+ assert.match(html,/전용면적 2026-11-03 \(같은 날짜 근거 충돌\)/);
+ assert.match(html,/도면 A.*도면 B/);
+});
 test('all current views share one source; outside-six candidates can enter',()=>{
  const rows=view.shortlist(data);assert.equal(rows.length,45);assert.equal(rows.filter(p=>p.region==='서울').length,30);
  assert.equal(rows.filter(p=>p.region==='경기').length,15);assert.ok(rows.some(p=>!p.old_area_visit_order));
