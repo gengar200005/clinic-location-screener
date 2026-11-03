@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v42-2026-11-03-sensitivity';
+const VERSION = 'v43-2026-11-03-rent-links';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -15,7 +15,7 @@ const SHELL_ASSETS = [
   './visit-evidence.html',
   './market-demand.html',
   './current-fieldwork.html',
-  './current-view.js?v=4',
+  './current-view.js?v=5',
   './market-demand.css?v=2',
   './market-demand.js?v=4',
   './visit-evidence.js?v=3',
