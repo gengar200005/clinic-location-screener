@@ -1,0 +1,7 @@
+{
+  "web/data/current-recommendations.json": "1d67b7a301f4718648ae9773c7ccfc5699bd1f4c906971a6db60f9ca8d6bca5b",
+  "web/data/current-inventory.csv": "ae1c648062f300ddae1fd84845b92735ae827f876acc44f9189dcc1d1a271dd5",
+  "reports/current_recommendations_20261102/all_candidate_decisions.csv": "ae1c648062f300ddae1fd84845b92735ae827f876acc44f9189dcc1d1a271dd5",
+  "reports/current_recommendations_20261102/sensitivity.json": "dc757e17e91b7b00f57d4f618591e38a627173a1907025b6d0d21ad59b2c5e6e",
+  "config/current_recommendations.json": "79a208df840b9ab078e0a2ff80e7a407bee393c181b6c8de7525412b4ed3a1cc"
+}

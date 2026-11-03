@@ -18,8 +18,8 @@ def main():
         return path if path.is_absolute() else ROOT/path
     changed=[p for p,h in before.items() if hashlib.sha256(protected_path(p).read_bytes()).hexdigest()!=h]
     if changed:raise ValueError('Protected artifacts changed: '+str(changed))
-    selected=[p for p in d['candidates'] if not p['exclusion'] and p['research_order'] and p['research_order']<=(30 if p['region']=='서울' else 15)]
-    if len(selected)!=45 or any('정릉' in p['area'] for p in selected):raise ValueError('Shortlist contract broken')
+    selected=[p for p in d['candidates'] if not p['exclusion'] and p['research_order'] and p['research_order']<=d['rules']['seoul_shortlist' if p['region']=='서울' else 'gyeonggi_shortlist']]
+    if len(selected)!=sum(min(d['rules']['seoul_shortlist' if g['region']=='서울' else 'gyeonggi_shortlist'],g['administrative_bundles']) for g in d['comparison_groups']) or any('정릉' in p['area'] for p in selected):raise ValueError('Shortlist contract broken')
     representatives={p['area']:p for p in d['candidates'] if p['research_order'] and not p['exclusion']}
     selected_names={p['area'] for p in selected}
     old=[p for p in d['candidates'] if p['old_visit_order']]
@@ -56,12 +56,12 @@ def main():
     no_medical_effect={}
     for region in ['서울','경기']:
         group=f[f.region.eq(region)&f.structural.notna()].rename(columns={'id':'anchor_id'})
-        n=30 if region=='서울' else 15
-        common_only=stable_order(group,group.structural).drop_duplicates('admin_code').head(n)
+        n=d['rules']['seoul_shortlist' if region=='서울' else 'gyeonggi_shortlist']
+        common_only=stable_order(group,group.structural,d['rules']['priority_band_width']).drop_duplicates('admin_code').head(n)
         baseline=set(common_only.area);current={p['area'] for p in selected if p['region']==region}
         no_medical_effect[region]=dict(common_only_size=len(baseline),current_size=len(current),retained=len(current&baseline),entered=sorted(current-baseline),departed=sorted(baseline-current))
     for region,variants in sensitivity.items():
-        n=30 if region=='서울' else 15;codes={p['admin_code'] for p in selected if p['region']==region}
+        n=d['rules']['seoul_shortlist' if region=='서울' else 'gyeonggi_shortlist'];codes={p['admin_code'] for p in selected if p['region']==region}
         overlaps={key:len(codes & {c for c,r in ranks.items() if r<=n}) for key,ranks in variants.items()}
         sets=[{c for c,r in ranks.items() if r<=n} for ranks in variants.values()]
         variant_summary[region]=dict(variants=len(variants),priority_group=n,minimum_retained=min(overlaps.values()),maximum_retained=max(overlaps.values()),all_variants_common=len(set.intersection(*sets)),overlaps=overlaps)
@@ -69,7 +69,7 @@ def main():
         registry_total=sum(c['registry_coordinates'] for c in d['coverage']),export_rows=len(f),supplemental_manual_cases=1,
         common_comparison_total=sum(c['comparable_common'] for c in d['coverage']),coverage=d['coverage'],groups=d['comparison_groups'],
         v7_reference_rows=len(v7),v7_admin_areas_linked_to_current_bundle=sum(r['current_area_coordinate'] is not None for r in references),
-        current_priority_candidates=len(selected),ready_for_visit=sum(p['visit_state']=='방문 준비 완료' for p in selected),
+        current_priority_candidates=len(selected),ready_for_visit=sum(p['visit_state']=='현장 확인 가능' for p in selected),
         changes_by_old_v3_membership=pd.Series([p['history_change'] for p in selected]).value_counts().to_dict(),
         sensitivity=variant_summary,medical_increment_counterfactual=no_medical_effect,old_v3_comparison=rows,
         top_three=[{k:p[k] for k in ['id','name','area','zone','research_order','sensitivity','visit_state']} for p in sorted(selected,key=lambda p:p['research_order']) if p['region']=='서울' and p['research_order']<=3])

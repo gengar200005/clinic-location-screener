@@ -1,0 +1,385 @@
+{
+  "version": "f0b99325bd62",
+  "protected_files": 160,
+  "changed_protected_files": [],
+  "registry_total": 18675,
+  "export_rows": 18676,
+  "supplemental_manual_cases": 1,
+  "common_comparison_total": 14315,
+  "coverage": [
+    {
+      "region": "경기",
+      "registry_coordinates": 15412,
+      "personal_or_scope_excluded": 1538,
+      "comparable_common": 13214,
+      "common_unlinked_eligible": 660,
+      "exclusion_reasons": {
+        "러프 자차60분 초과·대중교통 미확인: 추천대기, 확정 통근불가 아님": 1530,
+        "개인조건 제외: 화성": 8
+      },
+      "market_link_failure_reasons": {
+        "gyeonggi_unverified": 15412
+      },
+      "market_linked": 0,
+      "unlinked_market": 15412,
+      "commute_unknown": 10480
+    },
+    {
+      "region": "서울",
+      "registry_coordinates": 1113,
+      "personal_or_scope_excluded": 12,
+      "comparable_common": 1101,
+      "common_unlinked_eligible": 0,
+      "exclusion_reasons": {
+        "개인조건 제외: 정릉": 12
+      },
+      "market_link_failure_reasons": {
+        "no_unique_compatible_admin_code": 36,
+        "coordinate_boundary_mismatch": 13
+      },
+      "market_linked": 1064,
+      "unlinked_market": 49,
+      "commute_unknown": 0
+    },
+    {
+      "region": "인천",
+      "registry_coordinates": 2150,
+      "personal_or_scope_excluded": 2150,
+      "comparable_common": 0,
+      "common_unlinked_eligible": 0,
+      "exclusion_reasons": {
+        "현재 서울·경기 범위 밖": 2150
+      },
+      "market_link_failure_reasons": {
+        "outside_current_scope": 2150
+      },
+      "market_linked": 0,
+      "unlinked_market": 2150,
+      "commute_unknown": 1299
+    }
+  ],
+  "groups": [
+    {
+      "region": "서울",
+      "compared_coordinates": 1101,
+      "administrative_bundles": 329,
+      "market_linked": 1053,
+      "four_quarter_comparable": 1015
+    },
+    {
+      "region": "경기",
+      "compared_coordinates": 13214,
+      "administrative_bundles": 518,
+      "market_linked": 0,
+      "four_quarter_comparable": 0
+    }
+  ],
+  "v7_reference_rows": 745,
+  "v7_admin_areas_linked_to_current_bundle": 426,
+  "current_priority_candidates": 45,
+  "ready_for_visit": 0,
+  "changes_by_old_v3_membership": {
+    "신규": 40,
+    "상향·예비에서 우선군": 3,
+    "유지": 2
+  },
+  "sensitivity": {
+    "서울": {
+      "variants": 31,
+      "priority_group": 30,
+      "minimum_retained": 16,
+      "maximum_retained": 30,
+      "all_variants_common": 7,
+      "overlaps": {
+        "w0.35_h1_r1000": 16,
+        "w0.35_h1_r1500": 21,
+        "w0.35_h2_r1000": 17,
+        "w0.35_h2_r1500": 22,
+        "w0.35_h3_r1000": 17,
+        "w0.35_h3_r1500": 22,
+        "w0.5_h1_r1000": 19,
+        "w0.5_h1_r1500": 25,
+        "w0.5_h2_r1000": 18,
+        "w0.5_h2_r1500": 26,
+        "w0.5_h3_r1000": 18,
+        "w0.5_h3_r1500": 26,
+        "w0.65_h1_r1000": 22,
+        "w0.65_h1_r1500": 20,
+        "w0.65_h2_r1000": 21,
+        "w0.65_h2_r1500": 21,
+        "w0.65_h3_r1000": 21,
+        "w0.65_h3_r1500": 20,
+        "grid125_offset0_0": 29,
+        "grid125_offset0_0.5": 29,
+        "grid125_offset0.5_0": 29,
+        "grid125_offset0.5_0.5": 29,
+        "grid250_offset0_0": 30,
+        "grid250_offset0_0.5": 30,
+        "grid250_offset0.5_0": 28,
+        "grid250_offset0.5_0.5": 28,
+        "grid500_offset0_0": 28,
+        "grid500_offset0_0.5": 27,
+        "grid500_offset0.5_0": 27,
+        "grid500_offset0.5_0.5": 27,
+        "unknown_trend_optimistic": 30
+      }
+    },
+    "경기": {
+      "variants": 30,
+      "priority_group": 15,
+      "minimum_retained": 13,
+      "maximum_retained": 15,
+      "all_variants_common": 13,
+      "overlaps": {
+        "w0.35_h1_r1000": 15,
+        "w0.35_h1_r1500": 13,
+        "w0.35_h2_r1000": 15,
+        "w0.35_h2_r1500": 13,
+        "w0.35_h3_r1000": 15,
+        "w0.35_h3_r1500": 13,
+        "w0.5_h1_r1000": 15,
+        "w0.5_h1_r1500": 15,
+        "w0.5_h2_r1000": 15,
+        "w0.5_h2_r1500": 15,
+        "w0.5_h3_r1000": 15,
+        "w0.5_h3_r1500": 15,
+        "w0.65_h1_r1000": 15,
+        "w0.65_h1_r1500": 15,
+        "w0.65_h2_r1000": 15,
+        "w0.65_h2_r1500": 15,
+        "w0.65_h3_r1000": 15,
+        "w0.65_h3_r1500": 15,
+        "grid125_offset0_0": 15,
+        "grid125_offset0_0.5": 15,
+        "grid125_offset0.5_0": 15,
+        "grid125_offset0.5_0.5": 15,
+        "grid250_offset0_0": 15,
+        "grid250_offset0_0.5": 15,
+        "grid250_offset0.5_0": 15,
+        "grid250_offset0.5_0.5": 15,
+        "grid500_offset0_0": 15,
+        "grid500_offset0_0.5": 15,
+        "grid500_offset0.5_0": 15,
+        "grid500_offset0.5_0.5": 15
+      }
+    }
+  },
+  "medical_increment_counterfactual": {
+    "서울": {
+      "common_only_size": 30,
+      "current_size": 30,
+      "retained": 25,
+      "entered": [
+        "서울특별시 금천구 시흥1동",
+        "서울특별시 노원구 월계3동",
+        "서울특별시 노원구 중계본동",
+        "서울특별시 동대문구 장안1동",
+        "서울특별시 성동구 왕십리도선동"
+      ],
+      "departed": [
+        "서울특별시 관악구 난향동",
+        "서울특별시 관악구 미성동",
+        "서울특별시 노원구 월계2동",
+        "서울특별시 노원구 하계1동",
+        "서울특별시 서대문구 남가좌1동"
+      ]
+    },
+    "경기": {
+      "common_only_size": 15,
+      "current_size": 15,
+      "retained": 15,
+      "entered": [],
+      "departed": []
+    }
+  },
+  "old_v3_comparison": [
+    {
+      "zone": "숭실대입구·상도",
+      "old_v3_visit_order": 1,
+      "old_candidate_id": "commercial_1159010200105010012020196",
+      "area": "서울특별시 동작구 상도1동",
+      "current_representative_id": "commercial_1159010200105010012020196",
+      "current_region": "서울",
+      "current_research_order": 3.0,
+      "current_in_priority_group": true,
+      "change": "유지",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 27,998명·관측 내과 5.0곳, 내시경 7.0곳 · 4분기 중3개 이상에서 금액·거래 동반 증가. 환자 증가나 신규기관 몫을 뜻하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "구로동로·구로시장 주변",
+      "old_v3_visit_order": 2,
+      "old_candidate_id": "commercial_1153010200103170091024950",
+      "area": "서울특별시 구로구 구로2동",
+      "current_representative_id": "commercial_1153010200103170091024950",
+      "current_region": "서울",
+      "current_research_order": 10.0,
+      "current_in_priority_group": true,
+      "change": "유지",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 45,112명·관측 내과 20.0곳, 내시경 19.0곳 · 4분기 중3개 이상 거래 감소. 미충족 수요나 신규 진입 기회로 바꾸지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "정릉·보국문로",
+      "old_v3_visit_order": 3,
+      "old_candidate_id": "commercial_1129013300104020050028104",
+      "area": "서울특별시 성북구 정릉4동",
+      "current_representative_id": null,
+      "current_region": null,
+      "current_research_order": null,
+      "current_in_priority_group": false,
+      "change": "개인조건/범위 제외",
+      "visit_state": "개인조건 또는 범위 제외",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 27,735명·관측 내과 8.0곳, 내시경 4.0곳 · 4분기 금액 증가와 거래 감소/보합이 동반. 환자 수요 증가로 설명하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "화곡역·화곡로",
+      "old_v3_visit_order": 4,
+      "old_candidate_id": "commercial_1150010300110630013019241",
+      "area": "서울특별시 강서구 우장산동",
+      "current_representative_id": "commercial_1150010300110630013019241",
+      "current_region": "서울",
+      "current_research_order": 34.0,
+      "current_in_priority_group": false,
+      "change": "하향·현재 우선군 밖",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 35,445명·관측 내과 19.0곳, 내시경 17.0곳 · 분기 방향이 혼재하거나 지속 증가 기준 미충족. 단일분기 급등으로 상향하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "서울대입구·중앙길",
+      "old_v3_visit_order": 5,
+      "old_candidate_id": "commercial_1162010100100470024026378",
+      "area": "서울특별시 관악구 중앙동",
+      "current_representative_id": "commercial_1162010100100470024026378",
+      "current_region": "서울",
+      "current_research_order": 97.0,
+      "current_in_priority_group": false,
+      "change": "하향·현재 우선군 밖",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 30,699명·관측 내과 20.0곳, 내시경 18.0곳 · 분기 방향이 혼재하거나 지속 증가 기준 미충족. 단일분기 급등으로 상향하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "까치산·강서로12길",
+      "old_v3_visit_order": 6,
+      "old_candidate_id": "commercial_1150010300103420030012207",
+      "area": "서울특별시 강서구 화곡8동",
+      "current_representative_id": "commercial_1150010300103410094011881",
+      "current_region": "서울",
+      "current_research_order": 7.0,
+      "current_in_priority_group": true,
+      "change": "상향·예비에서 우선군",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 36,868명·관측 내과 18.0곳, 내시경 20.0곳 · 4분기 중3개 이상에서 금액·거래 동반 증가. 환자 증가나 신규기관 몫을 뜻하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "독산로 생활권",
+      "old_v3_visit_order": 7,
+      "old_candidate_id": "commercial_1154510200101950008008965",
+      "area": "서울특별시 금천구 독산4동",
+      "current_representative_id": "commercial_1154510200101950008008965",
+      "current_region": "서울",
+      "current_research_order": 5.0,
+      "current_in_priority_group": true,
+      "change": "상향·예비에서 우선군",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 31,828명·관측 내과 9.0곳, 내시경 10.0곳 · 자료 미연결/정확한 대응4분기 부족. 저수요·0으로 판정하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "부개·수변로",
+      "old_v3_visit_order": 8,
+      "old_candidate_id": "commercial_2823710700104930003101251",
+      "area": "인천광역시 부평구 부개2동",
+      "current_representative_id": null,
+      "current_region": null,
+      "current_research_order": null,
+      "current_in_priority_group": false,
+      "change": "개인조건/범위 제외",
+      "visit_state": "개인조건 또는 범위 제외",
+      "reason": "동일 인천 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 27,618명·관측 내과 1.0곳, 내시경 4.0곳 · 의료소비 미연결/비교보류. 공통 수요·공급 비교는 유지",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "신월로·월정로",
+      "old_v3_visit_order": 9,
+      "old_candidate_id": "commercial_1147010300105300002010905",
+      "area": "서울특별시 양천구 신월4동",
+      "current_representative_id": "commercial_1147010300105370015010990",
+      "current_region": "서울",
+      "current_research_order": 16.0,
+      "current_in_priority_group": true,
+      "change": "상향·예비에서 우선군",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 29,822명·관측 내과 13.0곳, 내시경 13.0곳 · 4분기 금액 증가와 거래 감소/보합이 동반. 환자 수요 증가로 설명하지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    },
+    {
+      "zone": "신림동3길·신림로",
+      "old_v3_visit_order": 10,
+      "old_candidate_id": "commercial_1162010200114320153012254",
+      "area": "서울특별시 관악구 신림동",
+      "current_representative_id": "commercial_1162010200114320153012254",
+      "current_region": "서울",
+      "current_research_order": 170.0,
+      "current_in_priority_group": false,
+      "change": "예비·비교 유지",
+      "visit_state": "매물·공간 사전확인",
+      "reason": "동일 서울 비교군의 [1000, 1500]m 수요·공급 비교 · 50~69세 하한 추정 26,339명·관측 내과 17.0곳, 내시경 15.0곳 · 4분기 중3개 이상 거래 감소. 미충족 수요나 신규 진입 기회로 바꾸지 않음",
+      "counter_evidence": "실제 검사 가동률·예약·FTE·보행 장벽 미확인 · 전용95~100평 공실·설비 미확인",
+      "comparison_caution": "과거10권역 순서와 새 지역별 전체비교 순서는 모집단이 다름. 순위 차감 없음"
+    }
+  ],
+  "top_three": [
+    {
+      "id": "commercial_1132010500100880112005379",
+      "name": "쌍문3동 · 도봉로115길",
+      "area": "서울특별시 도봉구 쌍문3동",
+      "zone": "서울특별시 도봉구 도봉로115길 5",
+      "research_order": 1.0,
+      "sensitivity": [
+        1.0,
+        2.0
+      ],
+      "visit_state": "매물·공간 사전확인"
+    },
+    {
+      "id": "commercial_unresolved_shop_MA010120220803911390",
+      "name": "길음2동 · 삼양로4길",
+      "area": "서울특별시 성북구 길음2동",
+      "zone": "서울특별시 성북구 삼양로4길 26",
+      "research_order": 2.0,
+      "sensitivity": [
+        2.0,
+        6.0
+      ],
+      "visit_state": "매물·공간 사전확인"
+    },
+    {
+      "id": "commercial_1159010200105010012020196",
+      "name": "숭실대입구·상도",
+      "area": "서울특별시 동작구 상도1동",
+      "zone": "서울특별시 동작구 사당로 2",
+      "research_order": 3.0,
+      "sensitivity": [
+        1.0,
+        6.0
+      ],
+      "visit_state": "매물·공간 사전확인"
+    }
+  ]
+}

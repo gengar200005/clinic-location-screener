@@ -19,7 +19,7 @@
 <div id="error" role="alert" hidden></div>
 <section id="explore" class="panel">
 <div class="metrics" id="metrics"></div>
-<div class="toolbar"><label>지역·동명 검색<input id="search" type="search" placeholder="상도, 부천, 검단…"></label><label>보기<select id="scope"><option value="research">현재 조사 우선군</option><option value="review">방문 준비 완료</option><option value="pending">공간·추가 확인</option><option value="current-all">현재 전체 대표 조사점</option><option value="all">과거 전체 행정동 조회</option></select></label><label>지역<select id="region"><option value="">전체 지역</option><option selected>서울</option><option>경기</option><option>부천</option><option>인천</option><option>경기 기타</option></select></label><button id="reset">초기화</button><p id="count" aria-live="polite"></p></div>
+<div class="toolbar"><label>지역·동명 검색<input id="search" type="search" placeholder="상도, 부천, 검단…"></label><label>보기<select id="scope"><option value="research">현재 조사 우선군</option><option value="review">현장 확인 가능</option><option value="pending">공간·추가 확인</option><option value="current-all">현재 전체 대표 조사점</option><option value="all">과거 전체 행정동 조회</option></select></label><label>지역<select id="region"><option value="">전체 지역</option><option selected>서울</option><option>경기</option><option>부천</option><option>인천</option><option>경기 기타</option></select></label><button id="reset">초기화</button><p id="count" aria-live="polite"></p></div>
 <div class="workspace"><div class="results" id="list" aria-label="후보 목록"><p class="empty">검증 자료를 불러오고 있습니다.</p></div><div class="map-column"><div id="revenue-map-controls"></div><div id="explorer-controls"></div><div id="map" aria-label="후보 중심점 지도"></div><p class="map-caption" id="map-caption">초록: 조사 후보 · 황토: 확인 대기 · 회색: 그 외 · 점은 실제 매물이 아닙니다.</p><section id="map-revenue" class="card" aria-live="polite"></section><section id="market-demand-inline" aria-live="polite"></section><section id="provider-explorer" class="card"></section><article id="detail" aria-live="polite"><p class="empty">후보를 선택하면 수요·경쟁·확인 사항을 볼 수 있습니다.</p></article></div></div>
 </section>
 <section id="review" class="panel" hidden></section>
@@ -30,5 +30,5 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <script src="explorer.js?v=2"></script>
 <script src="revenue-map.js?v=11"></script>
-<script src="current-view.js?v=2"></script><script src="market-demand.js?v=4"></script><script src="research.js?v=21"></script>
+<script src="current-view.js?v=3"></script><script src="market-demand.js?v=4"></script><script src="research.js?v=22"></script>
 </body></html>
