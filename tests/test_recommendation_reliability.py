@@ -80,11 +80,11 @@ class BuildingTests(unittest.TestCase):
         for age,state in [(0,'fresh'),(1,'fresh'),(14,'fresh'),(15,'expired'),(-1,'future')]:
             day=(date(2026,11,3)-timedelta(days=age)).isoformat()
             out=self.review(vacancy_checked_on=day)
-            self.assertEqual(out['records'][0]['dates']['vacancy']['state'],state)
+            self.assertEqual(out['records'][0]['dates']['vacant']['state'],state)
             self.assertEqual(out['state']=='현장 확인 가능',state=='fresh')
         for value,state in [(None,'missing'),('bad','invalid')]:
             out=self.review(checked_on=value)
-            self.assertEqual(out['records'][0]['dates']['vacancy']['state'],state)
+            self.assertEqual(out['records'][0]['dates']['vacant']['state'],state)
             self.assertNotEqual(out['state'],'현장 확인 가능')
 
     def test_item_specific_ttl(self):
@@ -175,3 +175,50 @@ class DensityTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+def test_scenario_order_uses_alternative_structure_in_same_band():
+    from scripts.build_current_recommendations import scenario_order, stable_order
+    f=pd.DataFrame(dict(anchor_id=['a','b','c'],admin_code=['x','x','y'],commute_lane=[0,0,0],structural=[74.,72.,71.]))
+    alternative=pd.Series([71.,73.,74.])
+    expected=stable_order(f.assign(structural=alternative),alternative,5).anchor_id.tolist()
+    assert expected==['c','b','a']
+    assert scenario_order(f,alternative,0,5).anchor_id.tolist()==expected
+    shuffled=f.sample(frac=1,random_state=3)
+    assert scenario_order(shuffled,alternative,0,5).anchor_id.tolist()==expected
+
+
+class EvidenceConflictTests(unittest.TestCase):
+    setUp=BuildingTests.setUp
+    def test_latest_vacancy_date_and_floor_type(self):
+        a=dict(self.b,vacancy_checked_on='2026-11-02')
+        b=dict(self.b,checked_on='2026-11-02',vacancy_checked_on='2026-11-03',vacant=False,floor='3',source='최근 비공실')
+        out=premises_review(self.p,[a,b],rules(),'2026-11-03')
+        self.assertEqual(out,premises_review(self.p,[b,a],rules(),'2026-11-03'))
+        self.assertEqual(len(out['records']),1)
+        self.assertIs(out['records'][0]['vacant'],False)
+        self.assertNotEqual(out['state'],'현장 확인 가능')
+
+    def test_same_date_conflicts(self):
+        for key,value,field in [('exclusive_pyeong',80,'area'),('layout_prechecked',False,'layout'),('elevator_prechecked',False,'elevator')]:
+            with self.subTest(field=field):
+                out=premises_review(self.p,[self.b,dict(self.b,**{key:value})],rules(),'2026-11-03')
+                self.assertEqual(out['records'][0]['dates'][field]['state'],'conflict')
+                self.assertNotEqual(out['state'],'현장 확인 가능')
+
+    def test_separate_units_and_basement(self):
+        for key,value in [('floor',-3),('building_id','other'),('unit','302')]:
+            a=dict(self.b,unit='301')
+            b=dict(a,**{key:value},vacant=False)
+            out=premises_review(self.p,[a,b],rules(),'2026-11-03')
+            self.assertEqual(len(out['records']),2)
+            self.assertEqual(out['state'],'현장 확인 가능')
+
+    def test_absent_unknown_false_differ(self):
+        a=dict(self.b,checked_on='2026-11-02')
+        b={k:self.b[k] for k in ('candidate_id','building_id','floor','source','checked_on')}
+        self.assertEqual(premises_review(self.p,[a,b],rules(),'2026-11-03')['state'],'현장 확인 가능')
+        for value in (None,False):
+            out=premises_review(self.p,[a,dict(b,vacant=value)],rules(),'2026-11-03')
+            self.assertIs(out['records'][0]['vacant'],value)
+            self.assertNotEqual(out['state'],'현장 확인 가능')
