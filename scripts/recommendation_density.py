@@ -19,10 +19,11 @@ def reference_weights(frame, spec):
     f['_canonical'] = 1
     if 'building_key' in f and 'building_identity_state' in f:
         trusted = f.building_identity_state.eq('reported_building_id') & f.building_key.notna()
-        f.loc[trusted, '_canonical'] = (~f.loc[trusted, 'anchor_id'].eq('commercial_' + f.loc[trusted,'building_key'].astype(str))).astype(int)
-        positions = f[trusted].sort_values(['_canonical','anchor_id']).drop_duplicates('building_key').set_index('building_key')[['x','y']]
-        for axis in ['x','y']:
-            f.loc[trusted, axis] = f.loc[trusted,'building_key'].map(positions[axis])
+        if trusted.any():
+            f.loc[trusted, '_canonical'] = (~f.loc[trusted, 'anchor_id'].eq('commercial_' + f.loc[trusted,'building_key'].astype(str))).astype(int)
+            positions = f[trusted].sort_values(['_canonical','anchor_id']).drop_duplicates('building_key').set_index('building_key')[['x','y']]
+            for axis in ['x','y']:
+                f.loc[trusted, axis] = f.loc[trusted,'building_key'].map(positions[axis])
     size = spec['cell_size_m']; ox, oy = spec['offset_m']
     f['_cx'] = np.floor((f.x - ox) / size).astype(int)
     f['_cy'] = np.floor((f.y - oy) / size).astype(int)

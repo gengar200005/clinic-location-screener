@@ -11,7 +11,7 @@
   "scripts\\build_current_recommendations.py": "b77eb789b61d74269292d2a5a6e800961a1a86bbcab3e6f7fb8093db0685c994",
   "scripts\\market_demand.py": "edde36994f83bae8daaa494152a9605752da7af2f9306e01b3e3b534fa87e794",
   "scripts\\recommendation_policy.py": "3f39f2d49beac2bc3dd1d16ac63475301d448c1d377ec651bd51a04cc8c4b7be",
-  "scripts\\recommendation_density.py": "43f2ab1f01b60506e89f23897618d942f3c5eaf8516b7781f4b5e252a98e7f72",
+  "scripts\\recommendation_density.py": "351c9248d4542561ff710f4101e95b4f358948644f99b4657b1f1698ac9070c4",
   "config\\current_recommendations.json": "6636a84522528644998a49837f570cddb637fd19f80d5f949ed6b8329936f5dd",
   "web\\data\\revenue.json": "652ffdd3d53db595c9527b700bffc98bdec2d0352ff25233d18e88b8e0f2af7f",
   "data\\manual\\current_building_verifications.json": "d35eb8d67a894981e8f472bcbba65da7bdcea75eaf012c365979f57990689ceb",

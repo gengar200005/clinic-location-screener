@@ -27,7 +27,7 @@
 
 ## 재실행과 결과물
 
-현재 데이터 버전은 `5a2fd5d8d364`, 규칙 버전은 `investigation-v2-20261103`이다. 로컬 작업 브랜치는 `fix/recommendation-reliability-20261103`이고, 기준은 원격 main `d122429`이다. `before/`에 종전 JSON, CSV, 설정을 보관했다. `baseline_hashes.json`은 종전 파일, `input_hashes.json`은 이번 계산의 입력 해시다. `density_before_after.csv`는 행정동별 순서와 대표 좌표, `baseline_corrected_components.csv`는 반경별 점수 구성, `DENSITY_VALIDATION.json`은 대조 실험을 담고 있다. 별도 `review_pr9.zip`은 로컬과 첨부에서 확인되지 않아 실제 코드·캐시·기존 저장본으로 검증했다.
+현재 데이터 버전은 `f0b99325bd62`, 규칙 버전은 `investigation-v2-20261103`이다. 로컬 작업 브랜치는 `fix/recommendation-reliability-20261103`이고, 기준은 원격 main `d122429`이다. `before/`에 종전 JSON, CSV, 설정을 보관했다. `baseline_hashes.json`은 종전 파일, `input_hashes.json`은 이번 계산의 입력 해시다. `density_before_after.csv`는 행정동별 순서와 대표 좌표, `baseline_corrected_components.csv`는 반경별 점수 구성, `DENSITY_VALIDATION.json`은 대조 실험을 담고 있다. 별도 `review_pr9.zip`은 로컬과 첨부에서 확인되지 않아 실제 코드·캐시·기존 저장본으로 검증했다.
 
 작업 폴더에서 실행한다. 기준일을 생략하면 한국 시간 실행일을 사용한다. `--config`로 설정 파일을 지정할 수 있다. 같은 입력과 기준일로 다시 만들려면 옆 체크아웃의 v3 캐시와 `before/` 자료가 필요하다. 과거 기준일의 건물 상태는 당시 확인 기록을 기준으로 평가하며, 시장 원자료의 과거 수집 이력을 완전히 복원하지는 못한다.
 
