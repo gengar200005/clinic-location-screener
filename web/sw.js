@@ -5,7 +5,7 @@
 //     → 최신 데이터 우선, 오프라인 시 캐시 폴백
 //   - OSM 타일: 네트워크 우선, 캐시 안 함 (저장소 폭발 방지)
 
-const VERSION = 'v43-2026-11-03-rent-links';
+const VERSION = 'v44-2026-11-07-map-workspace';
 const SHELL_CACHE = `shell-${VERSION}`;
 const DATA_CACHE = `data-${VERSION}`;
 
@@ -23,9 +23,9 @@ const SHELL_ASSETS = [
   './progress.html',
   './manifest.json',
   './icon.svg',
-  './research.css?v=17',
+  './research.css?v=18',
   './research.js?v=22',
-  './explorer.js?v=2',
+  './explorer.js?v=3',
   './revenue-map.js?v=11',
   './data/research.json',
   './detail/index.html',
