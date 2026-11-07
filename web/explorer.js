@@ -8,7 +8,59 @@ class ClinicExplorer {
     document.getElementById('anchor-reset').onclick=()=>{if(this.candidate){this.anchor=[this.candidate.lat_shops,this.candidate.lon_shops];this.custom=false;this.render();this.fit();}};
     document.getElementById('radius-fit').onclick=()=>this.fit();
     document.getElementById('legacy-context').onchange=()=>this.loadContext();
-    document.getElementById('map-expand').onclick=e=>{const expanded=document.getElementById('map').classList.toggle('expanded');e.target.textContent=expanded?'지도 크기 복귀':'지도 크게 보기';e.target.setAttribute('aria-pressed',String(expanded));map.invalidateSize();this.fit();};
+    // Keep the same map and controls mounted so layers, filters and view survive resizing.
+    const mapElement=document.getElementById('map');
+    const workspace=document.createElement('section');
+    workspace.className='map-workspace';
+    workspace.setAttribute('aria-label','주변 병·의원 지도 탐색');
+    const settings=document.createElement('div');
+    settings.className='map-settings';
+    const controls=document.getElementById('explorer-controls');
+    const revenueControls=document.getElementById('revenue-map-controls');
+    const first=revenueControls&&revenueControls.parentNode===mapElement.parentNode?revenueControls:controls;
+    first.before(workspace);
+    workspace.append(settings);
+    if(first===revenueControls)settings.append(revenueControls);
+    settings.append(controls);
+    workspace.append(mapElement);
+    const caption=document.getElementById('map-caption');
+    if(caption)workspace.append(caption);
+    const expand=document.getElementById('map-expand');
+    expand.textContent='지도 전체화면';
+    const resizeMap=()=>requestAnimationFrame(()=>map.invalidateSize({animate:false}));
+    const setExpanded=expanded=>{
+      if(expanded===workspace.classList.contains('is-expanded'))return;
+      if(expanded)this.previousBodyOverflow=document.body.style.overflow;
+      workspace.classList.toggle('is-expanded',expanded);
+      document.body.style.overflow=expanded?'hidden':this.previousBodyOverflow;
+      expand.textContent=expanded?'전체화면 닫기 (Esc)':'지도 전체화면';
+      expand.setAttribute('aria-pressed',String(expanded));
+      if(expanded){
+        workspace.setAttribute('role','dialog');
+        workspace.setAttribute('aria-modal','true');
+      }else{
+        workspace.removeAttribute('role');
+        workspace.removeAttribute('aria-modal');
+      }
+      expand.focus({preventScroll:true});
+      resizeMap();
+    };
+    expand.onclick=()=>setExpanded(!workspace.classList.contains('is-expanded'));
+    document.addEventListener('keydown',e=>{
+      if(!workspace.classList.contains('is-expanded'))return;
+      if(e.key==='Escape'){e.preventDefault();setExpanded(false);}
+      if(e.key==='Tab'){
+        const items=[...workspace.querySelectorAll('button,a[href],input,select,[tabindex]')]
+          .filter(el=>!el.disabled&&el.tabIndex>=0&&el.getClientRects().length);
+        const first=items[0],last=items[items.length-1];
+        if(e.shiftKey&&(document.activeElement===first||!workspace.contains(document.activeElement))){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey&&(document.activeElement===last||!workspace.contains(document.activeElement))){e.preventDefault();first?.focus();}
+      }
+    });
+    if(typeof ResizeObserver!=='undefined'){
+      this.mapResizeObserver=new ResizeObserver(resizeMap);
+      this.mapResizeObserver.observe(mapElement);
+    }
     map.on('click',e=>{if(this.candidate)this.move(e.latlng.lat,e.latlng.lng);});
     this.load();
   }
@@ -39,8 +91,8 @@ class ClinicExplorer {
     const base=this.providers.map(p=>({p,d:this.distance(p)})).filter(x=>x.d<=this.radius);
     const internal=base.filter(x=>x.p.internal_specialists>0).length;
     const rows=base.filter(({p})=>this.filter==='all'||this.filter==='internal'&&p.internal_specialists>0||this.filter==='primary'&&(p.internal_specialists>0||p.family_specialists>0)||this.filter==='endo'&&p.egd_equipment_2025_positive).sort((a,b)=>this.sort==='internal'?(Number(b.p.internal_specialists>0)-Number(a.p.internal_specialists>0)||a.d-b.d):a.d-b.d);
-    box.innerHTML=`<h3>반경 ${this.radius.toLocaleString()}m · 병·의원 ${base.length}곳 / 내과 전문의 기관 ${internal}곳</h3><p class="muted">필터 결과 ${rows.length}곳 · HIRA 2026-09 / 장비 2025-12. 위·대장 장비 기록은 현재 운영·검진 지정 여부와 다릅니다. 전문의 결측은 0명으로 처리하지 않습니다. 치과·한방·약국은 이 목록에 포함하지 않습니다.</p>${this.custom?'<p class="callout">기준점을 옮겨 기관 거리와 수만 다시 계산했습니다. 아래 수요·통근·조사 순서는 원래 후보 중심점 기준입니다.</p>':''}<div class="provider-list">${rows.length?rows.map(({p,d},i)=>`<div class="provider-row"><button data-provider="${i}">${this.escape(p.name)} · ${Math.round(d)}m ${p.internal_specialists>0?'· 내과':''} ${p.egd_equipment_2025_positive?'· 위내시경 장비':''}</button><details><summary>의료진·주소·연락처 상세보기</summary>${this.info(p)}</details></div>`).join(''):'<p>현재 반경·필터에 일치하는 기록이 없습니다. 실제 기관 부재를 확정하지 않습니다.</p>'}</div><p class="muted">지도 핀: 빨강 내과 전문의 · 보라 위내시경 장비 기록 · 회색 그 외. 목록의 기관명을 누르면 해당 위치를 표시합니다.</p><div id="context-note" class="muted"></div>`;
-    const markers=rows.map(({p,d})=>{const color=p.internal_specialists>0?'#c44236':p.egd_equipment_2025_positive?'#7953a5':'#6c7b85';return L.circleMarker([p.lat,p.lon],{radius:p.internal_specialists>0?7:5,color,weight:2,fillOpacity:.8,bubblingMouseEvents:false}).addTo(this.layers).bindPopup(`<div class="provider-popup">${this.info(p)}<br>현재 기준점에서 ${Math.round(d)}m</div>`,{maxWidth:340});});
+    box.innerHTML=`<h3>반경 ${this.radius.toLocaleString()}m · 병·의원 ${base.length}곳 / 내과 전문의 기관 ${internal}곳</h3><p class="muted">필터 결과 ${rows.length}곳 · HIRA 2026-09 / 장비 2025-12. 위·대장 장비 기록은 현재 운영·검진 지정 여부와 다릅니다. 전문의 결측은 0명으로 처리하지 않습니다. 치과·한방·약국은 이 목록에 포함하지 않습니다.</p>${this.custom?'<p class="callout">기준점을 옮겨 기관 거리와 수만 다시 계산했습니다. 아래 수요·통근·조사 순서는 원래 후보 중심점 기준입니다.</p>':''}<div class="provider-list">${rows.length?rows.map(({p,d},i)=>`<div class="provider-row"><button data-provider="${i}">${this.escape(p.name)} · ${Math.round(d)}m ${p.internal_specialists>0?'· 내과':''} ${p.egd_equipment_2025_positive?'· 위내시경 장비':''}</button><details><summary>의료진·주소·연락처 상세보기</summary>${this.info(p)}</details></div>`).join(''):'<p>현재 반경·필터에 일치하는 기록이 없습니다. 실제 기관 부재를 확정하지 않습니다.</p>'}</div><p class="muted">지도 핀: 빨강 내과 전문의 · 보라 위내시경 장비 기록 · 회색 그 외. 핀에 마우스를 올리거나 터치하면 상세 정보를 표시합니다. 목록의 기관명을 누르면 해당 위치를 표시합니다.</p><div id="context-note" class="muted"></div>`;
+    const markers=rows.map(({p,d})=>{const color=p.internal_specialists>0?'#c44236':p.egd_equipment_2025_positive?'#7953a5':'#6c7b85';return L.circleMarker([p.lat,p.lon],{radius:p.internal_specialists>0?7:5,color,weight:2,fillOpacity:.8,bubblingMouseEvents:false}).addTo(this.layers).bindPopup(`<div class="provider-popup">${this.info(p)}<br>현재 기준점에서 ${Math.round(d)}m</div>`,{maxWidth:340}).on('mouseover',function(){this.openPopup();});});
     box.querySelectorAll('[data-provider]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.provider);this.map.setView([rows[i].p.lat,rows[i].p.lon],17);markers[i].openPopup();document.getElementById('map').scrollIntoView({block:'center',behavior:'smooth'});});
     this.contextNote();
   }
